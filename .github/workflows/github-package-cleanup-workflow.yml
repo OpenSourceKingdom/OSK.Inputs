@@ -23,5 +23,6 @@ jobs:
         with:
           keep: ${{ github.event.inputs.keepCount }}
           type: nuget
+          organization: OpenSourceKingdom
           names: |
             ${{ github.event.repository.name }}
