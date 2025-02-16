@@ -22,5 +22,6 @@ jobs:
         uses: SmartsquareGmbH/delete-old-packages@v0.8.1
         with:
           keep: ${{ github.event.inputs.keepCount }}
+          type: nuget
           names: |
             ${{ github.event.repository.name }}
