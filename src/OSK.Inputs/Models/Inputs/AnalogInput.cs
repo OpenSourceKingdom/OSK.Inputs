@@ -10,6 +10,6 @@ namespace OSK.Inputs.Models.Inputs;
 /// <param name="name">The name of the input</param>
 /// <param name="value">The value of the input</param>
 /// <param name="options">Power input options</param>
-public abstract class AnalogInput<TValue>(string name, TValue value, AnalogInputOptions options): HardwareInput<AnalogInputOptions, TValue>(name, value, options)
+public abstract class AnalogInput<TValue>(string name, TValue value, AnalogInputOptions options): HardwareInput<TValue, AnalogInputOptions>(name, value, options)
 {
 }

@@ -10,7 +10,7 @@ namespace OSK.Inputs.Models.Inputs;
 /// <param name="name">The name of the input</param>
 /// <param name="value">The value this input represents</param>
 /// <param name="options">A set of options that will be used to help process the input on an <see cref="IInputReceiver"/></param>
-public abstract class HardwareInput<TOptions, TValue>(string name, TValue value, TOptions options)
+public abstract class HardwareInput<TValue, TOptions>(string name, TValue value, TOptions options)
     : HardwareInput(name)
 {
     public TOptions Options => options;
