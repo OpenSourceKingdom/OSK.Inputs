@@ -2,7 +2,10 @@
 
 namespace OSK.Inputs.Options;
 
-public class DigitalInputOptions(int tapCount, TimeSpan activationDuration): InputOptions(activationDuration)
+public class DigitalInputOptions: InputOptions
 {
-    public int TapCount => tapCount;
+    /// <summary>
+    /// The required number of quick successive presses for the input to be considered active
+    /// </summary>
+    public int TapCount { get; set; }
 }

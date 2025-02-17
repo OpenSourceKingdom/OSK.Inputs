@@ -78,7 +78,7 @@ public class InputSchemeBuilderTests
     public void AssignInput_CombinationInput_AnInputNotValidForDescriptor_ThrowsInvalidOperationException()
     {
         // Arrange
-        var combinationInput = new CombinationInput("Abc", [new TestInputA(), new TestInputB()], new CombinationInputOptions(TimeSpan.Zero));
+        var combinationInput = new CombinationInput("Abc", [new TestInputA(), new TestInputB()], new CombinationInputOptions());
 
         // Act/Assert
         Assert.Throws<InvalidOperationException>(() => _builder.AssignInput(_testDescription.ReceiverName, "abc", combinationInput, InputPhase.Start));
@@ -88,7 +88,7 @@ public class InputSchemeBuilderTests
     public void AssignInput_CombinationInput_DuplicateInputsInCombinationInput_ThrowsInvalidOperationException()
     {
         // Arrange
-        var combinationInput = new CombinationInput("Abc", [new TestInputA(), new TestInputA()], new CombinationInputOptions(TimeSpan.Zero));
+        var combinationInput = new CombinationInput("Abc", [new TestInputA(), new TestInputA()], new CombinationInputOptions());
 
         // Act/Assert
         Assert.Throws<InvalidOperationException>(() => _builder.AssignInput(_testDescription.ReceiverName, "abc", combinationInput, InputPhase.Start));
@@ -108,7 +108,7 @@ public class InputSchemeBuilderTests
     public void AssignInput_CombinationInput_AllInputAreValid_ReturnsSuccessfully()
     {
         // Arrange
-        var combinationInput = new CombinationInput("Abc", [new TestInputA(), new TestInputC()], new CombinationInputOptions(TimeSpan.Zero));
+        var combinationInput = new CombinationInput("Abc", [new TestInputA(), new TestInputC()], new CombinationInputOptions());
 
         // Act/Assert
         _builder.AssignInput(_testDescription.ReceiverName, "abc", combinationInput, InputPhase.Start);

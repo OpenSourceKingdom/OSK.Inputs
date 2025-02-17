@@ -2,8 +2,11 @@
 
 namespace OSK.Inputs.Options;
 
-public class AnalogInputOptions(float powerThreshold, TimeSpan activationDuration)
-    : InputOptions(activationDuration)
+public class AnalogInputOptions
+    : InputOptions
 {
-    public float PowerThreshold => powerThreshold;
+    /// <summary>
+    /// The minimum required power for the input to be considered active
+    /// </summary>
+    public float PowerThreshold { get; set; }
 }

@@ -2,7 +2,10 @@
 
 namespace OSK.Inputs.Options;
 
-public class InputOptions(TimeSpan activationDuration)
+public class InputOptions
 {
-    public TimeSpan ActivationDuration => activationDuration;
+    /// <summary>
+    /// The mimium amount of time that must be pass for the input to be considered active
+    /// </summary>
+    public TimeSpan RequiredActivationDuration { get; set; } = TimeSpan.Zero;
 }
