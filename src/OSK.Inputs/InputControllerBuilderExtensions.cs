@@ -1,6 +1,5 @@
 ﻿using System;
 using OSK.Inputs.Internal;
-using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Ports;
 
@@ -10,7 +9,7 @@ public static class InputControllerBuilderExtensions
 {
     #region Input Receivers
 
-    public static IInputControllerBuilder AddInputReceiver<TInputReceiver, TInput>(this InputControllerBuilder builder, string name) 
+    public static IInputControllerBuilder AddInputReceiver<TInputReceiver, TInput>(this IInputControllerBuilder builder, string name) 
         where TInputReceiver : IInputReceiver
         where TInput: IInput
     {
