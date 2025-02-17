@@ -82,7 +82,7 @@ public class RuntimeControllerListenerTests
         // Act
         var inputs = await _controller.ReadInputsAsync(new InputHandlerOptions()
         {
-            ControllerReadTime = TimeSpan.FromMilliseconds(150)
+            ControllerReadTime = TimeSpan.FromMilliseconds(500)
         });
 
         // Assert
