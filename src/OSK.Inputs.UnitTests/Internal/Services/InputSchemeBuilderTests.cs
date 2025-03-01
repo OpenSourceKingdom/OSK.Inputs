@@ -78,7 +78,7 @@ public class InputSchemeBuilderTests
     public void AssignInput_CombinationInput_AnInputNotValidForDescriptor_ThrowsInvalidOperationException()
     {
         // Arrange
-        var combinationInput = new CombinationInput("Abc", [new TestInputA(), new TestInputB()], new CombinationInputOptions());
+        var combinationInput = new CombinationInput("Abc", [new TestInputA(), new TestInputB()], new CombinationInputOptions(                                                                 ));
 
         // Act/Assert
         Assert.Throws<InvalidOperationException>(() => _builder.AssignInput(_testDescription.ReceiverName, "abc", combinationInput, InputPhase.Start));

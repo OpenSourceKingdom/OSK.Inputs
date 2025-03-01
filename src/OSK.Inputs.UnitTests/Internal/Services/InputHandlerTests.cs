@@ -40,7 +40,7 @@ public class InputHandlerTests
     public async Task ReadInputsAsync_ActiveControllerReturnsInputs_DoesNotCheckInactiveControllers_ReturnsSuccessfully()
     {
         // Arrange
-        var activatedInput = new ActivatedInput("test", new TestInputA(), "A", InputPhase.Start, new InputPower([]));
+        var activatedInput = new ActivatedInput(1, "test", new TestInputA(), "A", InputPhase.Start, new InputPower([]));
 
         _mockControllerA.Setup(m => m.ReadInputsAsync(It.IsAny<InputHandlerOptions>()))
             .ReturnsAsync([activatedInput]);
@@ -60,7 +60,7 @@ public class InputHandlerTests
     public async Task ReadInputsAsync_ActiveControllerReturnsNoInputs_ChecksInactiveController_NoInput_DoesNotTriggerControllerChange_ReturnsSuccessfully()
     {
         // Arrange
-        var activatedInput = new ActivatedInput("test", new TestInputA(), "A", InputPhase.Start, new InputPower([]));
+        var activatedInput = new ActivatedInput(1, "test", new TestInputA(), "A", InputPhase.Start, new InputPower([]));
 
         _mockControllerA.Setup(m => m.ReadInputsAsync(It.IsAny<InputHandlerOptions>()))
             .ReturnsAsync([]);
@@ -85,7 +85,7 @@ public class InputHandlerTests
     public async Task ReadInputsAsync_ActiveControllerReturnsNoInputs_ChecksInactiveController_ReceiversInput_DoesTriggerControllerChange_ReturnsSuccessfully()
     {
         // Arrange
-        var activatedInput = new ActivatedInput("test", new TestInputA(), "A", InputPhase.Start, new InputPower([]));
+        var activatedInput = new ActivatedInput(1, "test", new TestInputA(), "A", InputPhase.Start, new InputPower([]));
 
         _mockControllerA.Setup(m => m.ReadInputsAsync(It.IsAny<InputHandlerOptions>()))
             .ReturnsAsync([]);

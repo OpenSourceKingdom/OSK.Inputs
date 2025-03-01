@@ -2,10 +2,12 @@
 
 namespace OSK.Inputs.Models.Runtime;
 
-public class ActivatedInput(string inputReceiverName, IInput input, string actionKey,
+public class ActivatedInput(int controllerId, string inputReceiverName, IInput input, string actionKey,
     InputPhase inputPhase, InputPower inputPower)
 {
     #region Variables
+
+    public int InputControllerId { get; set; }
 
     public string InputReceiverName => inputReceiverName;
 

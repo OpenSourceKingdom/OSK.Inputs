@@ -46,7 +46,7 @@ public class RuntimeControllerListenerTests
                     return [];
                 }
 
-                return [ new ActivatedInput("abc", new TestInputA(), "abc", InputPhase.Start, new InputPower([])) ];
+                return [ new ActivatedInput(1, "abc", new TestInputA(), "abc", InputPhase.Start, new InputPower([])) ];
             });
 
         // Act
@@ -65,7 +65,7 @@ public class RuntimeControllerListenerTests
     public async Task ReadInputsAsync_OperationIsShorterThanCancellationToken_ReturnsSuccessfully()
     {
         // Arrange
-        var activatedInput = new ActivatedInput("abc", new TestInputA(), "abc", InputPhase.Start, new InputPower([]));
+        var activatedInput = new ActivatedInput(1, "abc", new TestInputA(), "abc", InputPhase.Start, new InputPower([]));
 
         _mockInputReceiver.Setup(m => m.ReadInputsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync((CancellationToken token) =>
