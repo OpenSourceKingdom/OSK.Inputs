@@ -8,7 +8,7 @@ internal class InputReceiverDescriptor(string receiverName, Type inputReceiverTy
 {
     public string ReceiverName => receiverName;
 
-    public Type InputReceiverType => inputReceiverType;
+    public Type InputSystemType => inputReceiverType;
 
     public bool IsValidInput(IInput input) => validator(input);
 }

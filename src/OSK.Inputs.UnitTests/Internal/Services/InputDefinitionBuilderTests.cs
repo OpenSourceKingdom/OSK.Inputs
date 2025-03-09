@@ -153,8 +153,8 @@ public class InputDefinitionBuilderTests
         Assert.Single(definition.InputActions);
         Assert.Equal(action, definition.InputActions.First().ActionKey);
         Assert.Equal(description, definition.InputActions.First().Description);
-        Assert.Single(definition.SupportedInputControllers);
-        Assert.Equal(controllerName, definition.SupportedInputControllers.First().ControllerName);
+        Assert.Single(definition.DefaultControllerConfigurations);
+        Assert.Equal(controllerName, definition.DefaultControllerConfigurations.First().ControllerName);
         Assert.Equal(allowCustomSchemes, definition.AllowCustomInputSchemes);
     }
 

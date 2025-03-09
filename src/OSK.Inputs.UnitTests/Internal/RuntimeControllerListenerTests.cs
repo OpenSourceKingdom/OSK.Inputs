@@ -14,9 +14,9 @@ public class RuntimeControllerListenerTests
 {
     #region Variables
 
-    private readonly Mock<IInputReceiver> _mockInputReceiver;
+    private readonly Mock<IInputSystem> _mockInputReceiver;
 
-    private readonly RuntimeControllerListener _controller;
+    private readonly InputSystemListener _controller;
 
     #endregion
 
@@ -24,9 +24,9 @@ public class RuntimeControllerListenerTests
 
     public RuntimeControllerListenerTests()
     {
-        _mockInputReceiver = new Mock<IInputReceiver>();
+        _mockInputReceiver = new Mock<IInputSystem>();
         
-        _controller = new RuntimeControllerListener(new InputControllerConfiguration("abc", [], []), [_mockInputReceiver.Object]);
+        _controller = new InputSystemListener(new InputControllerConfiguration("abc", [], []), [_mockInputReceiver.Object]);
     }
 
     #endregion

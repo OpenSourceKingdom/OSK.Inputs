@@ -15,7 +15,7 @@ public class InputDefinition(string name, bool allowCustomInputSchemes,
 
     public IReadOnlyCollection<InputAction> InputActions { get; } = inputActions.ToArray();
 
-    public IReadOnlyCollection<InputControllerConfiguration> SupportedInputControllers { get; } = supportedInputControllers.ToArray();
+    public IReadOnlyCollection<InputControllerConfiguration> DefaultControllerConfigurations { get; } = supportedInputControllers.ToArray();
 
     #endregion
 
@@ -27,7 +27,7 @@ public class InputDefinition(string name, bool allowCustomInputSchemes,
             StringComparer.Ordinal).ToDictionary(group => group.Key) ?? [];
 
         List<InputControllerConfiguration> inputControllers = [];
-        foreach (var inputController in SupportedInputControllers)
+        foreach (var inputController in DefaultControllerConfigurations)
         {
             additionalInputSchemeLookup.TryGetValue(inputController.ControllerName, out var additionalSchemes);
 

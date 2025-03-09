@@ -25,7 +25,7 @@ public class InputSchemeBuilderTests
 
     public InputSchemeBuilderTests()
     {
-        _testDescription = new InputReceiverDescriptor("abc", typeof(TestInputReceiver), input => input is TestInputA || input is TestInputC);
+        _testDescription = new InputReceiverDescriptor("abc", typeof(TestInputSystem), input => input is TestInputA || input is TestInputC);
         _builder = new(DefinitionName, ControllerName, SchemeName, [ _testDescription ]);
     }
 

@@ -42,7 +42,7 @@ public class InputControllerBuilderTests
     public void AddInputReceiver_InvalidInputReceiverDescriptionName_ThrowsArgumentNullException(string? receiverName)
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _builder.AddInputReceiver(new InputReceiverDescriptor(receiverName!, typeof(TestInputReceiver), _ => true)));
+        Assert.Throws<ArgumentNullException>(() => _builder.AddInputReceiver(new InputReceiverDescriptor(receiverName!, typeof(TestInputSystem), _ => true)));
     }
 
     [Fact]
@@ -63,17 +63,17 @@ public class InputControllerBuilderTests
     public void AddInputReceiver_DuplicateReceiverDescriptionName_ThrowsDuplicateNameException()
     {
         // Arrange
-        _builder.AddInputReceiver(new InputReceiverDescriptor("abc", typeof(TestInputReceiver), _ => true));
+        _builder.AddInputReceiver(new InputReceiverDescriptor("abc", typeof(TestInputSystem), _ => true));
 
         // Act/Assert
-        Assert.Throws<DuplicateNameException>(() => _builder.AddInputReceiver(new InputReceiverDescriptor("abc", typeof(TestInputReceiver), _ => true)));
+        Assert.Throws<DuplicateNameException>(() => _builder.AddInputReceiver(new InputReceiverDescriptor("abc", typeof(TestInputSystem), _ => true)));
     }
 
     [Fact]
     public void AddInputReceiver_Valid_ReturnsSuccessfully()
     {
         // Arrange/Act/Assert
-        _builder.AddInputReceiver(new InputReceiverDescriptor("abc", typeof(TestInputReceiver), _ => true));
+        _builder.AddInputReceiver(new InputReceiverDescriptor("abc", typeof(TestInputSystem), _ => true));
     }
 
     #endregion

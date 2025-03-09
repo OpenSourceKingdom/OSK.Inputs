@@ -12,7 +12,7 @@ public class TestSchemeRepository : IInputSchemeRepository
         throw new NotImplementedException();
     }
 
-    public Task<IOutput<IEnumerable<ActiveInputScheme>>> GetActiveInputSchemesAsync(string inputDefinitionName, CancellationToken cancellationToken = default)
+    public Task<IOutput<IEnumerable<ActiveInputScheme>>> GetActiveInputSchemesAsync(string inputDefinitionName, int playerId, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
@@ -23,6 +23,11 @@ public class TestSchemeRepository : IInputSchemeRepository
     }
 
     public Task<IOutput<IEnumerable<InputScheme>>> GetInputSchemesAsync(string inputDefinitionName, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<IOutput<ActiveInputScheme>> SaveActiveInputSchemeAsync(ActiveInputScheme inputScheme, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

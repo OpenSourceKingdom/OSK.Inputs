@@ -6,7 +6,7 @@ public interface IInputReceiverDescriptor
 {
     string ReceiverName { get; }
 
-    Type InputReceiverType { get; }
+    Type InputSystemType { get; }
 
     bool IsValidInput(IInput input);
 }

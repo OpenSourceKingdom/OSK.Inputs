@@ -132,7 +132,7 @@ public class InputValidationServiceTests
     {
         // Arrange/Act
         var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [new InputControllerConfiguration("abc", [new InputReceiverDescriptor(descriptorName!, typeof(TestInputReceiver), _ => true)], [])],
+            [new InputControllerConfiguration("abc", [new InputReceiverDescriptor(descriptorName!, typeof(TestInputSystem), _ => true)], [])],
             [new InputAction("abc", null)]));
 
         // Assert
@@ -148,8 +148,8 @@ public class InputValidationServiceTests
         // Arrange/Act
         var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
             [new InputControllerConfiguration("abc", [
-                new InputReceiverDescriptor(inputReceiver1, typeof(TestInputReceiver), _ => true),
-                new InputReceiverDescriptor(inputReceiver2, typeof(TestInputReceiver), _ => true)
+                new InputReceiverDescriptor(inputReceiver1, typeof(TestInputSystem), _ => true),
+                new InputReceiverDescriptor(inputReceiver2, typeof(TestInputSystem), _ => true)
                ], [])
             ],
             [new InputAction("abc", null)]));
@@ -181,7 +181,7 @@ public class InputValidationServiceTests
             [
             new InputControllerConfiguration("abc", 
                [
-                new InputReceiverDescriptor("abc", typeof(TestInputReceiver), _ => true)
+                new InputReceiverDescriptor("abc", typeof(TestInputSystem), _ => true)
                ], 
                // Invalid action key
                [ new InputScheme("", "abc", "abc", [], false) ])
@@ -200,8 +200,8 @@ public class InputValidationServiceTests
             [
                 new InputControllerConfiguration("abc",
                 [
-                    new InputReceiverDescriptor("Motion1", typeof(TestInputReceiver), _ => true),
-                    new InputReceiverDescriptor("Motion2", typeof(TestInputReceiver), _ => true)
+                    new InputReceiverDescriptor("Motion1", typeof(TestInputSystem), _ => true),
+                    new InputReceiverDescriptor("Motion2", typeof(TestInputSystem), _ => true)
                 ],
                 [
                     new InputScheme("abc", "abc", "abc",

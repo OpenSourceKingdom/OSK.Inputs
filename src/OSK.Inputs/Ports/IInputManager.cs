@@ -12,7 +12,7 @@ public interface IInputManager
 {
     ValueTask<IOutput<IEnumerable<InputDefinition>>> GetInputDefinitionsAsync(CancellationToken cancellationToken = default);
 
-    Task<IOutput<IInputHandler>> GetInputHandlerAsync(string inputDefinitionName, CancellationToken cancellationToken = default);
+    Task<IOutput<IInputHandler>> GetInputHandlerAsync(string inputDefinitionName, int playerId, CancellationToken cancellationToken = default);
 
     Task<IOutput<InputScheme>> SaveInputSchemeAsync(InputScheme inputScheme, CancellationToken cancellationToken = default);
 

@@ -26,13 +26,13 @@ internal class InputControllerBuilder(string definitionName, string controllerNa
         {
             throw new ArgumentNullException(nameof(descriptor.ReceiverName));
         }
-        if (descriptor.InputReceiverType is null)
+        if (descriptor.InputSystemType is null)
         {
-            throw new ArgumentNullException(nameof(descriptor.InputReceiverType));
+            throw new ArgumentNullException(nameof(descriptor.InputSystemType));
         }
-        if (!typeof(IInputReceiver).IsAssignableFrom(descriptor.InputReceiverType))
+        if (!typeof(IInputSystem).IsAssignableFrom(descriptor.InputSystemType))
         {
-            throw new InvalidOperationException($"The input receiver type provdied {descriptor.InputReceiverType.FullName} is not of type {typeof(IInputReceiver).FullName}");
+            throw new InvalidOperationException($"The input receiver type provdied {descriptor.InputSystemType.FullName} is not of type {typeof(IInputSystem).FullName}");
         }
 
         if (_receiverDescriptions.TryGetValue(descriptor.ReceiverName, out _))

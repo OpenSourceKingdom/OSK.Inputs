@@ -10,7 +10,7 @@ public static class InputControllerBuilderExtensions
     #region Input Receivers
 
     public static IInputControllerBuilder AddInputReceiver<TInputReceiver, TInput>(this IInputControllerBuilder builder, string name) 
-        where TInputReceiver : IInputReceiver
+        where TInputReceiver : IInputSystem
         where TInput: IInput
     {
         builder.AddInputReceiver(new InputReceiverDescriptor(name, typeof(TInputReceiver), input => input is IInput));
@@ -19,7 +19,7 @@ public static class InputControllerBuilderExtensions
     }   
 
     public static IInputControllerBuilder AddInputReceiver<TInputReceiver>(this IInputControllerBuilder builder, string name, Func<IInput, bool> validator)
-        where TInputReceiver : IInputReceiver
+        where TInputReceiver : IInputSystem
     {
         builder.AddInputReceiver(new InputReceiverDescriptor(name, typeof(TInputReceiver), validator));
 

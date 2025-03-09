@@ -43,7 +43,7 @@ public class InputManagerTests
                 [ new BuiltInInputScheme("Test", "TestController", "TestScheme", [], false) ]) ], 
               []);
         _testDefinitionNoCustomSchemes = new("Test2", false, [
-            new InputControllerConfiguration("TestController2", [new InputReceiverDescriptor("test", typeof(TestInputReceiver), _ => true)],
+            new InputControllerConfiguration("TestController2", [new InputReceiverDescriptor("test", typeof(TestInputSystem), _ => true)],
                 [ new BuiltInInputScheme("Test2", "TestController2", "TestScheme2", [new InputReceiverConfiguration("test", [])], false) ]) ],
               []);
 
@@ -86,7 +86,7 @@ public class InputManagerTests
         _inputDefinitions.Add(_testDefinitionWithCustomSchemes);
 
         var customScheme = new InputScheme(_testDefinitionWithCustomSchemes.Name,
-            _testDefinitionWithCustomSchemes.SupportedInputControllers.First().ControllerName,
+            _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().ControllerName,
             "custom", [], false);
 
         _mockInputSchemeRepository.Setup(m => m.GetInputSchemesAsync(It.Is<string>(name => name == _testDefinitionWithCustomSchemes.Name),
@@ -108,7 +108,7 @@ public class InputManagerTests
         // Definition should now include a new custom scheme
         Assert.False(definitionCustomSchemes.DeepEquals(_testDefinitionWithCustomSchemes));
 
-        var controller = definitionCustomSchemes.SupportedInputControllers.First();
+        var controller = definitionCustomSchemes.DefaultControllerConfigurations.First();
         Assert.Equal(2, controller.InputSchemes.Count());
         
         var actualCustomScheme = controller.InputSchemes.Last();
@@ -126,14 +126,14 @@ public class InputManagerTests
     public async Task GetInputHandlerAsync_EmptyDefinitionNames_ThrowsArgumentNullException(string? definitionName)
     {
         // Arrange/Act/Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _manager.GetInputHandlerAsync(definitionName!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _manager.GetInputHandlerAsync(definitionName!, 1));
     }
 
     [Fact]
     public async Task GetInputHandlerAsync_InputDefinitionDoesNotExist_ReturnsNotFound()
     {
         // Arrange/Act
-        var getOutput = await _manager.GetInputHandlerAsync("NotADefomotopm");
+        var getOutput = await _manager.GetInputHandlerAsync("NotADefomotopm", 1);
 
         // Assert
         Assert.False(getOutput.IsSuccessful);
@@ -152,7 +152,7 @@ public class InputManagerTests
             .ReturnsAsync(_outputFactory.Fail<IEnumerable<InputScheme>>("Bad Day", expectedSpecificityCode));
 
         // Act
-        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionWithCustomSchemes.Name);
+        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionWithCustomSchemes.Name, 1);
 
         // Assert
         Assert.False(getOutput.IsSuccessful);
@@ -166,11 +166,12 @@ public class InputManagerTests
         var expectedSpecificityCode = OutputSpecificityCode.InsufficientStorage;
         _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
 
-        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<string>(), It.IsAny<int>(),
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Fail<IEnumerable<ActiveInputScheme>>("Bad Day", expectedSpecificityCode));
 
         // Act
-        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionNoCustomSchemes.Name);
+        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionNoCustomSchemes.Name, 1);
 
         // Assert
         Assert.False(getOutput.IsSuccessful);
@@ -183,11 +184,11 @@ public class InputManagerTests
         // Arrange
         var expectedSpecificityCode = OutputSpecificityCode.InvalidParameter;
         _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var controller = _testDefinitionNoCustomSchemes.SupportedInputControllers.First();
+        var controller = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First();
         var scheme = controller.InputSchemes.First();
 
-        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[new ActiveInputScheme(_testDefinitionNoCustomSchemes.Name, controller.ControllerName, scheme.SchemeName)]));
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[new ActiveInputScheme(1, _testDefinitionNoCustomSchemes.Name, controller.ControllerName, scheme.SchemeName)]));
 
         _mockValidationService.Setup(m => m.ValidateInputScheme(It.IsAny<InputDefinition>(), It.IsAny<InputScheme>()))
             .Returns((InputDefinition _, InputScheme _) =>
@@ -199,7 +200,7 @@ public class InputManagerTests
             });
 
         // Act
-        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionNoCustomSchemes.Name);
+        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionNoCustomSchemes.Name, 1);
 
         // Assert
         Assert.False(getOutput.IsSuccessful);
@@ -211,11 +212,11 @@ public class InputManagerTests
     {
         // Arrange
         _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var controller = _testDefinitionNoCustomSchemes.SupportedInputControllers.First();
+        var controller = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First();
         var scheme = controller.InputSchemes.First();
 
-        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[new ActiveInputScheme(_testDefinitionNoCustomSchemes.Name, controller.ControllerName, scheme.SchemeName)]));
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[new ActiveInputScheme(1, _testDefinitionNoCustomSchemes.Name, controller.ControllerName, scheme.SchemeName)]));
 
         _mockValidationService.Setup(m => m.ValidateInputScheme(It.IsAny<InputDefinition>(), It.IsAny<InputScheme>()))
             .Returns(new InputValidationContext());
@@ -231,7 +232,7 @@ public class InputManagerTests
             });
 
         // Act
-        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionNoCustomSchemes.Name);
+        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionNoCustomSchemes.Name, 1);
 
         // Assert
         Assert.True(getOutput.IsSuccessful);
@@ -363,8 +364,8 @@ public class InputManagerTests
     {
         // Arrange
         _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var controllerName = _testDefinitionNoCustomSchemes.SupportedInputControllers.First().ControllerName;
-        var schemeName = _testDefinitionNoCustomSchemes.SupportedInputControllers.First().InputSchemes.First().SchemeName;
+        var controllerName = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First().ControllerName;
+        var schemeName = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First().InputSchemes.First().SchemeName;
 
         // Act
         var deleteOutput = await _manager.DeleteInputSchemeAsync(_testDefinitionNoCustomSchemes.Name, controllerName, schemeName);
@@ -401,7 +402,7 @@ public class InputManagerTests
     {
         // Arrange
         _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var controllerName = _testDefinitionNoCustomSchemes.SupportedInputControllers.First().ControllerName;
+        var controllerName = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First().ControllerName;
 
         // Act
         var deleteOutput = await _manager.DeleteInputSchemeAsync(_testDefinitionNoCustomSchemes.Name, controllerName, "abc");
@@ -415,8 +416,8 @@ public class InputManagerTests
     {
         // Arrange
         _inputDefinitions.Add(_testDefinitionWithCustomSchemes);
-        var controllerName = _testDefinitionWithCustomSchemes.SupportedInputControllers.First().ControllerName;
-        var schemeName = _testDefinitionWithCustomSchemes.SupportedInputControllers.First().InputSchemes.First().SchemeName;
+        var controllerName = _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().ControllerName;
+        var schemeName = _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().InputSchemes.First().SchemeName;
 
         _mockInputSchemeRepository.Setup(m => m.DeleteInputSchemeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<CancellationToken>()))
@@ -434,8 +435,8 @@ public class InputManagerTests
     {
         // Arrange
         _inputDefinitions.Add(_testDefinitionWithCustomSchemes);
-        var controllerName = _testDefinitionWithCustomSchemes.SupportedInputControllers.First().ControllerName;
-        var schemeName = _testDefinitionWithCustomSchemes.SupportedInputControllers.First().InputSchemes.First().SchemeName;
+        var controllerName = _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().ControllerName;
+        var schemeName = _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().InputSchemes.First().SchemeName;
 
         _mockInputSchemeRepository.Setup(m => m.DeleteInputSchemeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<CancellationToken>()))

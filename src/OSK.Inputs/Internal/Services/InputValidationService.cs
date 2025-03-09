@@ -76,14 +76,14 @@ internal class InputValidationService : IInputValidationService
             }
         }
 
-        if (!inputDefinition.SupportedInputControllers.Any())
+        if (!inputDefinition.DefaultControllerConfigurations.Any())
         {
             validationContext.AddError(InputDefinitionError, ValidationError_MissingData2,
                 $"Input definition {inputDefinition.Name} has no controllers and can not be used.");
         }
         else
         {
-            var invalidControllerNames = inputDefinition.SupportedInputControllers
+            var invalidControllerNames = inputDefinition.DefaultControllerConfigurations
                 .GroupBy(controller => controller.ControllerName, StringComparer.OrdinalIgnoreCase)
                 .Select(group => new
                 {
@@ -104,7 +104,7 @@ internal class InputValidationService : IInputValidationService
                 validationContext.AddAggregateError(InputDefinitionError, ValidationError_InvalidData2, invalidControllerNames);
             }
 
-            foreach (var controller in inputDefinition.SupportedInputControllers)
+            foreach (var controller in inputDefinition.DefaultControllerConfigurations)
             {
                 ValidateInputController(validationContext, inputDefinition, controller);
             }
@@ -155,7 +155,7 @@ internal class InputValidationService : IInputValidationService
             return;
         }
 
-        if (!inputDefinition.SupportedInputControllers.AnyByString(controller => controller.ControllerName, inputScheme.ControllerName))
+        if (!inputDefinition.DefaultControllerConfigurations.AnyByString(controller => controller.ControllerName, inputScheme.ControllerName))
         {
             context.AddError(InputSchemeError, ValidationError_InvalidData,
                 $"Input definition {inputDefinition.Name} does not support the {inputScheme.ControllerName} controller");
@@ -290,8 +290,8 @@ internal class InputValidationService : IInputValidationService
     private void ValidateInputReceiverDescription(InputValidationContext context, InputControllerConfiguration controller, IInputReceiverDescriptor description)
     {
         var invalidReceiverDescriptorTypes = controller.ReceiverDescriptors
-            .Where(descriptor => !typeof(IInputReceiver).IsAssignableFrom(descriptor.InputReceiverType))
-            .Select(descriptor => $"The input descriptor {descriptor.ReceiverName}'s receiver type, {descriptor.InputReceiverType.FullName}, does not implement the {nameof(IInputReceiver)} interface.");
+            .Where(descriptor => !typeof(IInputSystem).IsAssignableFrom(descriptor.InputSystemType))
+            .Select(descriptor => $"The input descriptor {descriptor.ReceiverName}'s receiver type, {descriptor.InputSystemType.FullName}, does not implement the {nameof(IInputSystem)} interface.");
 
         if (invalidReceiverDescriptorTypes.Any())
         {

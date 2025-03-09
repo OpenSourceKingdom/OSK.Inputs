@@ -76,7 +76,7 @@ public class InputControllerConfigurationTests
         var controller = GetInputControllerConfiguration(scheme1, scheme2, scheme3);
 
         // Act
-        var activeScheme = controller.GetActiveScheme(new ActiveInputScheme("abc", "abc", "NoWay"));
+        var activeScheme = controller.GetActiveScheme(new ActiveInputScheme(1 ,"abc", "abc", "NoWay"));
 
         // Assert
         Assert.Equal(scheme2, activeScheme);
@@ -93,7 +93,7 @@ public class InputControllerConfigurationTests
         var controller = GetInputControllerConfiguration(scheme1, scheme2, scheme3);
 
         // Act
-        var activeScheme = controller.GetActiveScheme(new ActiveInputScheme("abc", "abc", scheme3.SchemeName));
+        var activeScheme = controller.GetActiveScheme(new ActiveInputScheme(1, "abc", "abc", scheme3.SchemeName));
 
         // Assert
         Assert.Equal(scheme3, activeScheme);

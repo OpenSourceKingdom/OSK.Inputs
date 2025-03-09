@@ -8,7 +8,7 @@ using OSK.Inputs.Models.Runtime;
 namespace OSK.Inputs.Ports;
 
 [HexagonalIntegration(HexagonalIntegrationType.IntegrationRequired)]
-public interface IInputReceiver: IDisposable
+public interface IInputSystem: IDisposable
 {
     Task<IEnumerable<ActivatedInput>> ReadInputsAsync(CancellationToken cancellationToken = default);
 }

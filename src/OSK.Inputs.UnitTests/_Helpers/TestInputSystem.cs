@@ -3,7 +3,7 @@ using OSK.Inputs.Models.Runtime;
 using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.UnitTests._Helpers;
-public class TestInputReceiver(InputReceiverConfiguration configuration) : IInputReceiver
+public class TestInputSystem(PlayerInputSystemConfiguration playerInputSystemConfiguration) : IInputSystem
 {
     public void Dispose()
     {

@@ -26,7 +26,7 @@ internal class InputManager(IEnumerable<InputDefinition> inputDefinitions,
         return new ValueTask<IOutput<IEnumerable<InputDefinition>>>(outputFactory.Succeed(inputDefinitions.Select(definition => definition.Clone())));
     }
 
-    public async Task<IOutput<IInputHandler>> GetInputHandlerAsync(string inputDefinitionName, CancellationToken cancellationToken = default)
+    public async Task<IOutput<IInputHandler>> GetInputHandlerAsync(string inputDefinitionName, int playerId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(inputDefinitionName))
         {
@@ -51,15 +51,16 @@ internal class InputManager(IEnumerable<InputDefinition> inputDefinitions,
             customInputSchemes = getCustomSchemeOutput.Value;
         }
 
-        var getActiveSchemesOutput = await inputSchemeRepository.GetActiveInputSchemesAsync(inputDefinition.Name, cancellationToken);
+        var getActiveSchemesOutput = await inputSchemeRepository.GetActiveInputSchemesAsync(inputDefinition.Name, playerId, cancellationToken);
         if (!getActiveSchemesOutput.IsSuccessful)
         {
             return getActiveSchemesOutput.AsOutput<IInputHandler>();
         }
 
         var activeSchemeLookup = getActiveSchemesOutput.Value.ToDictionary(scheme => scheme.ControllerName);
-        List<RuntimeControllerListener> activeControllers = [];
-        foreach (var controller in inputDefinition.SupportedInputControllers)
+        var customSchemeLookup = customInputSchemes.GroupBy(scheme => scheme.ControllerName).ToDictionary(scheme => scheme.Key);
+        List<InputSystemListener> activeControllers = [];
+        foreach (var controller in inputDefinition.DefaultControllerConfigurations)
         {
             activeSchemeLookup.TryGetValue(controller.ControllerName, out var activeControllerScheme);
             var controllerScheme = controller.GetActiveScheme(preferredScheme: activeControllerScheme);
@@ -70,16 +71,6 @@ internal class InputManager(IEnumerable<InputDefinition> inputDefinitions,
                 return outputFactory.Fail<IInputHandler>($"The {controller.ControllerName} controller's input scheme {controllerScheme.SchemeName} was not compatible with the input definition {inputDefinition.Name}. The custom scheme data file is corrupted.");
             }
 
-            var inputReceivers = controller.ReceiverDescriptors.Select(receiverDescriptor =>
-            {
-                var inputConfiguration = controllerScheme.ReceiverConfigurations.FirstByString(configuration 
-                    => configuration.InputReceiverName, receiverDescriptor.ReceiverName);
-
-                return (IInputReceiver)ActivatorUtilities.CreateInstance(serviceProvider, receiverDescriptor.InputReceiverType,
-                    inputConfiguration);
-            }).ToArray();
-
-            activeControllers.Add(new RuntimeControllerListener(controller, inputReceivers));
         }
 
         return outputFactory.Succeed((IInputHandler)ActivatorUtilities.CreateInstance<InputHandler>(serviceProvider, activeControllers));
@@ -140,7 +131,7 @@ internal class InputManager(IEnumerable<InputDefinition> inputDefinitions,
             return outputFactory.Succeed();
         }
 
-        var controller = inputDefinition.SupportedInputControllers.FirstOrDefaultByString(controller => controller.ControllerName,
+        var controller = inputDefinition.DefaultControllerConfigurations.FirstOrDefaultByString(controller => controller.ControllerName,
             controllerName);
         if (controller is null)
         {

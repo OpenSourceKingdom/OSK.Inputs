@@ -9,7 +9,7 @@ using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal;
 
-internal class RuntimeControllerListener(InputControllerConfiguration controller, IEnumerable<IInputReceiver> inputReceivers) 
+internal class InputSystemListener(InputControllerConfiguration controller, IEnumerable<IInputSystem> inputSystems) 
     : IInputControllerListener
 {
     #region IInputControllerListener
@@ -20,7 +20,7 @@ internal class RuntimeControllerListener(InputControllerConfiguration controller
     {
         using var cancellationTokenSource = new CancellationTokenSource(options.ControllerReadTime);
 
-        var activatedInputs = await inputReceivers.ExecuteConcurrentResultAsync(
+        var activatedInputs = await inputSystems.ExecuteConcurrentResultAsync(
             inputReceiver => inputReceiver.ReadInputsAsync(cancellationTokenSource.Token),
             maxDegreesOfConcrruency: options.MaxConcurrentReceivers,
             isParallel: options.RunInputReceiversInParallel,
@@ -31,7 +31,7 @@ internal class RuntimeControllerListener(InputControllerConfiguration controller
 
     public void Dispose()
     {
-        foreach (var inputReceiver in inputReceivers)
+        foreach (var inputReceiver in inputSystems)
         {
             inputReceiver.Dispose();
         }
