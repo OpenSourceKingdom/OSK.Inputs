@@ -2,14 +2,12 @@
 
 namespace OSK.Inputs.Models.Runtime;
 
-public class ActivatedInput(int playerId, string inputReceiverName, IInput input, string actionKey,
+public class ActivatedInput(InputControllerIdentifier controllerIdentifier, IInput input, string actionKey,
     InputPhase inputPhase, InputPower inputPower, PointerTranslation? pointerTranslation = null)
 {
     #region Variables
 
-    public int PlayerId => playerId;
-
-    public string InputReceiverName => inputReceiverName;
+    public InputControllerIdentifier ControllerIdentifier => controllerIdentifier;
 
     public IInput Input => input;
 

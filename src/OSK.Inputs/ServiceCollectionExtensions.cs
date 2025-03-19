@@ -8,7 +8,7 @@ namespace OSK.Inputs;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInputs(this IServiceCollection services, Action<IInputBuilder> builderConfiguration)
+    public static IServiceCollection AddInputs(this IServiceCollection services, Action<IInputSystemBuilder> builderConfiguration)
     {
         if (builderConfiguration is null)
         {
@@ -17,12 +17,12 @@ public static class ServiceCollectionExtensions
 
         services.TryAddTransient<IInputDefinitionBuilder, InputDefinitionBuilder>();
         services.TryAddTransient<IInputManager, InputManager>();
-        services.TryAddTransient<IInputHandler, InputHandler>();
+        services.TryAddTransient<IInputReaderProvider, DefaultInputReaderProvider>();
         services.TryAddTransient<IInputValidationService, InputValidationService>();
 
-        var builder = new InputBuilder(services);
+        var builder = new InputSystemBuilder(services);
         builderConfiguration(builder);
-        builder.ApplyInputDefinitions();
+        builder.ApplyInputSystemConfiguration();
 
         return services;
     }

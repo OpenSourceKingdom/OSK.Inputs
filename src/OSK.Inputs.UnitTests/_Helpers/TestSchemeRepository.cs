@@ -7,22 +7,27 @@ namespace OSK.Inputs.UnitTests._Helpers;
 
 public class TestSchemeRepository : IInputSchemeRepository
 {
-    public Task<IOutput> DeleteInputSchemeAsync(string inputDefinitionName, string controllerName, string inputSchemeName, CancellationToken cancellationToken = default)
+    public Task<IOutput> DeleteActiveInputSchemeAsync(int userId, string inputDefinitionName, string controllerName, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
-    public Task<IOutput<IEnumerable<ActiveInputScheme>>> GetActiveInputSchemesAsync(string inputDefinitionName, int playerId, CancellationToken cancellationToken = default)
+    public Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, string controllerName, string inputSchemeName, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
-    public Task<IOutput<InputScheme>> GetInputSchemeAsync(string inputDefinitionName, string controllerName, string inputSchemeName, CancellationToken cancellationToken = default)
+    public Task<IOutput<IEnumerable<ActiveInputScheme>>> GetActiveInputSchemesAsync(int userId, string inputDefinitionName, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
-    public Task<IOutput<IEnumerable<InputScheme>>> GetInputSchemesAsync(string inputDefinitionName, CancellationToken cancellationToken = default)
+    public Task<IOutput<InputScheme>> GetCustomInputSchemeAsync(string inputDefinitionName, string controllerName, string inputSchemeName, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<IOutput<IEnumerable<InputScheme>>> GetCustomInputSchemesAsync(string inputDefinitionName, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
@@ -32,7 +37,7 @@ public class TestSchemeRepository : IInputSchemeRepository
         throw new NotImplementedException();
     }
 
-    public Task<IOutput<InputScheme>> SaveInputSchemeAsync(string inputDefinitionName, InputScheme inputScheme, CancellationToken cancellationToken = default)
+    public Task<IOutput<InputScheme>> SaveCustomInputSchemeAsync(string inputDefinitionName, InputScheme inputScheme, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

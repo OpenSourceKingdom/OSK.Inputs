@@ -9,7 +9,7 @@ namespace OSK.Inputs.Models.Inputs;
 /// <typeparam name="TValue">The type of value for the input</typeparam>
 /// <param name="name">The name of the input</param>
 /// <param name="value">The value this input represents</param>
-/// <param name="options">A set of options that will be used to help process the input on an <see cref="IInputSystem"/></param>
+/// <param name="options">A set of options that will be used to help process the input on an <see cref="IInputReader"/></param>
 public abstract class HardwareInput<TValue, TOptions>(string name, TValue value, TOptions options)
     : HardwareInput(name)
 {

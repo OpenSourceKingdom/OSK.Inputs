@@ -1,11 +1,10 @@
-﻿using Microsoft.Extensions.Options;
-using Moq;
+﻿using Moq;
 using OSK.Extensions.Object.DeepEquals;
 using OSK.Functions.Outputs.Abstractions;
+using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Functions.Outputs.Mocks;
 using OSK.Inputs.Internal;
 using OSK.Inputs.Internal.Services;
-using OSK.Inputs.Models;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Runtime;
 using OSK.Inputs.Options;
@@ -19,17 +18,16 @@ public class InputManagerTests
 {
     #region Variables
 
-    private readonly List<InputDefinition> _inputDefinitions;
+    private readonly Mock<IInputControllerConfiguration> _mockControllerConfiguration;
 
-    private readonly InputDefinition _testDefinitionWithCustomSchemes;
-    private readonly InputDefinition _testDefinitionNoCustomSchemes;
-
-    private readonly Mock<IInputSchemeRepository> _mockInputSchemeRepository;
     private readonly Mock<IInputValidationService> _mockValidationService;
+    private readonly Mock<IInputSchemeRepository> _mockInputSchemeRepository;
+    private readonly Mock<IInputReaderProvider> _mockInputReaderProvider;
     private readonly Mock<IServiceProvider> _mockServiceProvider;
-    private readonly IOutputFactory _outputFactory;
+    private readonly IOutputFactory<InputManager> _outputFactory;
 
-    private readonly InputManager _manager;
+    private readonly InputManager _4UserManagerWithCustomSchemes;
+    private readonly InputManager _2UserManagerWithNoCustomSchemes;
 
     #endregion
 
@@ -37,25 +35,29 @@ public class InputManagerTests
 
     public InputManagerTests()
     {
-        _inputDefinitions = new List<InputDefinition>();
-        _testDefinitionWithCustomSchemes = new("Test", true, [
-            new InputControllerConfiguration("TestController", [], 
-                [ new BuiltInInputScheme("Test", "TestController", "TestScheme", [], false) ]) ], 
-              []);
-        _testDefinitionNoCustomSchemes = new("Test2", false, [
-            new InputControllerConfiguration("TestController2", [new InputReceiverDescriptor("test", typeof(TestInputSystem), _ => true)],
-                [ new BuiltInInputScheme("Test2", "TestController2", "TestScheme2", [new InputReceiverConfiguration("test", [])], false) ]) ],
-              []);
+        _mockControllerConfiguration = new();
+        _mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+        _mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("TestController");
 
-        _mockInputSchemeRepository = new();
         _mockValidationService = new();
+        _mockInputSchemeRepository = new();
+        _mockInputReaderProvider = new();
         _mockServiceProvider = new();
-        _outputFactory = new MockOutputFactory();
+        _outputFactory = new MockOutputFactory<InputManager>();
 
-        _manager = new(_inputDefinitions,
-            _mockValidationService.Object, _mockInputSchemeRepository.Object, _mockServiceProvider.Object,
-            _outputFactory);
-    }
+        var testDefinition = new InputDefinition("Test", [], [ new BuiltInInputScheme("Test", "TestController", "TestScheme", false, []) ]);
+        var testDefinition2 = new InputDefinition("Test2", [], [new BuiltInInputScheme("Test", "TestController", "TestScheme", false, [])]);
+
+        var inputSystemConfigurationA = new InputSystemConfiguration([ testDefinition, testDefinition2 ], [ _mockControllerConfiguration.Object ], false, 2);
+        _2UserManagerWithNoCustomSchemes = new(inputSystemConfigurationA, _mockValidationService.Object, _mockInputSchemeRepository.Object, _mockInputReaderProvider.Object,
+            _mockServiceProvider.Object, _outputFactory);
+
+        var inputSystemConfigurationB = new InputSystemConfiguration([ testDefinition, testDefinition2 ], [ _mockControllerConfiguration.Object ], true, 4);
+        _4UserManagerWithCustomSchemes = new(inputSystemConfigurationB, _mockValidationService.Object, _mockInputSchemeRepository.Object, _mockInputReaderProvider.Object,
+            _mockServiceProvider.Object, _outputFactory);
+    } 
 
     #endregion
 
@@ -64,390 +66,1053 @@ public class InputManagerTests
     [Fact]
     public async Task GetInputDefinitionsAsync_InputDefinitionDoesNotAllowCustomSchemes_ReturnsBuiltInList()
     {
-        // Arrange
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-
-        // Act
-        var getOutput = await _manager.GetInputDefinitionsAsync();
+        // Arrange/Act
+        var getOutput = await _2UserManagerWithNoCustomSchemes.GetInputDefinitionsAsync();
 
         // Assert
         Assert.True(getOutput.IsSuccessful);
-        Assert.Single(getOutput.Value);
+        Assert.Equal(_2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.Count(), getOutput.Value.Count());
 
         var definition = getOutput.Value.First();
-        Assert.True(definition.DeepEquals(_testDefinitionNoCustomSchemes));
+        Assert.True(definition.DeepEquals(_2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First()));
+
+        var definition2 = getOutput.Value.Last();
+        Assert.True(definition2.DeepEquals(_2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.Last()));
     }
 
     [Fact]
     public async Task GetInputDefinitionsAsync_InputDefinitionDoesAllowCustomSchemes_ReturnsBuiltInListWithCustomSchemes()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        _inputDefinitions.Add(_testDefinitionWithCustomSchemes);
+        var testDefinition = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First();
+        var testDefinition2 = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.Last();
 
-        var customScheme = new InputScheme(_testDefinitionWithCustomSchemes.Name,
-            _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().ControllerName,
-            "custom", [], false);
+        var customScheme = new InputScheme(testDefinition.Name,
+            _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName,
+            "custom", false, []);
 
-        _mockInputSchemeRepository.Setup(m => m.GetInputSchemesAsync(It.Is<string>(name => name == _testDefinitionWithCustomSchemes.Name),
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.Is<string>(name => name == testDefinition.Name),
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed((IEnumerable<InputScheme>)new List<InputScheme>() { customScheme }));
 
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.Is<string>(name => name == testDefinition2.Name),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<InputScheme>)new List<InputScheme>()));
+
         // Act
-        var getOutput = await _manager.GetInputDefinitionsAsync();
+        var getDefinitionsOutput = await _4UserManagerWithCustomSchemes.GetInputDefinitionsAsync();
 
         // Assert
-        Assert.True(getOutput.IsSuccessful);
-        Assert.Equal(2, getOutput.Value.Count());
+        Assert.True(getDefinitionsOutput.IsSuccessful);
+        Assert.Equal(_4UserManagerWithCustomSchemes.Configuration.InputDefinitions.Count, getDefinitionsOutput.Value.Count());
 
-        var definitionBuiltIn = getOutput.Value.First(definition => definition.Name == _testDefinitionNoCustomSchemes.Name);
-        var definitionCustomSchemes = getOutput.Value.First(definition => definition.Name == _testDefinitionWithCustomSchemes.Name);
-
-        Assert.True(_testDefinitionNoCustomSchemes.DeepEquals(definitionBuiltIn));
-
-        // Definition should now include a new custom scheme
-        Assert.False(definitionCustomSchemes.DeepEquals(_testDefinitionWithCustomSchemes));
-
-        var controller = definitionCustomSchemes.DefaultControllerConfigurations.First();
-        Assert.Equal(2, controller.InputSchemes.Count());
-        
-        var actualCustomScheme = controller.InputSchemes.Last();
-        Assert.True(customScheme.DeepEquals(actualCustomScheme));
+        var actualDefinition = getDefinitionsOutput.Value.First();
+        Assert.True(testDefinition.Clone([customScheme]).DeepEquals(getDefinitionsOutput.Value.First()));
     }
 
     #endregion
 
-    #region GetInputHandlerAsync
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public async Task GetInputHandlerAsync_EmptyDefinitionNames_ThrowsArgumentNullException(string? definitionName)
-    {
-        // Arrange/Act/Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _manager.GetInputHandlerAsync(definitionName!, 1));
-    }
+    #region SetUserActiveInputDefinitionAsync
 
     [Fact]
-    public async Task GetInputHandlerAsync_InputDefinitionDoesNotExist_ReturnsNotFound()
+    public async Task SetUserActiveInputDefinitionAsync_UserIdDoesNotExistOnInputManager_ReturnsNotFound()
     {
         // Arrange/Act
-        var getOutput = await _manager.GetInputHandlerAsync("NotADefomotopm", 1);
+        var result = await _2UserManagerWithNoCustomSchemes.SetUserActiveInputDefinitionAsync(1, "abc");
 
         // Assert
-        Assert.False(getOutput.IsSuccessful);
-        Assert.Equal(OutputSpecificityCode.DataNotFound, getOutput.StatusCode.SpecificityCode);
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataNotFound, result.StatusCode.SpecificityCode);
     }
 
     [Fact]
-    public async Task GetInputHandlerAsync_InputDefinitionAllowsCustomSchemes_GetSchemesReturnsError_ReturnsError()
+    public async Task SetUserActiveInputDefinitionAsync_InputDefinitionNameDoesNotExist_ReturnsNotFound()
     {
         // Arrange
-        var expectedSpecificityCode = OutputSpecificityCode.NotAuthenticated;
-        _inputDefinitions.Add(_testDefinitionWithCustomSchemes);
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
 
-        _mockInputSchemeRepository.Setup(m => m.GetInputSchemesAsync(It.IsAny<string>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Fail<IEnumerable<InputScheme>>("Bad Day", expectedSpecificityCode));
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
 
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+        
         // Act
-        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionWithCustomSchemes.Name, 1);
+        var result = await _2UserManagerWithNoCustomSchemes.SetUserActiveInputDefinitionAsync(1, "notreal");
 
         // Assert
-        Assert.False(getOutput.IsSuccessful);
-        Assert.Equal(expectedSpecificityCode, getOutput.StatusCode.SpecificityCode);
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataNotFound, result.StatusCode.SpecificityCode);
     }
 
     [Fact]
-    public async Task GetInputHandlerAsync_GetActiveSchemesReturnsError_ReturnsError()
+    public async Task SetUserActiveInputDefinitionAsync_GetCustomSchemesFail_ReturnsError()
     {
         // Arrange
-        var expectedSpecificityCode = OutputSpecificityCode.InsufficientStorage;
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
 
-        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<string>(), It.IsAny<int>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Fail<IEnumerable<ActiveInputScheme>>("Bad Day", expectedSpecificityCode));
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Fail<IEnumerable<InputScheme>>("Bad Day", OutputSpecificityCode.InvalidParameter));
+
+        var definition = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.Last();
 
         // Act
-        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionNoCustomSchemes.Name, 1);
+        var result = await _4UserManagerWithCustomSchemes.SetUserActiveInputDefinitionAsync(1, definition.Name);
 
         // Assert
-        Assert.False(getOutput.IsSuccessful);
-        Assert.Equal(expectedSpecificityCode, getOutput.StatusCode.SpecificityCode);
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.InvalidParameter, result.StatusCode.SpecificityCode);
     }
 
     [Fact]
-    public async Task GetInputHandlerAsync_InvalidControllerScheme_ReturnsError()
+    public async Task SetUserActiveInputDefinitionAsync_GetActiveSchemesFail_ReturnsError()
     {
         // Arrange
-        var expectedSpecificityCode = OutputSpecificityCode.InvalidParameter;
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var controller = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First();
-        var scheme = controller.InputSchemes.First();
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
 
-        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[new ActiveInputScheme(1, _testDefinitionNoCustomSchemes.Name, controller.ControllerName, scheme.SchemeName)]));
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
 
-        _mockValidationService.Setup(m => m.ValidateInputScheme(It.IsAny<InputDefinition>(), It.IsAny<InputScheme>()))
-            .Returns((InputDefinition _, InputScheme _) =>
-            {
-                var errorContext = new InputValidationContext();
-                errorContext.AddError("Bad Day", 1, "Unable to do it man");
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-                return errorContext;
-            });
+        await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Fail<IEnumerable<InputScheme>>("Bad Day", OutputSpecificityCode.EndlessLoop));
+
+        var definition = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.Last();
 
         // Act
-        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionNoCustomSchemes.Name, 1);
+        var result = await _4UserManagerWithCustomSchemes.SetUserActiveInputDefinitionAsync(1, definition.Name);
 
         // Assert
-        Assert.False(getOutput.IsSuccessful);
-        Assert.Equal(expectedSpecificityCode, getOutput.StatusCode.SpecificityCode);
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.EndlessLoop, result.StatusCode.SpecificityCode);
     }
 
     [Fact]
-    public async Task GetInputHandlerAsync_Valid_ReturnsSuccessfully()
+    public async Task SetUserActiveInputDefinitionAsync_UserIdAlreadyUsingInputDefinition_ShortCircuits_ReturnsSuccessfully()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var controller = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First();
-        var scheme = controller.InputSchemes.First();
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
 
-        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[new ActiveInputScheme(1, _testDefinitionNoCustomSchemes.Name, controller.ControllerName, scheme.SchemeName)]));
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
 
-        _mockValidationService.Setup(m => m.ValidateInputScheme(It.IsAny<InputDefinition>(), It.IsAny<InputScheme>()))
-            .Returns(new InputValidationContext());
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        _mockServiceProvider.Setup(m => m.GetService(It.Is<Type>(t => t == typeof(IOptions<InputHandlerOptions>))))
-            .Returns(() =>
-            {
-                var mockOptions = new Mock<IOptions<InputHandlerOptions>>();
-                mockOptions.SetupGet(m => m.Value)
-                    .Returns(new InputHandlerOptions());
+        await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
-                return mockOptions.Object;
-            });
+        _mockInputSchemeRepository.Reset();
+
+        var definition = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First();
 
         // Act
-        var getOutput = await _manager.GetInputHandlerAsync(_testDefinitionNoCustomSchemes.Name, 1);
+        var result = await _4UserManagerWithCustomSchemes.SetUserActiveInputDefinitionAsync(1, definition.Name);
 
         // Assert
-        Assert.True(getOutput.IsSuccessful);
+        Assert.True(result.IsSuccessful);
+        _mockInputSchemeRepository.Verify(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SetUserActiveInputDefinitionAsync_NewDefinition_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var user = await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        _mockInputSchemeRepository.Reset();
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var definition = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.Last();
+
+        // Act
+        var result = await _4UserManagerWithCustomSchemes.SetUserActiveInputDefinitionAsync(1, definition.Name);
+
+        // Assert
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(user.Value.ActiveInputDefinition, definition);
+        _mockInputSchemeRepository.Verify(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
 
-    #region SaveInputSchemeAsync
+    #region SetActiveInputSchemeAsync
 
     [Fact]
-    public async Task SaveInputSchemeAsync_NullInputScheme_ThrowArgumentNullException()
+    public async Task SetActiveInputSchemeAsync_UserIdDoesNotExistOnInputManager_ReturnsNotFound()
     {
-        // Arrange/Act/Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _manager.SaveInputSchemeAsync(null!));
-    }
-
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public async Task SaveInputSchemeAsync_EmptyInputSchemeDefinitionName_ReturnsError(string? definitionName)
-    {
-        // Arrange
-        var scheme = new InputScheme(definitionName!, "abc", "abc", [], false);
-
-        // Act
-        var saveOutput = await _manager.SaveInputSchemeAsync(scheme);
+        // Arrange/Act
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, "abc", "abc", "abc");
 
         // Assert
-        Assert.False(saveOutput.IsSuccessful);
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataNotFound, result.StatusCode.SpecificityCode);
     }
 
     [Fact]
-    public async Task SaveInputSchemeAsync_InputDefinitionDoesNotAllowCustomSchemes_ReturnsError()
+    public async Task SetActiveInputSchemeAsync_InputDefinitionNameDoesNotExist_ReturnsNotFound()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var scheme = new InputScheme(_testDefinitionNoCustomSchemes.Name, "abc", "abc", [], false);
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        var saveOutput = await _manager.SaveInputSchemeAsync(scheme);
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, "notreal", controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
 
         // Assert
-        Assert.False(saveOutput.IsSuccessful);
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataNotFound, result.StatusCode.SpecificityCode);
     }
 
     [Fact]
-    public async Task SaveInputSchemeAsync_InputSchemeHasValidationErrors_ReturnsError()
+    public async Task SetActiveInputSchemeAsync_InputContorllerNameNotSupported_ReturnsNotFound()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var scheme = new InputScheme(_testDefinitionNoCustomSchemes.Name, "abc", "abc", [], false);
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var validationContext = new InputValidationContext();
-        validationContext.AddError("test", 1, "Oh ya");
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
-        _mockValidationService.Setup(m => m.ValidateInputScheme(It.IsAny<InputDefinition>(), It.IsAny<InputScheme>()))
-            .Returns(validationContext);
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        var saveOutput = await _manager.SaveInputSchemeAsync(scheme);
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, "notreal", inputDefinition.InputSchemes.First().SchemeName);
 
         // Assert
-        Assert.False(saveOutput.IsSuccessful);
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataNotFound, result.StatusCode.SpecificityCode);
     }
 
     [Fact]
-    public async Task SaveInputSchemeAsync_InputSchemeHasNoValidationErrors_CallsRepository_ReturnsRepositoryResult()
+    public async Task SetActiveInputSchemeAsync_InputSchemeNameDoesNotExist_ReturnsNotFound()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var scheme = new InputScheme(_testDefinitionNoCustomSchemes.Name, "abc", "abc", [], false);
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var validationContext = new InputValidationContext();
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
-        _mockInputSchemeRepository.Setup(m => m.SaveInputSchemeAsync(It.IsAny<string>(), It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string _, InputScheme scheme, CancellationToken _) =>
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, "notreal");
+
+        // Assert
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataNotFound, result.StatusCode.SpecificityCode);
+    }
+
+    [Fact]
+    public async Task SetActiveInputSchemeAsync_RepositorySaveFails_ReturnsError()
+    {
+        // Arrange
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+
+        _mockInputSchemeRepository.Setup(m => m.SaveActiveInputSchemeAsync(It.IsAny<ActiveInputScheme>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Fail<ActiveInputScheme>("Bad Day", OutputSpecificityCode.BadGateway));
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
+
+        // Assert
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.BadGateway, result.StatusCode.SpecificityCode);
+    }
+
+    [Fact]
+    public async Task SetActiveInputSchemeAsync_UsersActiveInputDefinitionIsTheDefinitionUpdated_UpdatesInputSchemesForUser_SchemeRepositoryFails_ReturnsError()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+
+        var userJoined = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+        Assert.True(userJoined.IsSuccessful);
+
+        _mockInputSchemeRepository.Setup(m => m.SaveActiveInputSchemeAsync(It.IsAny<ActiveInputScheme>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ActiveInputScheme scheme, CancellationToken _) => _outputFactory.Succeed(scheme));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Fail<IEnumerable<ActiveInputScheme>>("Bad Day", OutputSpecificityCode.SpecificityNotRecognized));
+
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
+
+        // Assert
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.SpecificityNotRecognized, result.StatusCode.SpecificityCode);
+    }
+
+    [Fact]
+    public async Task SetActiveInputSchemeAsync_UsersActiveInputDefinitionNotTheDefinitionUpdated_ShortCircuits_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.Last();
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        _mockInputSchemeRepository.Reset();
+
+        _mockInputSchemeRepository.Setup(m => m.SaveActiveInputSchemeAsync(It.IsAny<ActiveInputScheme>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ActiveInputScheme scheme, CancellationToken _) => _outputFactory.Succeed(scheme));
+
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
+
+        // Assert
+        Assert.True(result.IsSuccessful);
+        _mockInputSchemeRepository.Verify(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SetActiveInputSchemeAsync_UsersActiveInputDefinitionIsTheDefinitionUpdated_UpdatesInputSchemesForUser_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.Last();
+
+        ActiveInputScheme activeScheme = new ActiveInputScheme(1, "", "", "");
+        _mockInputSchemeRepository.Setup(m => m.SaveActiveInputSchemeAsync(It.IsAny<ActiveInputScheme>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ActiveInputScheme scheme, CancellationToken _) =>
             {
+                activeScheme = scheme;
                 return _outputFactory.Succeed(scheme);
             });
 
-        _mockValidationService.Setup(m => m.ValidateInputScheme(It.IsAny<InputDefinition>(), It.IsAny<InputScheme>()))
-            .Returns(validationContext);
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[activeScheme]));
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        var saveOutput = await _manager.SaveInputSchemeAsync(scheme);
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
+
+        // Assert
+        Assert.True(result.IsSuccessful);
+    }
+
+    #endregion
+
+    #region ResetUserActiveInputSchemeAsync
+
+    [Fact]
+    public async Task ResetUserActiveInputSchemeAsync_UserIdDoesNotExistOnInputManager_ReturnsNotFound()
+    {
+        // Arrange/Act
+        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, "abc", "abc");
+
+        // Assert
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataNotFound, result.StatusCode.SpecificityCode);
+    }
+
+    [Fact]
+    public async Task ResetUserActiveInputSchemeAsync_RepositoryError_ReturnsError()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.DeleteActiveInputSchemeAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Fail("A bad day", OutputSpecificityCode.DataTooLarge));
+
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName);
+
+        // Assert
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataTooLarge, result.StatusCode.SpecificityCode);
+    }
+
+    [Fact]
+    public async Task ResetUserActiveInputSchemeAsync_GetActiveSchemesErrors_ReturnsError()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.DeleteActiveInputSchemeAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed());
+
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Fail<IEnumerable<ActiveInputScheme>>("a bad day", OutputSpecificityCode.DataTooLarge));
+
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName);
+
+        // Assert
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataTooLarge, result.StatusCode.SpecificityCode);
+    }
+
+    [Fact]
+    public async Task ResetUserActiveInputSchemeAsync_UpdatedDefinitionIsNotUserDefinition_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.Last();
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        _mockInputSchemeRepository.Reset();
+
+        _mockInputSchemeRepository.Setup(m => m.DeleteActiveInputSchemeAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed());
+
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName);
+
+        // Assert
+        Assert.True(result.IsSuccessful);
+        _mockInputSchemeRepository.Verify(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ResetUserActiveInputSchemeAsync_UpdatedDefinitionIsUserDefinition_UpdatesUserSchemes_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockInputSchemeRepository.Setup(m => m.DeleteActiveInputSchemeAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed());
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName);
+
+        // Assert
+        Assert.True(result.IsSuccessful);
+    }
+
+    #endregion
+
+    #region SaveCustomInputSchemeAsync
+
+    [Fact]
+    public async Task SaveCustomInputSchemeAsync_NullInputScheme_ThrowArgumentNullException()
+    {
+        // Arrange/Act/Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _2UserManagerWithNoCustomSchemes.SaveCustomInputSchemeAsync(null!));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task SaveCustomInputSchemeAsync_EmptyInputSchemeDefinitionName_ReturnsError(string? definitionName)
+    {
+        // Arrange
+        var scheme = new InputScheme(definitionName!, "abc", "abc", false, []);
+
+        // Act
+        var saveOutput = await _2UserManagerWithNoCustomSchemes.SaveCustomInputSchemeAsync(scheme);
 
         // Assert
         Assert.False(saveOutput.IsSuccessful);
     }
 
-    #endregion
-
-    #region DeleteInputSchemeAsync
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public async Task DeleteInputSchemeAsync_EmptyInputDefinitionName_ThrowsArgumentNullException(string? definitionName)
+    [Fact]
+    public async Task SaveCustomInputSchemeAsync_InputSystemDoesNotAllowCustomSchemes_ReturnsError()
     {
-        // Arrange/Act/Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _manager.DeleteInputSchemeAsync(definitionName!, "abc", "def"));
-    }
+        // Arrange
+        var scheme = new InputScheme(_2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First().Name, "abc", "abc", false, []);
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public async Task DeleteInputSchemeAsync_EmptyInputControllerName_ThrowsArgumentNullException(string? controllerName)
-    {
-        // Arrange/Act/Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _manager.DeleteInputSchemeAsync("abc", controllerName!, "def"));
-    }
+        // Act
+        var saveOutput = await _2UserManagerWithNoCustomSchemes.SaveCustomInputSchemeAsync(scheme);
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public async Task DeleteInputSchemeAsync_EmptyInputSchemeName_ThrowsArgumentNullException(string? schemeName)
-    {
-        // Arrange/Act/Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _manager.DeleteInputSchemeAsync("abc", "def", schemeName!));
+        // Assert
+        Assert.False(saveOutput.IsSuccessful);
     }
 
     [Fact]
-    public async Task DeleteInputSchemeAsync_InputSchemeIsBuiltIn_ReturnsError()
+    public async Task SaveCustomInputSchemeAsync_InputSchemeHasValidationErrors_ReturnsError()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var controllerName = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First().ControllerName;
-        var schemeName = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First().InputSchemes.First().SchemeName;
+        var definition = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First();
+        var controller = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First();
+        var scheme = new InputScheme(definition.Name, controller.ControllerName, "abc", false, []);
+
+        var validationContext = new InputValidationContext("test");
+        validationContext.AddErrors(1, "Oh ya");
+
+        _mockValidationService.Setup(m => m.ValidateCustomInputScheme(It.IsAny<InputSystemConfiguration>(), It.IsAny<InputScheme>()))
+            .Returns(validationContext);
 
         // Act
-        var deleteOutput = await _manager.DeleteInputSchemeAsync(_testDefinitionNoCustomSchemes.Name, controllerName, schemeName);
+        var saveOutput = await _4UserManagerWithCustomSchemes.SaveCustomInputSchemeAsync(scheme);
+
+        // Assert
+        Assert.False(saveOutput.IsSuccessful);
+    }
+
+    [Fact]
+    public async Task SaveCustomInputSchemeAsync_InputSchemeHasNoValidationErrors_CallsRepository_ReturnsRepositoryResult()
+    {
+        // Arrange
+        var definition = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First();
+        var scheme = new InputScheme(definition.Name, "abc", "abc", false, []);
+
+        _mockInputSchemeRepository.Setup(m => m.SaveCustomInputSchemeAsync(It.IsAny<string>(), It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string _, InputScheme _, CancellationToken _) =>
+            {
+                return _outputFactory.Fail<InputScheme>("A bad day", OutputSpecificityCode.BadGateway);
+            });
+
+        _mockValidationService.Setup(m => m.ValidateCustomInputScheme(It.IsAny<InputSystemConfiguration>(), It.IsAny<InputScheme>()))
+            .Returns(InputValidationContext.Success);
+
+        // Act
+        var saveOutput = await _4UserManagerWithCustomSchemes.SaveCustomInputSchemeAsync(scheme);
+
+        // Assert
+        Assert.False(saveOutput.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.BadGateway, saveOutput.StatusCode.SpecificityCode);
+    }
+
+    #endregion
+
+    #region DeleteCustomInputSchemeAsync
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task DeleteCustomInputSchemeAsync_EmptyInputDefinitionName_ThrowsArgumentNullException(string? definitionName)
+    {
+        // Arrange/Act/Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _2UserManagerWithNoCustomSchemes.DeleteCustomInputSchemeAsync(definitionName!, "abc", "def"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task DeleteCustomInputSchemeAsync_EmptyInputControllerName_ThrowsArgumentNullException(string? controllerName)
+    {
+        // Arrange/Act/Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _2UserManagerWithNoCustomSchemes.DeleteCustomInputSchemeAsync("abc", controllerName!, "def"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task DeleteCustomInputSchemeAsync_EmptyInputSchemeName_ThrowsArgumentNullException(string? schemeName)
+    {
+        // Arrange/Act/Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _2UserManagerWithNoCustomSchemes.DeleteCustomInputSchemeAsync("abc", "def", schemeName!));
+    }
+
+    [Fact]
+    public async Task DeleteCustomInputSchemeAsync_InputSchemeIsBuiltIn_ReturnsError()
+    {
+        // Arrange
+        var definitionName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().Name;
+        var controllerName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
+        var schemeName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().InputSchemes.First().SchemeName;
+
+        // Act
+        var deleteOutput = await _4UserManagerWithCustomSchemes.DeleteCustomInputSchemeAsync(definitionName, controllerName, schemeName);
 
         // Assert
         Assert.False(deleteOutput.IsSuccessful);
     }
 
     [Fact]
-    public async Task DeleteInputSchemeAsync_InputDefinitionDoesNotExist_ReturnsSuccessfully()
+    public async Task DeleteCustomInputSchemeAsync_InputDefinitionDoesNotExist_ReturnsSuccessfully()
     {
         // Arrange/Act
-        var deleteOutput = await _manager.DeleteInputSchemeAsync("abc", "abc", "abc");
+        var deleteOutput = await _4UserManagerWithCustomSchemes.DeleteCustomInputSchemeAsync("abc", "abc", "abc");
 
         // Assert
         Assert.True(deleteOutput.IsSuccessful);
     }
 
     [Fact]
-    public async Task DeleteInputSchemeAsync_InputControllerDoesNotExist_ReturnsSuccessfully()
+    public async Task DeleteCustomInputSchemeAsync_InputControllerDoesNotExist_ReturnsSuccessfully()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
+        var definitionName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().Name;
 
         // Act
-        var deleteOutput = await _manager.DeleteInputSchemeAsync(_testDefinitionNoCustomSchemes.Name, "abc", "abc");
+        var deleteOutput = await _2UserManagerWithNoCustomSchemes.DeleteCustomInputSchemeAsync(definitionName, "abc", "abc");
 
         // Assert
         Assert.True(deleteOutput.IsSuccessful);
     }
 
     [Fact]
-    public async Task DeleteInputSchemeAsync_InputSchemeDoesNotExist_DefinitionDoesNotAllowCustomSchemes_ReturnsSuccessfully()
+    public async Task DeleteCustomInputSchemeAsync_InputSchemeDoesNotExist_DefinitionDoesNotAllowCustomSchemes_ReturnsSuccessfully()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionNoCustomSchemes);
-        var controllerName = _testDefinitionNoCustomSchemes.DefaultControllerConfigurations.First().ControllerName;
+        var definitionName = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First().Name;
+        var controllerName = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
 
         // Act
-        var deleteOutput = await _manager.DeleteInputSchemeAsync(_testDefinitionNoCustomSchemes.Name, controllerName, "abc");
+        var deleteOutput = await _2UserManagerWithNoCustomSchemes.DeleteCustomInputSchemeAsync(definitionName, controllerName, controllerName);
 
         // Assert
         Assert.True(deleteOutput.IsSuccessful);
     }
 
     [Fact]
-    public async Task DeleteInputSchemeAsync_InputSchemeDoesNotExistOnDefinition_DefinitionAllowsCustomSchemes_CallsRepository_ReturnsOutput()
+    public async Task DeleteCustomInputSchemeAsync_InputSchemeDoesNotExistOnDefinition_DefinitionAllowsCustomSchemes_CallsRepository_ReturnsOutput()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionWithCustomSchemes);
-        var controllerName = _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().ControllerName;
-        var schemeName = _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().InputSchemes.First().SchemeName;
+        var definitionName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().Name;
+        var controllerName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
+        var schemeName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().InputSchemes.First().SchemeName;
 
-        _mockInputSchemeRepository.Setup(m => m.DeleteInputSchemeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+        _mockInputSchemeRepository.Setup(m => m.DeleteCustomInputSchemeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed());
 
         // Act
-        var deleteOutput = await _manager.DeleteInputSchemeAsync(_testDefinitionNoCustomSchemes.Name, controllerName, schemeName);
+        var deleteOutput = await _4UserManagerWithCustomSchemes.DeleteCustomInputSchemeAsync(definitionName, controllerName, controllerName);
 
         // Assert
         Assert.True(deleteOutput.IsSuccessful);
     }
 
     [Fact]
-    public async Task DeleteInputSchemeAsync_InputSchemeDoesNotExistOnDefinition_DefinitionAllowsCustomSchemes_CallsRepository_MasksNotFoundAsSuccess()
+    public async Task DeleteCustomInputSchemeAsync_InputSchemeDoesNotExistOnDefinition_DefinitionAllowsCustomSchemes_CallsRepository_MasksNotFoundAsSuccess()
     {
         // Arrange
-        _inputDefinitions.Add(_testDefinitionWithCustomSchemes);
-        var controllerName = _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().ControllerName;
-        var schemeName = _testDefinitionWithCustomSchemes.DefaultControllerConfigurations.First().InputSchemes.First().SchemeName;
+        var definitionName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().Name;
+        var controllerName = "not real";
+        var schemeName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().InputSchemes.First().SchemeName;
 
-        _mockInputSchemeRepository.Setup(m => m.DeleteInputSchemeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+        _mockInputSchemeRepository.Setup(m => m.DeleteCustomInputSchemeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.NotFound());
 
         // Act
-        var deleteOutput = await _manager.DeleteInputSchemeAsync(_testDefinitionNoCustomSchemes.Name, controllerName, schemeName);
+        var deleteOutput = await _4UserManagerWithCustomSchemes.DeleteCustomInputSchemeAsync(definitionName, controllerName, schemeName);
 
         // Assert
         Assert.True(deleteOutput.IsSuccessful);
     }
+
+    #endregion
+
+    #region JoinUserAsync
+
+    [Fact]
+    public async Task JoinUserAsync_NullJoinOptions_ThrowsArgumentNullException()
+    {
+        // Arrange/Act/Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, null!));
+    }
+
+    [Fact]
+    public async Task JoinUserAsync_InputControllerIdentifierDoesNotExist_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var definition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[]));
+
+        // Act/Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, new JoinUserOptions()
+        {
+            ControllerIdentifiers = [new InputControllerIdentifier(1, "notreal")]
+        }));
+    }
+
+    [Fact]
+    public async Task JoinUserAsync_PreferredInputDefinitionDoesNotExist_ReturnsNotFound()
+    {
+        // Arrange/Act
+        var result = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, new JoinUserOptions()
+        {
+            ActiveInputDefinitionName = "notreal"
+        });
+
+        // Assert
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DataNotFound, result.StatusCode.SpecificityCode);
+    }
+
+    [Fact]
+    public async Task JoinUserAsync_GetActiveInputSchemesFails_ReturnsError()
+    {
+        // Arrange
+        var definition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Fail<IEnumerable<ActiveInputScheme>>("Bad day", OutputSpecificityCode.NotAuthenticated));
+        
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, new JoinUserOptions()
+        {
+            ActiveInputDefinitionName = definition.Name
+        });
+
+        // Assert
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.NotAuthenticated, result.StatusCode.SpecificityCode);
+    }
+
+    [Fact]
+    public async Task JoinUserAsync_Valid_ReturnsSuccessfully()
+    {
+        // Arrange
+        var definition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[]));
+
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(), It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        // Act
+        var result = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, new JoinUserOptions()
+        {
+            ActiveInputDefinitionName = definition.Name,
+            ControllerIdentifiers =[ new InputControllerIdentifier(1, _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName) ]
+        });
+
+        // Assert
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(result.Value.ActiveInputDefinition, definition);
+    }
+
+    [Fact]
+    public async Task JoinUserAsync_UserAlreadyJoined_ShortCircuits_ReturnsSuccessfully()
+    {
+        // Arrange
+        var definition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
+        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[]));
+
+        var joinUserOutput = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        // Act
+        var joinUserOutput2 = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, new JoinUserOptions()
+        {
+            ActiveInputDefinitionName = "Bad",
+            ControllerIdentifiers = [new InputControllerIdentifier(1, "Bad")]
+        });
+
+        // Assert
+        Assert.True(joinUserOutput2.IsSuccessful);
+        Assert.Equal(joinUserOutput.Value, joinUserOutput2.Value);
+    }
+
+    #endregion
+
+    #region RemoveUser
+
+    [Fact]
+    public void RemoveUser_UserDoesNotExist_ReturnsSuccessfully()
+    {
+        // Arrange/Act/Assert
+        _2UserManagerWithNoCustomSchemes.RemoveUser(1);
+    }
+
+    [Fact]
+    public async Task RemoveUser_UserExists_UserRemoved_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+        Assert.Single(_2UserManagerWithNoCustomSchemes.GetApplicationInputUsers());
+
+        // Act
+        _2UserManagerWithNoCustomSchemes.RemoveUser(1);
+
+        // Assert
+        Assert.Empty(_2UserManagerWithNoCustomSchemes.GetApplicationInputUsers());
+    }
+
+    #endregion
+
+    #region PairController
+
+    [Fact]
+    public void PairController_UserIdDoesNotExist_ThrowsInvalidOperationException()
+    {
+        // Arrange/Act/Assert
+        Assert.Throws<InvalidOperationException>(() => _4UserManagerWithCustomSchemes.PairController(117, new InputControllerIdentifier()));
+    }
+
+    [Fact]
+    public async Task PairController_ControllerAddedToDifferentUser_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controllerName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
+        var controllerIndentifier = new InputControllerIdentifier(1, controllerName);
+
+        await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+        await _4UserManagerWithCustomSchemes.JoinUserAsync(2, JoinUserOptions.Default);
+
+        _4UserManagerWithCustomSchemes.PairController(1, controllerIndentifier);
+
+        // Act/Assert
+        Assert.Throws<InvalidOperationException>(() => _4UserManagerWithCustomSchemes.PairController(2, controllerIndentifier));
+    }
+
+    [Fact]
+    public async Task PairController_AddNewController_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controllerName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
+        var controllerIndentifier = new InputControllerIdentifier(1, controllerName);
+
+        var user = await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        // Act
+        _4UserManagerWithCustomSchemes.PairController(1, controllerIndentifier);
+
+        // Assert
+        Assert.Single(user.Value.ControllerIdentifiers, identifier => identifier == controllerIndentifier);
+    }
+
+    [Fact]
+    public async Task PairController_AddPreviousControllerToSameUser_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputControllerConfiguration>(),
+            It.IsAny<InputControllerIdentifier>()))
+            .Returns(Mock.Of<IInputReader>());
+
+        _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
+
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var controllerName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
+        var controllerIndentifier = new InputControllerIdentifier(1, controllerName);
+
+        var user = await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+        _4UserManagerWithCustomSchemes.PairController(1, controllerIndentifier);
+
+        // Act
+        _4UserManagerWithCustomSchemes.PairController(1, controllerIndentifier);
+
+        // Assert
+        Assert.Single(user.Value.ControllerIdentifiers, identifier => identifier == controllerIndentifier);
+    }
+
+    #endregion
+
+    #region GetApplicationInputUser
+
+    [Fact]
+    public void GetApplicationInputUser_UserIdDoesNotExist_ThrowsInvalidOperationException()
+    {
+        // Arrnage/Act/Assert
+        Assert.Throws<InvalidOperationException>(() => _4UserManagerWithCustomSchemes.GetApplicationInputUser(117));
+    }
+
+    [Fact]
+    public async Task GetApplicationInputUser_UserIdExists_ReturnsUser()
+     {
+        // Arrnage
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+
+        var user = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
+
+        // Act
+        var getUser = _2UserManagerWithNoCustomSchemes.GetApplicationInputUser(user.Value.Id);
+
+        // Assert
+        Assert.Equal(user.Value, getUser);
+    }
+
+    #endregion
+
+    #region GetApplicationInputUsers
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task GetApplicationInputUsers_ReturnsListOfAddedUsers_ReturnsSuccessfully(int totalUsers)
+    {
+        // Arrange        
+        _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
+        
+        for (var i = 0; i < totalUsers; i++)
+        {
+            await _2UserManagerWithNoCustomSchemes.JoinUserAsync(i, JoinUserOptions.Default);
+        }
+
+        // Act
+        var users = _2UserManagerWithNoCustomSchemes.GetApplicationInputUsers();
+
+        // Assert
+        Assert.Equal(totalUsers, users.Count());
+        for (var i = 0; i < totalUsers; i++)
+        {
+            Assert.Contains(users, user => user.Id == i);
+        }
+    }
+
+    #endregion
+
+    #region ReadInputsAsync
+
+
 
     #endregion
 }

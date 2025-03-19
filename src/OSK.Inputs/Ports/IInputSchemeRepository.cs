@@ -9,18 +9,20 @@ namespace OSK.Inputs.Ports;
 
 public interface IInputSchemeRepository
 {
-    Task<IOutput<IEnumerable<ActiveInputScheme>>> GetActiveInputSchemesAsync(string inputDefinitionName, int playerId, CancellationToken cancellationToken = default);
+    Task<IOutput<IEnumerable<ActiveInputScheme>>> GetActiveInputSchemesAsync(int userId, string inputDefinitionName, CancellationToken cancellationToken = default);
 
-    Task<IOutput<InputScheme>> GetInputSchemeAsync(string inputDefinitionName, string controllerName, string inputSchemeName,
+    Task<IOutput<InputScheme>> GetCustomInputSchemeAsync(string inputDefinitionName, string controllerName, string inputSchemeName,
         CancellationToken cancellationToken = default);
 
-    Task<IOutput<IEnumerable<InputScheme>>> GetInputSchemesAsync(string inputDefinitionName, CancellationToken cancellationToken = default);
+    Task<IOutput<IEnumerable<InputScheme>>> GetCustomInputSchemesAsync(string inputDefinitionName, CancellationToken cancellationToken = default);
+
+    Task<IOutput<InputScheme>> SaveCustomInputSchemeAsync(string inputDefinitionName, InputScheme inputScheme,
+        CancellationToken cancellationToken = default);
+
+    Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, string controllerName, string inputSchemeName,
+        CancellationToken cancellationToken = default);
+
+    Task<IOutput> DeleteActiveInputSchemeAsync(int userId, string inputDefinitionName, string controllerName, CancellationToken cancellationToken = default);
 
     Task<IOutput<ActiveInputScheme>> SaveActiveInputSchemeAsync(ActiveInputScheme inputScheme, CancellationToken cancellationToken = default);
-
-    Task<IOutput<InputScheme>> SaveInputSchemeAsync(string inputDefinitionName, InputScheme inputScheme,
-        CancellationToken cancellationToken = default);
-
-    Task<IOutput> DeleteInputSchemeAsync(string inputDefinitionName, string controllerName, string inputSchemeName,
-        CancellationToken cancellationToken = default);
 }

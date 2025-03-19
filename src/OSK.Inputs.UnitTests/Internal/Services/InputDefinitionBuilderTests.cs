@@ -1,10 +1,7 @@
 ﻿using System.Data;
 using Moq;
-using OSK.Inputs.Exceptions;
 using OSK.Inputs.Internal.Services;
-using OSK.Inputs.Models;
 using OSK.Inputs.Models.Configuration;
-using OSK.Inputs.Ports;
 using Xunit;
 
 namespace OSK.Inputs.UnitTests.Internal.Services;
@@ -14,7 +11,9 @@ public class InputDefinitionBuilderTests
     #region Variables
 
     private const string TestDefinitionName = "test123";
-    private readonly Mock<IInputValidationService> _mockValidationService;
+
+    private readonly Mock<IInputControllerConfiguration> _mockControllerConfiguration1;
+    private readonly Mock<IInputControllerConfiguration> _mockControllerConfiguration2;
 
     private readonly InputDefinitionBuilder _builder;
 
@@ -24,9 +23,10 @@ public class InputDefinitionBuilderTests
 
     public InputDefinitionBuilderTests()
     {
-        _mockValidationService = new Mock<IInputValidationService>();
+        _mockControllerConfiguration1 = new();
+        _mockControllerConfiguration2 = new();
 
-        _builder = new(TestDefinitionName, _mockValidationService.Object);
+        _builder = new(TestDefinitionName, [ _mockControllerConfiguration1.Object, _mockControllerConfiguration2.Object ]);
     }
 
     #endregion
@@ -37,10 +37,10 @@ public class InputDefinitionBuilderTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void AddAction_InvalidActionKey_ThrowsArgumentNullException(string actionKey)
+    public void AddAction_InvalidActionKey_ThrowsArgumentNullException(string? actionKey)
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _builder.AddAction(new InputAction(actionKey, null)));
+        Assert.Throws<ArgumentNullException>(() => _builder.AddAction(new InputAction(actionKey!, null)));
     }
 
     [Fact]
@@ -62,51 +62,76 @@ public class InputDefinitionBuilderTests
 
     #endregion
 
-    #region AddInputController
+    #region AddInputScheme
 
-    [Fact]
-    public void AddInputController_NullController_ThrowsArgumentNullException()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void AddInputScheme_InvalidControllerName_ThrowsArgumentException(string? controllerName)
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _builder.AddInputController(null!));
+        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(controllerName!, "abc", _ => { }));
+    }
+
+    [Fact]
+    public void AddInputScheme_ControllerNameIsNotASupportController_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+
+        // Act/Assert
+        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme("def", "abc", _ => { }));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData(" ")]
-    public void AddInputController_InvalidControllerName_ThrowsArgumentNullException(string controllerName)
-    {
-        // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _builder.AddInputController(new InputControllerConfiguration(controllerName, [], [])));
-    }
-
-    [Fact]
-    public void AddInputController_DuplicateControllerName_ThrowsDuplicateNameException()
+    [InlineData("  ")]
+    public void AddInputScheme_InvalidSchemeName_ThrowsArgumentException(string? schemeName)
     {
         // Arrange
-        _builder.AddInputController(new InputControllerConfiguration("test", [], []));
+        _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns("abc");
 
         // Act/Assert
-        Assert.Throws<DuplicateNameException>(() => _builder.AddInputController(new InputControllerConfiguration("test", [], [])));
+        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme("abc", schemeName!, _ => { }));
     }
 
     [Fact]
-    public void AddInputController_Valid_ReturnsSuccessfully()
+    public void AddInputScheme_NullAction_ThrowsInvalidOperationException()
     {
-        // Arrange/Act/Assert
-        _builder.AddInputController(new InputControllerConfiguration("test", [], []));
+        // Arrange
+        _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+
+        // Act/Assert
+        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(_mockControllerConfiguration1.Name, "abc", null!));
     }
 
-    #endregion
+    [Fact]
+    public void AddInputScheme_SchemeNameAlreadyAdded_ThrowsDuplicateNameException()
+    {
+        // Arrange
+        _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns("abc");
 
-    #region AllowCustomInputSchemes
+        _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "abc", _ => { });
+
+        // Act/Assert
+        Assert.Throws<DuplicateNameException>(() => _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "abc", _ => { }));
+    }
 
     [Fact]
-    public void AllowCustomInputSchemes_Valid_ReturnsSuccessfully()
+    public void AddInputScheme_Valid_ReturnsSuccessfully()
     {
-        // Arrange/Act/Assert
-        _builder.AllowCustomInputSchemes();
+        // Arrange
+        _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+
+        // Act/Assert
+        _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "abc", _ => { });
     }
 
     #endregion
@@ -114,35 +139,23 @@ public class InputDefinitionBuilderTests
     #region Build
 
     [Fact]
-    public void Build_ValidationServiceRetrunsErrorContextWithErrors_ThrowsInputValidationException()
+    public void Build_Valid_ReturnsInputDefinition()
     {
         // Arrange
-        var errorContext = new InputValidationContext();
-        errorContext.AddError("Bad", 1, "No way");
+        var action1 = new InputAction("Fire", "Triggers a boom");
+        var action2 = new InputAction("Reload", "Does a thing for resupply");
+        _builder.AddAction(action1);
+        _builder.AddAction(action2);
 
-        _mockValidationService.Setup(m => m.ValidateInputDefinition(It.IsAny<InputDefinition>()))
-            .Returns(errorContext);
+        _mockControllerConfiguration1.Setup(m => m.ControllerName)
+            .Returns("abc");
+        _mockControllerConfiguration2.Setup(m => m.ControllerName)
+            .Returns("def");
 
-        // Act/Assert
-        Assert.Throws<InputValidationException>(() => _builder.Build());
-    }
+        _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "Scheme1", _ => { });
+        _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "Scheme2", _ => { });
 
-    [Theory]
-    [InlineData("abc", null, false, "who")]
-    [InlineData("abc", "description", true, "who")]
-    public void Build_VariousValidStates_ReturnsInputDefinition(string action, string? description, bool allowCustomSchemes, string controllerName)
-    {
-        // Arrange
-
-        _mockValidationService.Setup(m => m.ValidateInputDefinition(It.IsAny<InputDefinition>()))
-            .Returns(new InputValidationContext());
-
-        _builder.AddAction(new InputAction(action, description));
-        _builder.AddInputController(new InputControllerConfiguration(controllerName, [], []));
-        if (allowCustomSchemes)
-        {
-            _builder.AllowCustomInputSchemes();
-        }
+        _builder.AddInputScheme(_mockControllerConfiguration2.Object.ControllerName, "Scheme1", _ => { });
 
         // Act
         var definition = _builder.Build();
@@ -150,12 +163,15 @@ public class InputDefinitionBuilderTests
         // Assert
         Assert.NotNull(definition);
         Assert.Equal(TestDefinitionName, definition.Name);
-        Assert.Single(definition.InputActions);
-        Assert.Equal(action, definition.InputActions.First().ActionKey);
-        Assert.Equal(description, definition.InputActions.First().Description);
-        Assert.Single(definition.DefaultControllerConfigurations);
-        Assert.Equal(controllerName, definition.DefaultControllerConfigurations.First().ControllerName);
-        Assert.Equal(allowCustomSchemes, definition.AllowCustomInputSchemes);
+        
+        Assert.Equal(2, definition.InputActions.Count());
+        Assert.Contains(action1, definition.InputActions);
+        Assert.Contains(action2, definition.InputActions);
+
+        Assert.Equal(3, definition.InputSchemes.Count());
+        Assert.Contains(definition.InputSchemes, scheme => scheme.ControllerName == _mockControllerConfiguration1.Object.ControllerName && scheme.SchemeName == "Scheme1");
+        Assert.Contains(definition.InputSchemes, scheme => scheme.ControllerName == _mockControllerConfiguration1.Object.ControllerName && scheme.SchemeName == "Scheme2");
+        Assert.Contains(definition.InputSchemes, scheme => scheme.ControllerName == _mockControllerConfiguration2.Object.ControllerName && scheme.SchemeName == "Scheme1");
     }
 
     #endregion

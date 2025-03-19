@@ -3,8 +3,7 @@ using System.Linq;
 
 namespace OSK.Inputs.Models.Configuration;
 
-public class InputScheme(string inputDefinitionName, string controllerName, string schemeName,
-    IEnumerable<InputReceiverConfiguration> receiverConfigurations, bool isDefault)
+public class InputScheme(string inputDefinitionName, string controllerName, string schemeName, bool isDefault, IEnumerable<InputActionMap> inputActions)
 {
     public string InputDefinitionName => inputDefinitionName;
 
@@ -14,5 +13,5 @@ public class InputScheme(string inputDefinitionName, string controllerName, stri
 
     public bool IsDefault => isDefault;
 
-    public IReadOnlyCollection<InputReceiverConfiguration> ReceiverConfigurations { get; } = receiverConfigurations.ToArray();
+    public IReadOnlyCollection<InputActionMap> InputActionMaps { get; } = inputActions.ToArray();
 }

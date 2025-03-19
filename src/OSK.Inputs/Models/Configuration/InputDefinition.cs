@@ -1,40 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
 namespace OSK.Inputs.Models.Configuration;
 
-public class InputDefinition(string name, bool allowCustomInputSchemes,
-    IEnumerable<InputControllerConfiguration> supportedInputControllers, IEnumerable<InputAction> inputActions)
+public class InputDefinition(string name, IEnumerable<InputAction> inputActions, IEnumerable<InputScheme> inputSchemes)
 {
     #region Variables
 
     public string Name => name;
 
-    public bool AllowCustomInputSchemes => allowCustomInputSchemes;
-
     public IReadOnlyCollection<InputAction> InputActions { get; } = inputActions.ToArray();
 
-    public IReadOnlyCollection<InputControllerConfiguration> DefaultControllerConfigurations { get; } = supportedInputControllers.ToArray();
+    public IEnumerable<InputScheme> InputSchemes => _inputSchemeLookup.Values.SelectMany(schemesByController => schemesByController);
+
+    private readonly Dictionary<string, InputScheme[]> _inputSchemeLookup = inputSchemes.GroupBy(inputScheme => inputScheme.ControllerName)
+        .ToDictionary(inputControllerSchemeGroup => inputControllerSchemeGroup.Key, 
+                      inputControllerSchemeGroup => inputControllerSchemeGroup.OrderBy(scheme => scheme.IsDefault).ThenBy(scheme => scheme.SchemeName).ToArray());
 
     #endregion
 
     #region Helpers
 
+    public IReadOnlyCollection<InputScheme> GetInputSchemesByController(string controllerName)
+        => _inputSchemeLookup.TryGetValue(controllerName, out var schemesByController) ? schemesByController : [];
+
     public InputDefinition Clone(IEnumerable<InputScheme>? additionalInputSchemes = null)
     {
-        var additionalInputSchemeLookup = additionalInputSchemes?.GroupBy(inputScheme => inputScheme.ControllerName,
-            StringComparer.Ordinal).ToDictionary(group => group.Key) ?? [];
-
-        List<InputControllerConfiguration> inputControllers = [];
-        foreach (var inputController in DefaultControllerConfigurations)
-        {
-            additionalInputSchemeLookup.TryGetValue(inputController.ControllerName, out var additionalSchemes);
-
-            inputControllers.Add(inputController.Clone(additionalInputSchemes: additionalSchemes));
-        }
-
-        return new InputDefinition(Name, AllowCustomInputSchemes, inputControllers, InputActions);
+        var inputSchemes = additionalInputSchemes is null 
+            ? InputSchemes
+            : InputSchemes.Concat(additionalInputSchemes);
+        return new InputDefinition(Name, InputActions, inputSchemes);
     }
 
     #endregion

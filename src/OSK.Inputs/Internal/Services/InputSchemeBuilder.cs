@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
@@ -7,26 +8,20 @@ using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal.Services;
 
-internal class InputSchemeBuilder(string inputDefinitionName, string controllerName, string schemeName,
-    IEnumerable<IInputReceiverDescriptor> receiverDescriptions) 
+internal class InputSchemeBuilder(string inputDefinitionName, IInputControllerConfiguration controllerConfiguration, string schemeName) 
     : IInputSchemeBuilder
 {
     #region Variables
 
     private bool _isDefault;
-    private readonly Dictionary<string, IInputReceiverDescriptor> _receiverDescriptionLookup = receiverDescriptions.ToDictionary(receiver => receiver.ReceiverName);
-    private readonly Dictionary<string, Dictionary<string, InputActionMap>> _inputConfigurations = [];
+    private readonly Dictionary<string, InputActionMap> _inputActionMapLookup = [];
 
     #endregion
 
     #region IInputSchemeBuilder
 
-    public IInputSchemeBuilder AssignInput(string receiverName, string actionKey, IInput input, InputPhase inputPhase)
+    public IInputSchemeBuilder AssignInput(string actionKey, IInput input, InputPhase inputPhase)
     {
-        if (string.IsNullOrWhiteSpace(receiverName))
-        {
-            throw new ArgumentNullException(nameof(receiverName));
-        }
         if (string.IsNullOrWhiteSpace(actionKey))
         {
             throw new ArgumentNullException(nameof(actionKey));
@@ -36,46 +31,35 @@ internal class InputSchemeBuilder(string inputDefinitionName, string controllerN
             throw new ArgumentNullException(nameof(input));
         }
 
-        if (!_receiverDescriptionLookup.TryGetValue(receiverName, out var receiverDescription))
-        {
-            throw new InvalidOperationException($"The controller scheme {schemeName} for {controllerName}, {inputDefinitionName} is not able to support the input receiver {receiverName}");
-        }
-
-        var inputValidationError = input switch
+        Exception? exception = input switch
         {
             CombinationInput combinationInput => combinationInput.Inputs.GroupBy(comboInput => comboInput.Name)
                 .Select(group =>
                 {
                     if (group.Count() > 1)
                     {
-                        return $"The input {group.Key} has already been added to the combination input {combinationInput.Name} for the input receiver {receiverDescription.ReceiverName}";
+                        return (Exception) new DuplicateNameException($"The input {group.Key} has already been added to the combination input {combinationInput.Name} for the input controller {controllerConfiguration.ControllerName}");
                     }
 
-                    return receiverDescription.IsValidInput(group.First())
+                    return controllerConfiguration.IsValidInput(group.First())
                         ? null
-                        : $"Unable to add inputs of type {combinationInput.GetType().FullName} to the combonation input {combinationInput.Name} for the input receiver {receiverDescription.ReceiverName} since it is not the expected input type.";
-                }).FirstOrDefault(error => !string.IsNullOrWhiteSpace(error)),
-            _ => receiverDescription.IsValidInput(input) 
-                ? null 
-                : $"Unable to add inputs of type {input.GetType().FullName} for the input receiver {receiverDescription.ReceiverName} since it is not the expected input type."
+                        : new InvalidOperationException($"Unable to add inputs of type {combinationInput.GetType().FullName} to the combonation input {combinationInput.Name} for the input controller {controllerConfiguration.ControllerName} since it is not the expected input type.");
+                }).FirstOrDefault(exceptionError => exceptionError is not null),
+            _ => controllerConfiguration.IsValidInput(input)
+                ? null
+                : new InvalidOperationException($"Unable to add inputs of type {input.GetType().FullName} for the input controller {controllerConfiguration.ControllerName} since it is not the expected input type.")
         };
 
-        if (!string.IsNullOrWhiteSpace(inputValidationError)) 
+        if (exception is not null) 
         {
-            throw new InvalidOperationException(inputValidationError);
+            throw exception;
         }
-        if (!_inputConfigurations.TryGetValue(receiverName, out var receiverInputConfiguration))
+        if (_inputActionMapLookup.TryGetValue(actionKey, out _))
         {
-            receiverInputConfiguration = [];
-            _inputConfigurations.Add(receiverName, receiverInputConfiguration);
-        }
-
-        if (receiverInputConfiguration.TryGetValue(actionKey, out _))
-        {
-            throw new InvalidOperationException($"The input scheme {schemeName} for the receiver {receiverName} on controller {controllerName} using input definition {inputDefinitionName} already has an input associated to the action key {actionKey}.");
+            throw new DuplicateNameException($"The input scheme {schemeName} for the controller {controllerConfiguration.ControllerName} using input definition {inputDefinitionName} already has an input associated to the action key {actionKey}.");
         }
 
-        receiverInputConfiguration.Add(actionKey, new InputActionMap(actionKey, input.Name, inputPhase));
+        _inputActionMapLookup.Add(actionKey, new InputActionMap(actionKey, input.Name, inputPhase));
         return this;
     }
 
@@ -91,11 +75,7 @@ internal class InputSchemeBuilder(string inputDefinitionName, string controllerN
 
     public InputScheme Build()
     {
-        var inputConfigurations = _inputConfigurations.Select(configuration =>
-        {
-            return new InputReceiverConfiguration(configuration.Key, configuration.Value.Values);
-        });
-        return new BuiltInInputScheme(inputDefinitionName, controllerName, schemeName, inputConfigurations, _isDefault);
+        return new BuiltInInputScheme(inputDefinitionName, controllerConfiguration.ControllerName, schemeName, _isDefault, _inputActionMapLookup.Values);
     }
 
     #endregion

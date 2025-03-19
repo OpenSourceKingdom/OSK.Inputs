@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using OSK.Inputs.Models;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Ports;
 
@@ -11,243 +10,287 @@ internal class InputValidationService : IInputValidationService
 {
     #region Variables
 
+    public const string InputSystemConfigurationError = "_inputSysConfiguration";
     public const string InputDefinitionError = "_inputDefinition";
     public const string InputSchemeError = "_inputScheme";
-    public const string InputReceiverError = "_inputReceiver";
     public const string InputControllerError = "_inputController";
-    public const string InputReceiverDescriptorError = "_inputDescriptorError";
     public const string InputActionError = "_inputAction";
     public const string InputActionMapError = "_inputMap";
         
+    /// <summary>
+    /// Represents a child object not referencing the same id as the parent object it is attached to.
+    /// </summary>
     public const int ValidationError_MismatchedTenant = 400;
+
+    /// <summary>
+    /// The identifying property for an object is null or empty
+    /// </summary>
     public const int ValidationError_MissingIdentifier = 401;
+
+    /// <summary>
+    /// The identifier for an object was found on another object associated to the parent
+    /// </summary>
     public const int ValidationError_DuplicateIdentifier = 402;
-    public const int ValidationError_MissingData = 403;
-    public const int ValidationError_MissingData2 = 404;
+
+    /// <summary>
+    /// The data for a collection property is null or empty
+    /// </summary>
+    public const int ValidationError_CollectionMissingData = 403;
+
+    /// <summary>
+    /// Data for a property was in an invalid state
+    /// </summary>
     public const int ValidationError_InvalidData = 405;
-    public const int ValidationError_InvalidData2 = 406;
 
     #endregion
 
     #region IInputValidationService
 
-    public InputValidationContext ValidateInputDefinition(InputDefinition inputDefinition)
+    public InputValidationContext ValidateInputSystemConfiguration(InputSystemConfiguration inputSystemConfiguration)
     {
-        if (inputDefinition is null)
+        if (inputSystemConfiguration is null)
         {
-            throw new ArgumentNullException(nameof(inputDefinition));
-        }
-        
-        var validationContext = new InputValidationContext();
-        if (string.IsNullOrWhiteSpace(inputDefinition.Name))
-        {
-            validationContext.AddError(InputDefinitionError, ValidationError_MissingIdentifier, "Input definition name can not be empty.");
+            throw new ArgumentNullException(nameof(inputSystemConfiguration));
         }
 
-        if (!inputDefinition.InputActions.Any())
+        var inputControllersValidationContext = ValidateInputControllers(inputSystemConfiguration.SupportedInputControllers);
+        if (inputControllersValidationContext.Errors.Any())
         {
-            validationContext.AddError(InputDefinitionError, ValidationError_MissingData, $"Input definition {inputDefinition.Name} has no actions and can not be used.");
-        }
-        else
-        {
-             var invalidActionKeys = inputDefinition.InputActions
-                .GroupBy(action => action.ActionKey, StringComparer.OrdinalIgnoreCase)
-                .Select(group => new
-                {
-                    ActionKey = group.Key,
-                    IsEmptyName = string.IsNullOrWhiteSpace(group.Key),
-                    IsDuplicateName = group.Count() > 1
-                })
-                .Where(group => group.IsDuplicateName || group.IsEmptyName)
-                .Select(group =>
-                {
-                    return group.IsEmptyName
-                        ? $"An action key had an empty name for the input definition {inputDefinition.Name}"
-                        : $"The action key {group.ActionKey} already exists on the input definition {inputDefinition.Name}";
-                });
-            if (invalidActionKeys.Any())
-            {
-                validationContext.AddAggregateError(InputDefinitionError, ValidationError_InvalidData, invalidActionKeys);
-            }
-
-            foreach (var action in inputDefinition.InputActions)
-            {
-                ValidateInputAction(validationContext, action);
-            }
+            return inputControllersValidationContext;
         }
 
-        if (!inputDefinition.DefaultControllerConfigurations.Any())
+        var inputDefinitionsValidationContext = ValidateInputDefinitions(inputSystemConfiguration.InputDefinitions, inputSystemConfiguration.SupportedInputControllers);
+        if (inputDefinitionsValidationContext.Errors.Any())
         {
-            validationContext.AddError(InputDefinitionError, ValidationError_MissingData2,
-                $"Input definition {inputDefinition.Name} has no controllers and can not be used.");
-        }
-        else
-        {
-            var invalidControllerNames = inputDefinition.DefaultControllerConfigurations
-                .GroupBy(controller => controller.ControllerName, StringComparer.OrdinalIgnoreCase)
-                .Select(group => new
-                {
-                    ControllerName = group.Key,
-                    IsEmptyName = string.IsNullOrWhiteSpace(group.Key),
-                    IsDuplicateName = group.Count() > 1
-                })
-                .Where(group => group.IsDuplicateName || group.IsEmptyName)
-                .Select(group =>
-                {
-                    return group.IsEmptyName
-                        ? "An input controller had an empty name"
-                        : $"The controller name {group.ControllerName} already exists on the input definition {inputDefinition.Name}";
-                });
-
-            if (invalidControllerNames.Any())
-            {
-                validationContext.AddAggregateError(InputDefinitionError, ValidationError_InvalidData2, invalidControllerNames);
-            }
-
-            foreach (var controller in inputDefinition.DefaultControllerConfigurations)
-            {
-                ValidateInputController(validationContext, inputDefinition, controller);
-            }
+            return inputDefinitionsValidationContext;
         }
 
-        return validationContext;
+        if (inputSystemConfiguration.MaxLocalUsers < 1)
+        {
+            return InputValidationContext.Error(InputSystemConfigurationError, ValidationError_InvalidData, "Max local users can not be less than 1.");
+        }
+
+        return InputValidationContext.Success;
     }
 
-    public InputValidationContext ValidateInputScheme(InputDefinition inputDefinition, InputScheme inputScheme)
+    public InputValidationContext ValidateCustomInputScheme(InputSystemConfiguration inputSystemConfiguration, InputScheme inputScheme)
     {
-        if (inputDefinition is null)
+        if (inputSystemConfiguration is null)
         {
-            throw new ArgumentNullException(nameof(inputDefinition));
+            throw new ArgumentNullException(nameof(inputSystemConfiguration));
         }
         if (inputScheme is null)
         {
             throw new ArgumentNullException(nameof(inputScheme));
         }
 
-        var validationContext = new InputValidationContext();
-
-        if (string.IsNullOrWhiteSpace(inputScheme.InputDefinitionName))
-        {
-            validationContext.AddError(InputSchemeError, ValidationError_MissingData, "Input scheme's definition name can not be empty.");
-            return validationContext;
-        }
-        else if (!string.Equals(inputScheme.InputDefinitionName, inputDefinition.Name, StringComparison.Ordinal))
-        {
-            validationContext.AddError(InputSchemeError, ValidationError_MismatchedTenant, 
-                $"Input Scheme's definition id {inputScheme.InputDefinitionName} does not match the definition it's being associated, which is {inputDefinition.Name}.");
-        
-            return validationContext;
-        }
-
-        ValidateInputScheme(validationContext, inputDefinition, inputScheme);        
-        return validationContext;
+        return ValidateInputScheme(inputScheme, true, inputSystemConfiguration.InputDefinitions, inputSystemConfiguration.SupportedInputControllers);        
     }
 
     #endregion
 
     #region Helpers
 
-    private void ValidateInputScheme(InputValidationContext context, InputDefinition inputDefinition, InputScheme inputScheme)
+    private InputValidationContext ValidateInputDefinitions(IReadOnlyCollection<InputDefinition> inputDefinitions,
+        IReadOnlyCollection<IInputControllerConfiguration> supportedInputControllerConfigurations)
     {
-        if (string.IsNullOrWhiteSpace(inputScheme.ControllerName))
+        if (inputDefinitions is null || !inputDefinitions.Any())
         {
-            context.AddError(InputSchemeError, ValidationError_MissingData, "Controller name can not be empty.");
-            return;
+            return InputValidationContext.Error(InputDefinitionError, ValidationError_CollectionMissingData, "Input System configuration has no input definitions and is unusable.");
         }
 
-        if (!inputDefinition.DefaultControllerConfigurations.AnyByString(controller => controller.ControllerName, inputScheme.ControllerName))
+        if (inputDefinitions.Any(definition => string.IsNullOrWhiteSpace(definition.Name)))
         {
-            context.AddError(InputSchemeError, ValidationError_InvalidData,
+            return InputValidationContext.Error(InputDefinitionError, ValidationError_MissingIdentifier, "One or more input definitions had an empty name.");
+        }
+
+        var duplicateDefinitionNames = inputDefinitions.GroupBy(definition => definition.Name).Where(group => group.Count() > 1);
+        if (duplicateDefinitionNames.Any())
+        {
+            var error = string.Join(", ", duplicateDefinitionNames.Select(g => g.Key));
+            return InputValidationContext.Error(InputDefinitionError, ValidationError_DuplicateIdentifier, $"One or more input definitions share the same name: {error}");
+        }
+
+        foreach (var inputDefinition in inputDefinitions)
+        {
+            var context = ValidateInputDefinition(inputDefinition, supportedInputControllerConfigurations);
+            if (context.Errors.Any())
+            {
+                return context;
+            }
+        }
+
+        return InputValidationContext.Success;
+    }
+
+    private InputValidationContext ValidateInputDefinition(InputDefinition inputDefinition, IEnumerable<IInputControllerConfiguration> supportedInputControllerConfigurations)
+    {
+        if (!inputDefinition.InputActions.Any())
+        {
+            return InputValidationContext.Error(InputDefinitionError, ValidationError_CollectionMissingData, $"Input definition {inputDefinition.Name} has no actions and can not be used.");
+        }
+
+        var invalidActionKeys = inputDefinition.InputActions
+           .GroupBy(action => action.ActionKey, StringComparer.OrdinalIgnoreCase)
+           .Select(group => new
+           {
+               ActionKey = group.Key,
+               IsEmptyName = string.IsNullOrWhiteSpace(group.Key),
+               IsDuplicateName = group.Count() > 1
+           })
+           .Where(group => group.IsDuplicateName || group.IsEmptyName)
+           .Select(group =>
+           {
+               return group.IsEmptyName
+                   ? $"An action key had an empty name for the input definition {inputDefinition.Name}"
+                   : $"The action key {group.ActionKey} already exists on the input definition {inputDefinition.Name}";
+           });
+        if (invalidActionKeys.Any())
+        {
+            var errorMessage = string.Join("\n", invalidActionKeys.Select(key => $"{key}"));
+            return InputValidationContext.Error(InputDefinitionError, ValidationError_InvalidData, errorMessage);
+        }
+
+        foreach (var action in inputDefinition.InputActions)
+        {
+            var inputActionValidation = ValidateInputAction(action);
+            if (inputActionValidation.Errors.Any())
+            {
+                return inputActionValidation;
+            }
+        }
+
+        InputDefinition[] inputDefinitions = [inputDefinition];
+        foreach (var inputScheme in inputDefinition.InputSchemes)
+        {
+            var inputSchemeValidationContext = ValidateInputScheme(inputScheme, false, inputDefinitions, supportedInputControllerConfigurations);
+            if (inputSchemeValidationContext.Errors.Any())
+            {
+                return inputSchemeValidationContext;
+            }
+        }
+
+        return InputValidationContext.Success;
+    }
+
+    private InputValidationContext ValidateInputAction(InputAction inputAction)
+    {
+        return InputValidationContext.Success;
+    }
+
+    private InputValidationContext ValidateInputControllers(IReadOnlyCollection<IInputControllerConfiguration> supportedControllerConfigurations)
+    {
+        if (supportedControllerConfigurations is null || !supportedControllerConfigurations.Any())
+        {
+            return InputValidationContext.Error(InputControllerError, ValidationError_CollectionMissingData, "Input System configuration has no input controller configurations and is unusable.");
+        }
+        if (supportedControllerConfigurations.Any(controllerConfiguration => string.IsNullOrWhiteSpace(controllerConfiguration.ControllerName)))
+        {
+            return InputValidationContext.Error(InputControllerError, ValidationError_MissingIdentifier, "One or more input controllers had an empty name.");
+        }
+
+        var duplicateControllerNames = supportedControllerConfigurations.GroupBy(controller => controller.ControllerName).Where(group => group.Count() > 1);
+        if (duplicateControllerNames.Any())
+        {
+            var error = string.Join(", ", duplicateControllerNames.Select(g => g.Key));
+            return InputValidationContext.Error(InputControllerError, ValidationError_DuplicateIdentifier, $"One or more input controllers share the same name: {error}");
+        }
+
+        foreach (var controllerConfiguration in supportedControllerConfigurations)
+        {
+            var validationContext = ValidateInputController(controllerConfiguration);
+            if (validationContext.Errors.Any())
+            {
+                return validationContext;
+            }
+        }
+
+        return InputValidationContext.Success;
+    }
+
+    private InputValidationContext ValidateInputController(IInputControllerConfiguration controllerConfiguration)
+    {
+        var context = new InputValidationContext(InputControllerError);
+
+        if (controllerConfiguration.InputReaderType is null)
+        {
+            context.AddErrors(ValidationError_InvalidData, $"The {controllerConfiguration.ControllerName} controller had a null input reader type and is unusable.");
+        }
+        else if (!typeof(IInputReader).IsAssignableFrom(controllerConfiguration.InputReaderType))
+        {
+            context.AddErrors(ValidationError_InvalidData,
+                $"The input controller {controllerConfiguration.ControllerName}'s input reader type, {controllerConfiguration.InputReaderType.FullName}, does not implement the {nameof(IInputReader)} interface.");
+        }
+
+        if (controllerConfiguration.Inputs is null || !controllerConfiguration.Inputs.Any())
+        {
+            context.AddErrors(ValidationError_CollectionMissingData, $"The {controllerConfiguration.ControllerName} has no inputs and is unusable.");
+        }
+        else if (controllerConfiguration.Inputs.Any(input => string.IsNullOrWhiteSpace(input.Name)))
+        {
+            context.AddErrors(ValidationError_InvalidData, $"The input controller {controllerConfiguration.ControllerName} bas inputs with empty names.");
+        }
+
+        return context;
+    }
+
+    private InputValidationContext ValidateInputScheme(InputScheme inputScheme, bool isNewScheme, IEnumerable<InputDefinition> inputDefinitions, 
+        IEnumerable<IInputControllerConfiguration> supportedControllers)
+    {
+        if (string.IsNullOrWhiteSpace(inputScheme.InputDefinitionName))
+        {
+            return InputValidationContext.Error(InputSchemeError, ValidationError_InvalidData, "Input scheme's definition name can not be empty.");
+        }
+
+        var inputDefinition = inputDefinitions.FirstOrDefaultByString(definition => definition.Name, inputScheme.InputDefinitionName);
+        if (inputDefinition is null)
+        {
+            return InputValidationContext.Error(InputSchemeError, ValidationError_MismatchedTenant, $"The Input Scheme references a definition {inputScheme.InputDefinitionName} that was not added to the input system.");
+        }
+
+        if (string.IsNullOrWhiteSpace(inputScheme.ControllerName))
+        {
+            return InputValidationContext.Error(InputSchemeError, ValidationError_InvalidData, "Controller name can not be empty.");
+        }
+
+        var inputControllerConfiguration = supportedControllers.FirstOrDefaultByString(controller => controller.ControllerName, inputScheme.ControllerName);
+        if (inputControllerConfiguration is null)
+        {
+            return InputValidationContext.Error(InputSchemeError, ValidationError_InvalidData,
                 $"Input definition {inputDefinition.Name} does not support the {inputScheme.ControllerName} controller");
-            return;
         }
 
         if (string.IsNullOrWhiteSpace(inputScheme.SchemeName))
         {
-            context.AddError(InputSchemeError, ValidationError_MissingIdentifier, "Input scheme name can not be empty.");
+            return InputValidationContext.Error(InputSchemeError, ValidationError_MissingIdentifier, "Input scheme name can not be empty.");
         }
 
-        ValidateReceiverConfigurations(context, inputDefinition, inputScheme);
-    }
-
-    private void ValidateInputAction(InputValidationContext context, InputAction inputAction)
-    {
-    }
-
-    private void ValidateInputController(InputValidationContext context, InputDefinition inputDefinition, InputControllerConfiguration controller)
-    {
-        var invalidReceiverDescriptorNames = controller.ReceiverDescriptors
-            .GroupBy(descriptor => descriptor.ReceiverName, StringComparer.OrdinalIgnoreCase)
-            .Select(group => new
-            {
-                DescriptorName = group.Key,
-                IsEmptyName = string.IsNullOrWhiteSpace(group.Key),
-                IsDuplicateName = group.Count() > 1
-            })
-            .Where(group => group.IsDuplicateName || group.IsEmptyName)
-            .Select(group =>
-            {
-                return group.IsEmptyName
-                    ? $"An input descriptor had an empty name for controller {controller.ControllerName}"
-                    : $"The input descriptor name {group.DescriptorName} already exists on the input controller {controller.ControllerName}";
-            });
-
-        if (invalidReceiverDescriptorNames.Any())
+        if (isNewScheme && inputDefinition.InputSchemes.AnyByString(scheme => scheme.ControllerName, inputScheme.ControllerName))
         {
-            context.AddAggregateError(InputControllerError, ValidationError_InvalidData, invalidReceiverDescriptorNames);
+            return InputValidationContext.Error(InputSchemeError, ValidationError_DuplicateIdentifier, $"Input scheme with name {inputScheme.SchemeName} has already been added to the input definition {inputDefinition.Name}.");
         }
 
-        foreach (var descriptor in controller.ReceiverDescriptors)
+        var actionMapValidationContext = ValidateInpurSchemeActionMaps(inputScheme);
+        if (actionMapValidationContext.Errors.Any())
         {
-            ValidateInputReceiverDescription(context, controller, descriptor);
-        }
-        foreach (var scheme in controller.InputSchemes)
-        {
-            ValidateInputScheme(context, inputDefinition, scheme);
-        }
-    }
-
-    private void ValidateReceiverConfigurations(InputValidationContext context, InputDefinition inputDefinition, InputScheme scheme)
-    {
-        var invalidReceiverConfigurationNames = scheme.ReceiverConfigurations
-            .GroupBy(receiver => receiver.InputReceiverName, StringComparer.OrdinalIgnoreCase)
-            .Select(group => new
-            {
-                InputReceiverName = group.Key,
-                IsEmptyName = string.IsNullOrWhiteSpace(group.Key),
-                IsDuplicateName = group.Count() > 1
-            })
-            .Where(group => group.IsDuplicateName || group.IsEmptyName)
-            .Select(group => 
-            {
-                return group.IsEmptyName
-                    ? $"An input receiver for {group.InputReceiverName} had an empty name"
-                    : $"The input receiver {group.InputReceiverName} already exists on the input definition {inputDefinition.Name} {scheme.SchemeName} scheme";
-            });
-        if (invalidReceiverConfigurationNames.Any())
-        {
-            context.AddAggregateError(InputReceiverError, ValidationError_InvalidData, invalidReceiverConfigurationNames);
+            return actionMapValidationContext;
         }
 
-        foreach (var receiverConfiguration in scheme.ReceiverConfigurations)
-        {
-            ValidateActionMaps(context, receiverConfiguration);
-        }
-
-        var currentActionKeys = new HashSet<string>(
-            scheme.ReceiverConfigurations.SelectMany(configuration => configuration.InputMaps)
-            .Select(inputMap => inputMap.ActionKey));
+        var currentActionKeys = new HashSet<string>(inputScheme.InputActionMaps.Select(inputMap => inputMap.ActionKey));
         var missingInputActions = inputDefinition.InputActions.Where(inputAction => !currentActionKeys.Contains(inputAction.ActionKey));
         if (missingInputActions.Any())
         {
             var error = string.Join("\n", missingInputActions.Select(action => action.ActionKey));
-            context.AddError(InputReceiverError, ValidationError_MissingData, $"The input scheme {scheme.SchemeName} is missing the following action keys:\n{error}");
+            return InputValidationContext.Error(InputSchemeError, ValidationError_CollectionMissingData, $"The input scheme {inputScheme.SchemeName} is missing the following action keys:\n{error}");
         }
+
+        return InputValidationContext.Success;
     }
 
-    private void ValidateActionMaps(InputValidationContext context, InputReceiverConfiguration configuration)
+    private InputValidationContext ValidateInpurSchemeActionMaps(InputScheme scheme)
     {
-        var invalidInputKeys = configuration.InputMaps.GroupBy(map => map.InputKey, StringComparer.OrdinalIgnoreCase)
+        var context = new InputValidationContext(InputActionMapError);
+        var invalidInputKeys = scheme.InputActionMaps.GroupBy(map => map.InputKey, StringComparer.OrdinalIgnoreCase)
             .Select(group => new
             {
                 InputKey = group.Key,
@@ -258,16 +301,16 @@ internal class InputValidationService : IInputValidationService
             .Select(group =>
             {
                 return group.IsEmptyName
-                    ? $"An input key for input receiver {configuration.InputReceiverName} had an empty name"
-                    : $"The input key {group.InputKey} already exists on the input receiver {configuration.InputReceiverName}";
+                    ? $"An input key for input scheme {scheme.SchemeName} had an empty name"
+                    : $"The input key {group.InputKey} already exists on the input scheme {scheme.SchemeName}";
             });
         if (invalidInputKeys.Any())
         {
             var errorMessage = string.Join("\n", invalidInputKeys.Select(key => $"{key}"));
-            context.AddAggregateError(InputActionMapError, ValidationError_InvalidData, invalidInputKeys);
+            context.AddErrors(ValidationError_InvalidData, errorMessage);
         }
 
-        var invalidActionKeys = configuration.InputMaps.GroupBy(map => map.ActionKey, StringComparer.OrdinalIgnoreCase)            
+        var invalidActionKeys = scheme.InputActionMaps.GroupBy(map => map.ActionKey, StringComparer.OrdinalIgnoreCase)            
             .Select(group => new
             {
                 ActionKey = group.Key,
@@ -278,25 +321,16 @@ internal class InputValidationService : IInputValidationService
             .Select(group =>
             {
                 return group.IsEmptyName
-                    ? $"An input action key for input receiver {configuration.InputReceiverName} had an empty name"
-                    : $"The input action key {group.ActionKey} already exists on the input receiver {configuration.InputReceiverName}";
+                    ? $"An input key for input scheme  {scheme.SchemeName} had an empty name"
+                    : $"The input action key {group.ActionKey} already exists on the input scheme {scheme.SchemeName}";
             });
         if (invalidActionKeys.Any())
         {
-            context.AddAggregateError(InputActionMapError, ValidationError_InvalidData2, invalidInputKeys);
+            var errorMessage = string.Join("\n", invalidActionKeys.Select(key => $"{key}"));
+            context.AddErrors(ValidationError_InvalidData, errorMessage);
         }
-    }
 
-    private void ValidateInputReceiverDescription(InputValidationContext context, InputControllerConfiguration controller, IInputReceiverDescriptor description)
-    {
-        var invalidReceiverDescriptorTypes = controller.ReceiverDescriptors
-            .Where(descriptor => !typeof(IInputSystem).IsAssignableFrom(descriptor.InputSystemType))
-            .Select(descriptor => $"The input descriptor {descriptor.ReceiverName}'s receiver type, {descriptor.InputSystemType.FullName}, does not implement the {nameof(IInputSystem)} interface.");
-
-        if (invalidReceiverDescriptorTypes.Any())
-        {
-            context.AddAggregateError(InputReceiverDescriptorError, ValidationError_InvalidData2 , invalidReceiverDescriptorTypes);
-        }
+        return context;
     }
 
     #endregion

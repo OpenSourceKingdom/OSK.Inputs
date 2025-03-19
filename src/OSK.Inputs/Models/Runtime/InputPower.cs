@@ -10,6 +10,12 @@ namespace OSK.Inputs.Models.Runtime;
 /// <param name="inputPower">The enumerable representing the input power on different axes of a particular input (a joystick has x/y axes for example)</param>
 public class InputPower(IEnumerable<float> inputPower)
 {
+    #region Static
+
+    public static InputPower FullPower(int axisCount) => new InputPower(Enumerable.Repeat(1f, axisCount));
+
+    #endregion
+
     #region Variables
 
     private float[] _inputPowers = inputPower.ToArray();

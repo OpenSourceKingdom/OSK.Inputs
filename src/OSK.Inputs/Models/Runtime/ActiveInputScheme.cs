@@ -1,5 +1,5 @@
 ﻿namespace OSK.Inputs.Models.Runtime;
-public class ActiveInputScheme(int playerId, string inputDefinitionName, string controllerName, string schemeName)
+public class ActiveInputScheme(int userId, string inputDefinitionName, string controllerName, string schemeName)
 {
     public string InputDefinitionName => inputDefinitionName;
 
@@ -7,5 +7,5 @@ public class ActiveInputScheme(int playerId, string inputDefinitionName, string 
 
     public string ActiveInputSchemeName => schemeName;
 
-    public int PlayerId => playerId;
+    public int UserId => userId;
 }

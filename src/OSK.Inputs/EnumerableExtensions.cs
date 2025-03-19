@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 
-namespace OSK.Inputs.Internal;
+namespace OSK.Inputs;
 
-internal static class EnumerableExtensions
+public static class EnumerableExtensions
 {
     public static T? FirstOrDefaultByString<T>(this IEnumerable<T> enumerable, Func<T, string> getString, string str,
         StringComparison comparison = StringComparison.Ordinal)
@@ -51,7 +51,7 @@ internal static class EnumerableExtensions
         Func<T, Task<TResult>> action, int maxDegreesOfConcrruency, CancellationToken cancellationToken = default)
         => source.ExecuteConcurrentAsync(action, maxDegreesOfConcrruency, false, cancellationToken);
 
-    public static async Task<IList<Task<TResult>>> ExecuteConcurrentAsync<T, TResult>(this IEnumerable<T> source, 
+    public static async Task<IList<Task<TResult>>> ExecuteConcurrentAsync<T, TResult>(this IEnumerable<T> source,
         Func<T, Task<TResult>> action, int maxDegreesOfConcrruency, bool isParallel, CancellationToken cancellationToken = default)
     {
         if (source is null)

@@ -1,4 +1,4 @@
-﻿using OSK.Inputs.Internal;
+﻿using Moq;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
@@ -24,203 +24,427 @@ public class InputValidationServiceTests
 
     #endregion
 
-    #region ValidateInputDefinition
+    #region ValidateInputSystemConfiguration
 
     [Fact]
-    public void ValidateInputDefinition_NullInputDefinition_ThrowsArgumentNullException()
+    public void ValidateInputSystemConfiguration_NullInputSystemConfiguration_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _service.ValidateInputDefinition(null!));
+        Assert.Throws<ArgumentNullException>(() => _service.ValidateInputSystemConfiguration(null!));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ValidateInputSystemConfiguration_EmptyControllerConfiguration_ReturnsInputControllerMissingDataError(bool useNull)
+    {
+        // Arrange
+        List<InputDefinition> definitions = [];
+        List<IInputControllerConfiguration>? controllerConfigurations = useNull ? null : [];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations!, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_CollectionMissingData));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void ValidateInputSystemConfiguration_InvalidControllerConfigurationNames_ReturnsInputControllerMissingIdentifierError(string? controllerName)
+    {
+        // Arrange
+        List<InputDefinition> definitions = [];
+
+        var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns(controllerName!);
+
+        List<IInputControllerConfiguration>? controllerConfigurations = [ mockControllerConfiguration1.Object ];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_MissingIdentifier));
+    }
+
+    [Fact]
+    public void ValidateInputSystemConfiguration_DuplicateControllerConfigurationNames_ReturnsInputControllerDuplicateIdentifierError()
+    {
+        // Arrange
+        List<InputDefinition> definitions = [];
+
+        var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns("default");
+
+        var mockControllerConfiguration2 = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration2.SetupGet(m => m.ControllerName)
+            .Returns("default");
+
+        List<IInputControllerConfiguration>? controllerConfigurations = [mockControllerConfiguration1.Object, mockControllerConfiguration2.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_DuplicateIdentifier));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(typeof(int))]
+    public void ValidateInputSystemConfiguration_InvalidControllerConfigurationInputReaderType_ReturnsInputControllerInvalidDataError(Type? type)
+    {
+        // Arrange
+        List<InputDefinition> definitions = [];
+
+        var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns("default");
+        mockControllerConfiguration1.SetupGet(m => m.InputReaderType)
+            .Returns(type!);
+
+        List<IInputControllerConfiguration>? controllerConfigurations = [mockControllerConfiguration1.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ValidateInputSystemConfiguration_ControllerConfigurationEmptyInputs_ReturnsInputControllerMissingDataError(bool useNull)
+    {
+        // Arrange
+        List<InputDefinition> definitions = [];
+
+        var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns("default");
+
+        mockControllerConfiguration1.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+
+        mockControllerConfiguration1.SetupGet(m => m.Inputs)
+            .Returns(useNull ? null! : []);
+
+        List<IInputControllerConfiguration>? controllerConfigurations = [mockControllerConfiguration1.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_CollectionMissingData));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void ValidateInputSystemConfiguration_ControllerConfigurationInvalidInputNames_ReturnsInputControllerInvalidDataError(string? inputName)
+    {
+        // Arrange
+        List<InputDefinition> definitions = [];
+
+        var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+            .Returns("default");
+        mockControllerConfiguration1.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+
+        var mockInput = new Mock<IInput>();
+        mockInput.SetupGet(m => m.Name)
+            .Returns(inputName!);
+
+        mockControllerConfiguration1.SetupGet(m => m.Inputs)
+            .Returns([ mockInput.Object ]);
+
+        List<IInputControllerConfiguration>? controllerConfigurations = [mockControllerConfiguration1.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ValidateInputSystemConfiguration_EmptyInputDefinitions_ReturnsInputDefinitionMissingDataError(bool useNull)
+    {
+        // Arrange
+        List<InputDefinition>? definitions = useNull ? null : [];
+
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+        
+        var mockInput = new Mock<IInput>();
+        mockInput.SetupGet(m => m.Name)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.Inputs)
+            .Returns([mockInput.Object]);
+
+        List<IInputControllerConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions!, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputDefinitionError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_CollectionMissingData));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void ValidateInputSystemConfiguration_InvalidInputDefinitionNames_ReturnsInputDefinitionMissingIdentifierError(string? definitionName)
+    {
+        // Arrange
+        List<InputDefinition> definitions = [new InputDefinition(definitionName!, [], [])];
+
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+
+        var mockInput = new Mock<IInput>();
+        mockInput.SetupGet(m => m.Name)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.Inputs)
+            .Returns([mockInput.Object]);
+
+        List<IInputControllerConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputDefinitionError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_MissingIdentifier));
+    }
+
+    [Fact]
+    public void ValidateInputSystemConfiguration_DuplicateInputDefinitionNames_ReturnsInputDefinitionDuplicateIdentifierError()
+    {
+        // Arrange
+        List<InputDefinition> definitions = [new InputDefinition("abc", [], []), new InputDefinition("abc", [], [])];
+
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+
+        var mockInput = new Mock<IInput>();
+        mockInput.SetupGet(m => m.Name)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.Inputs)
+            .Returns([mockInput.Object]);
+
+        List<IInputControllerConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputDefinitionError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_DuplicateIdentifier));
+    }
+
+    [Fact]
+    public void ValidateInputSystemConfiguration_InputDefinitionWithEmptyInputActions_ReturnsInputDefinitionMissingDataError()
+    {
+        // Arrange
+        List<InputDefinition> definitions = [new InputDefinition("abc", [], [])];
+
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+
+        var mockInput = new Mock<IInput>();
+        mockInput.SetupGet(m => m.Name)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.Inputs)
+            .Returns([mockInput.Object]);
+
+        List<IInputControllerConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
+
+        // Assert
+        Assert.Equal(InputValidationService.InputDefinitionError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_CollectionMissingData));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void ValidateInputDefinition_InvalidInputDefinitionName_AddsMissingIdentifierToErrorContext(string? definitionName)
+    public void ValidateInputSystemConfiguration_InputDefinitionWithEmptyInputActionKeys_ReturnsInputDefinitionInvalidDataError(string? inputActionKey)
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition(definitionName!, false, [], []));
+        // Arrange
+        List<InputDefinition> definitions = [new InputDefinition("abc", [new InputAction(inputActionKey!, null)], [])];
+
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+
+        var mockInput = new Mock<IInput>();
+        mockInput.SetupGet(m => m.Name)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.Inputs)
+            .Returns([mockInput.Object]);
+
+        List<IInputControllerConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputDefinitionError, InputValidationService.ValidationError_MissingIdentifier));
+        Assert.Equal(InputValidationService.InputDefinitionError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Fact]
-    public void ValidateInputDefinition_EmptyInputActions_AddsMissingDataToErrorContext()
+    public void ValidateInputSystemConfiguration_InputDefinitionWithDuplicateInputActionKeys_ReturnsInputDefinitionInvalidDataError()
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("abc", [], [])], []));
+        // Arrange
+        List<InputDefinition> definitions = [new InputDefinition("abc", [new InputAction("a", null), new InputAction("a", null)], [])];
+
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+
+        var mockInput = new Mock<IInput>();
+        mockInput.SetupGet(m => m.Name)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.Inputs)
+            .Returns([mockInput.Object]);
+
+        List<IInputControllerConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputDefinitionError, InputValidationService.ValidationError_MissingData));
+        Assert.Equal(InputValidationService.InputDefinitionError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void ValidateInputDefinition_InvalidInputActionKey_AddsInvalidDataToErrorContext(string? actionKey)
+    [InlineData(-1)]
+    [InlineData(0)]
+    public void ValidateInputSystemConfiguration_InvalidMaxLocalUser_ReturnsInputSystemConfigurationInvalidDataError(int maxLocalusers)
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [new InputControllerConfiguration("abc", [], [])],
-            [new InputAction(actionKey!, null)]));
+        // Arrange
+        List<InputDefinition> definitions = [
+            new InputDefinition("abc", 
+                [ new InputAction("a", null) ], 
+                [ new InputScheme("abc", "abc", "abc", false, [ new InputActionMap("a", "abc", InputPhase.Start) ]) ])
+         ];
+
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
+
+        var mockInput = new Mock<IInput>();
+        mockInput.SetupGet(m => m.Name)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.Inputs)
+            .Returns([mockInput.Object]);
+
+        List<IInputControllerConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, maxLocalusers);
+
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputDefinitionError, InputValidationService.ValidationError_InvalidData));
-    }
-
-    [Theory]
-    [InlineData("aBcD", "abcd")]
-    [InlineData("efgh", "efgh")]
-    [InlineData("IJKL", "IJKL")]
-    public void ValidateInputDefinition_DuplicateInputActionKey_ThrowsArgumentException(string actionKey1, string actionKey2)
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [new InputControllerConfiguration("abc", [], [])],
-            [new InputAction(actionKey1, null), new InputAction(actionKey2, null)]));
+        Assert.Equal(InputValidationService.InputSystemConfigurationError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Fact]
-    public void ValidateInputDefinition_EmptyControllers_AddsMissingDataToErrorContext()
+    public void ValidateInputSystemConfiguration_Valid_ReturnsSuccessfully()
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false, [], [new InputAction()]));
+        // Arrange
+        List<InputDefinition> definitions = [
+            new InputDefinition("abc",
+                [ new InputAction("a", null) ],
+                [ new InputScheme("abc", "abc", "abc", false, [ new InputActionMap("a", "abc", InputPhase.Start) ]) ])
+         ];
 
-        // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputDefinitionError, InputValidationService.ValidationError_MissingData2));
-    }
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+            .Returns(typeof(TestInputReader));
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void ValidateInputDefinition_InvalidControllerName_AddsInvalidDataToErrorContext(string? controllerName)
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [new InputControllerConfiguration(controllerName!, [], [])],
-            [new InputAction("abc", null)]));
+        var mockInput = new Mock<IInput>();
+        mockInput.SetupGet(m => m.Name)
+            .Returns("abc");
+        mockControllerConfiguration.SetupGet(m => m.Inputs)
+            .Returns([mockInput.Object]);
 
-        // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputDefinitionError, InputValidationService.ValidationError_InvalidData2));
-    }
+        List<IInputControllerConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
 
-    [Theory]
-    [InlineData("aBcD", "abcd")]
-    [InlineData("efgh", "efgh")]
-    [InlineData("IJKL", "IJKL")]
-    public void ValidateInputDefinition_DuplicateControllerName_AddsInvalidDataToErrorContext(string controllerName1, string controllerName2)
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [new InputControllerConfiguration(controllerName1, [], []), new InputControllerConfiguration(controllerName2, [], [])],
-            [new InputAction("abc", null)]));
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
 
-        // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputDefinitionError, InputValidationService.ValidationError_InvalidData2));
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void ValidateInputDefinition_InvalidControllerInputReceiverDescriptorName_AddsInvalidDataToErrorContext(string? descriptorName)
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [new InputControllerConfiguration("abc", [new InputReceiverDescriptor(descriptorName!, typeof(TestInputSystem), _ => true)], [])],
-            [new InputAction("abc", null)]));
-
-        // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputControllerError, InputValidationService.ValidationError_InvalidData));
-    }
-
-    [Theory]
-    [InlineData("aBcD", "abcd")]
-    [InlineData("efgh", "efgh")]
-    [InlineData("IJKL", "IJKL")]
-    public void ValidateInputDefinition_DuplicateControllerInputReceiverName_AddsInvalidDataToErrorContext(string inputReceiver1, string inputReceiver2)
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [new InputControllerConfiguration("abc", [
-                new InputReceiverDescriptor(inputReceiver1, typeof(TestInputSystem), _ => true),
-                new InputReceiverDescriptor(inputReceiver2, typeof(TestInputSystem), _ => true)
-               ], [])
-            ],
-            [new InputAction("abc", null)]));
-
-        // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputControllerError, InputValidationService.ValidationError_InvalidData));
-    }
-
-    [Fact]
-    public void ValidateInputDefinition_InvalidControllerInputReceiverType_DoesNotUseIInputReceiver_AddsInvalidDataToErrorContext()
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [new InputControllerConfiguration("abc", [
-                new InputReceiverDescriptor("abc", typeof(TestSchemeRepository), _ => true)
-               ], [])
-            ],
-            [new InputAction("abc", null)]));
-
-        // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputReceiverDescriptorError, InputValidationService.ValidationError_InvalidData2));
-    }
-
-    [Fact]
-    public void ValidateInputDefinition_InvalidControllerInputScheme_AddsInvalidDataToErrorContext()
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [
-            new InputControllerConfiguration("abc", 
-               [
-                new InputReceiverDescriptor("abc", typeof(TestInputSystem), _ => true)
-               ], 
-               // Invalid action key
-               [ new InputScheme("", "abc", "abc", [], false) ])
-            ],
-            [new InputAction("abc", null)]));
-
-        // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputReceiverError, InputValidationService.ValidationError_MissingData));
-    }
-
-    [Fact]
-    public void ValidateInputDefinition_Valid_ReturnsSuccessfully()
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputDefinition(new InputDefinition("abc", false,
-            [
-                new InputControllerConfiguration("abc",
-                [
-                    new InputReceiverDescriptor("Motion1", typeof(TestInputSystem), _ => true),
-                    new InputReceiverDescriptor("Motion2", typeof(TestInputSystem), _ => true)
-                ],
-                [
-                    new InputScheme("abc", "abc", "abc",
-                        [
-                            new InputReceiverConfiguration("Motion1",
-                                [
-                                    new ("Reload", "A", InputPhase.Start),
-                                    new ("Fire", "B", InputPhase.Start),
-                                    new ("Restart", "C", InputPhase.Start)
-                                ])
-                        ],
-                        false)
-                ])
-            ],
-            [
-                new InputAction("Reload", "Reload the air power"),
-                new InputAction("Fire", null),
-                new InputAction("Restart", string.Empty)
-            ]));
+        // Act
+        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
         Assert.Empty(validationContext.Errors);
@@ -228,236 +452,241 @@ public class InputValidationServiceTests
 
     #endregion
 
-    #region ValidateInputScheme
+    #region ValidateCustomInputScheme
 
     [Fact]
-    public void ValidateInputScheme_NullInputDefinition_ThrowsArgumentNullException()
+    public void ValidateCustomInputScheme_NullInputSystemConfiguration_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _service.ValidateInputScheme(null!, new InputScheme("abc", "abc", "abc", [], false)));
+        Assert.Throws<ArgumentNullException>(() => _service.ValidateCustomInputScheme(null!, new InputScheme("abc", "abc", "abc", false, [])));
     }
 
     [Fact]
-    public void ValidateInputScheme_NullInputScheme_ThrowsArgumentNullException()
+    public void ValidateCustomInputScheme_NullInputScheme_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _service.ValidateInputScheme(new InputDefinition("abc", false, [], []), null!));
+        Assert.Throws<ArgumentNullException>(() => _service.ValidateCustomInputScheme(new InputSystemConfiguration([], [], false, 2), null!));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void ValidateInputScheme_InvalidInputSchemeDefinitionName_AddsMissingDataToErrorContext(string? definitionName)
+    public void ValidateCustomInputScheme_InvalidInputSchemeDefinitionName_AddsInvalidDataErrorToContext(string? definitionName)
     {
         // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(new InputDefinition("abc", false, [], []), new InputScheme(definitionName!, "abc", "abc", [], false));
+        var validationContext = _service.ValidateCustomInputScheme(new InputSystemConfiguration([], [], false, 2), 
+            new InputScheme(definitionName!, "abc", "abc", false, []));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputSchemeError, InputValidationService.ValidationError_MissingData));
+        Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Fact]
-    public void ValidateInputScheme_InputSchemeDefinitionNameDoesNotMatchInputDefinition_AddsMismatchedTenantToErrorContext()
+    public void ValidateCustomInputScheme_InputSchemeDefinitionNameDoesNotMatchInputDefinition_AddsMismatchedTenantErrorToContext()
     {
         // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(new InputDefinition("abc", false, [], []), new InputScheme("def", "abc", "abc", [], false));
+        var validationContext = _service.ValidateCustomInputScheme(new InputSystemConfiguration([], [], false, 2), new InputScheme("def", "abc", "abc", false, []));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputSchemeError, InputValidationService.ValidationError_MismatchedTenant));
+        Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_MismatchedTenant));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void ValidateInputScheme_InputSchemeMissingControllerName_AddsMissingDataToErrorContext(string? controllerName)
+    public void ValidateCustomInputScheme_InputSchemeMissingControllerName_AddsInvalidDataErrorToContext(string? controllerName)
     {
         // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(new InputDefinition("abc", false, [], []), new InputScheme("abc", controllerName!, "abc", [], false));
+        var validationContext = _service.ValidateCustomInputScheme(new InputSystemConfiguration([ new InputDefinition("abc", [], [])], [], false, 2), 
+            new InputScheme("abc", controllerName!, "abc", false, []));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputSchemeError, InputValidationService.ValidationError_MissingData));
+        Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Fact]
-    public void ValidateInputScheme_InputSchemeControllerNameNotSupportedByInputDefinition_AddsInvalidDataToErrorContext()
+    public void ValidateCustomInputScheme_InputSchemeControllerNameNotSupportedByConfiguration_AddsInvalidDataErrorToContext()
     {
         // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [ new InputControllerConfiguration("amazing", [], []) ], []), 
-            new InputScheme("abc", "controller", "abc", [], false));
+        var validationContext = _service.ValidateCustomInputScheme(
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [], false, 2),
+            new InputScheme("abc", "controller", "abc", false, []));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputSchemeError, InputValidationService.ValidationError_InvalidData));
+        Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void ValidateInputScheme_InputSchemeInvalidSchemeName_AddsMissingIdentifierToErrorContext(string? schemeName)
+    public void ValidateCustomInputScheme_InputSchemeInvalidSchemeName_AddsMissingIdentifierErrorToContext(string? schemeName)
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("controller", [], [])], []),
-            new InputScheme("abc", "controller", schemeName!, [], false));
+        // Arrange
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("controller");
+
+        // Act
+        var validationContext = _service.ValidateCustomInputScheme(
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [ mockControllerConfiguration.Object ], false, 2),
+            new InputScheme("abc", mockControllerConfiguration.Object.ControllerName, schemeName!, false, []));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputSchemeError, InputValidationService.ValidationError_MissingIdentifier));
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void ValidateInputScheme_InvalidControllerInputReceiverConfigurationName_AddsInvalidDataToErrorContext(string? configurationName)
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("controller", [], [])], []),
-            new InputScheme("abc", "controller", "abc", [new InputReceiverConfiguration(configurationName!, [])], false));
-
-        // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputReceiverError, InputValidationService.ValidationError_InvalidData));
+        Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_MissingIdentifier));
     }
 
     [Theory]
     [InlineData("aBcD", "abcd")]
     [InlineData("efgh", "efgh")]
     [InlineData("IJKL", "IJKL")]
-    public void ValidateInputScheme_DuplicateControllerInputReceiverConfigurationName_AddsInvalidDataToErrorContext(string inputReceiver1, string inputReceiver2)
+    public void ValidateCustomInputScheme_DuplicateInputSchemeName_AddsDuplicateIdentifierErrorToContext(string schemeName1, string schemeName2)
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("controller", [], [])], []),
-            new InputScheme("abc", "controller", "abc",
-            [
-                new InputReceiverConfiguration(inputReceiver1, []),
-                new InputReceiverConfiguration(inputReceiver2, [])
-            ], false));
+        // Arrange
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("controller");
+
+        // Act
+        var validationContext = _service.ValidateCustomInputScheme(
+            new InputSystemConfiguration([new InputDefinition("abc", [], [ new InputScheme("abc", "controller", schemeName1, false, []) ])], [ mockControllerConfiguration.Object ], false, 2),
+            new InputScheme("abc", "controller", schemeName2, false, []));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputReceiverError, InputValidationService.ValidationError_InvalidData));
+        Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_DuplicateIdentifier));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void ValidateInputScheme_InvalidControllerInputReceiverConfigurationActionMapInputKey_AddsInvalidDataToErrorContext(string? inputKey)
+    public void ValidateCustomInputScheme_InvalidInputControllerConfigurationActionMapInputKey_AddsInvalidDataErrorToContext(string? inputKey)
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("controller", [], [])], []),
-            new InputScheme("abc", "controller", "abc", 
-            [
-                new InputReceiverConfiguration("Mouse", [ new InputActionMap("actionKey", inputKey!, InputPhase.Start) ])
-            ], false));
+        // Arrange
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("controller");
+
+        // Act
+        var validationContext = _service.ValidateCustomInputScheme(
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [ mockControllerConfiguration.Object ], false, 2),
+            new InputScheme("abc", "controller", "abc", false, [new InputActionMap("actionKey", inputKey!, InputPhase.Start)]));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputActionMapError, InputValidationService.ValidationError_InvalidData));
+        Assert.Equal(InputValidationService.InputActionMapError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Theory]
     [InlineData("aBcD", "abcd")]
     [InlineData("efgh", "efgh")]
     [InlineData("IJKL", "IJKL")]
-    public void ValidateInputScheme_DuplicateControllerInputReceiverConfigurationActionMapInputKey_AddsInvalidDataToErrorContext(string inputKey1, string inputKey2)
+    public void ValidateCustomInputScheme_DuplicateInputControllerConfigurationActionMapInputKey_AddsInvalidDataErrorToContext(string inputKey1, string inputKey2)
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("controller", [], [])], []),
-            new InputScheme("abc", "controller", "abc",
-            [
-                new InputReceiverConfiguration("Mouse", 
-                [ 
-                    new InputActionMap("actionKey", inputKey1, InputPhase.Start), 
-                    new InputActionMap("actionKey2", inputKey2, InputPhase.Start) 
-                ])
-            ], false));
+        // Arrange
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("controller");
+
+        // Act
+        var validationContext = _service.ValidateCustomInputScheme(
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockControllerConfiguration.Object], false, 2),
+            new InputScheme("abc", "controller", "abc", false, [
+                    new InputActionMap("actionKey", inputKey1, InputPhase.Start),
+                    new InputActionMap("actionKey2", inputKey2, InputPhase.Start)
+             ]));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputActionMapError, InputValidationService.ValidationError_InvalidData));
+        Assert.Equal(InputValidationService.InputActionMapError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void ValidateInputScheme_InvalidControllerInputReceiverConfigurationActionMapActionKey_AddsInvalidDataToErrorContext(string? actionKey)
+    public void ValidateCustomInputScheme_InvalidInputControllerConfigurationActionMapActionKey_AddsInvalidDataErrorToContext(string? actionKey)
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("controller", [], [])], []),
-            new InputScheme("abc", "controller", "abc",
-            [
-                new InputReceiverConfiguration("Mouse", [ new InputActionMap(actionKey!, "inputKey", InputPhase.Start) ])
-            ], false));
+        // Arrange
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("controller");
+
+        // Act
+        var validationContext = _service.ValidateCustomInputScheme(
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockControllerConfiguration.Object], false, 2),
+            new InputScheme("abc", "controller", "abc", false, [new InputActionMap(actionKey!, "inputKey", InputPhase.Start)]));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputActionMapError, InputValidationService.ValidationError_InvalidData2));
+        Assert.Equal(InputValidationService.InputActionMapError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Theory]
     [InlineData("aBcD", "abcd")]
     [InlineData("efgh", "efgh")]
     [InlineData("IJKL", "IJKL")]
-    public void ValidateInputScheme_DuplicateControllerInputReceiverConfigurationActionMapActionKey_AddsInvalidDataToErrorContext(string actionKey1, string actionKey2)
-    {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("controller", [], [])], []),
-            new InputScheme("abc", "controller", "abc",
-            [
-                new InputReceiverConfiguration("Mouse",
-                [
+    public void ValidateCustomInputScheme_DuplicateInputControllerConfigurationActionMapActionKey_AddsInvalidDataErrorToContext(string actionKey1, string actionKey2)
+    {        
+        // Arrange
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("controller");
+
+        // Act
+        var validationContext = _service.ValidateCustomInputScheme(
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockControllerConfiguration.Object], false, 2),
+            new InputScheme("abc", "controller", "abc", false, [
                     new InputActionMap(actionKey1, "abc", InputPhase.Start),
                     new InputActionMap(actionKey2, "def", InputPhase.Start)
-                ])
-            ], false));
+             ]));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputActionMapError, InputValidationService.ValidationError_InvalidData2));
+        Assert.Equal(InputValidationService.InputActionMapError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Fact]
-    public void ValidateInputScheme_SchemeMissingActionKeysInDefinition_AddsMissingDataToErrorContext()
+    public void ValidateCustomInputScheme_SchemeMissingActionKeysInDefinition_AddsMissingDataErrorToContext()
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("controller", [], [])], 
-                [new InputAction("abc", null), new InputAction("def", null)]),
-            new InputScheme("abc", "controller", "abc",
-            [
-                new InputReceiverConfiguration("Mouse",
-                [
-                    new InputActionMap("abc", "abc", InputPhase.Start)
-                ])
-            ], false));
+        // Arrange
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("controller");
+
+        // Act
+        var validationContext = _service.ValidateCustomInputScheme(
+            new InputSystemConfiguration([new InputDefinition("abc", [new InputAction("abc", null), new InputAction("def", null)], [])], 
+                [mockControllerConfiguration.Object], false, 2),
+            new InputScheme("abc", "controller", "abc", false, [new InputActionMap("abc", "abc", InputPhase.Start)]));
 
         // Assert
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.InputReceiverError, InputValidationService.ValidationError_MissingData));
+        Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
+        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_CollectionMissingData));
     }
 
     [Fact]
-    public void ValidateInputScheme_Valid_ReturnsSuccessfully()
+    public void ValidateCustomInputScheme_Valid_ReturnsSuccessfully()
     {
-        // Arrange/Act
-        var validationContext = _service.ValidateInputScheme(
-            new InputDefinition("abc", false, [new InputControllerConfiguration("controller", [], [])],
-                [new InputAction("abc", null), new InputAction("def", null)]),
-            new InputScheme("abc", "controller", "abc",
-            [
-                new InputReceiverConfiguration("Mouse",
-                [
-                    new InputActionMap("abc", "abc", InputPhase.Start)
-                ]),
-                new InputReceiverConfiguration("Keyboard",
-                [
-                    new InputActionMap("def", "def", InputPhase.Start)
-                ])
-            ], false));
+        // Arrange
+        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+            .Returns("controller");
+
+        // Act
+        var validationContext = _service.ValidateCustomInputScheme(
+            new InputSystemConfiguration([new InputDefinition("abc", [new InputAction("abc", null), new InputAction("def", null)], [])],
+                [mockControllerConfiguration.Object], false, 2),
+            new InputScheme("abc", "controller", "abc", false, 
+            [ new InputActionMap("abc", "abc", InputPhase.Start), new InputActionMap("def", "def", InputPhase.Start)]));
 
         // Assert
         Assert.Empty(validationContext.Errors);

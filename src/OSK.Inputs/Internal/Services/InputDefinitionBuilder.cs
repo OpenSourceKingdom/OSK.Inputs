@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal.Services;
 
-internal class InputDefinitionBuilder(string definitionName, IInputValidationService validationService) : IInputDefinitionBuilder
+internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputControllerConfiguration> supportedControllers) : IInputDefinitionBuilder
 {
     #region Variables
 
-    private bool _allowCustomInputSchemes;
-    private readonly Dictionary<string, InputAction> _actions = [];
-    private readonly Dictionary<string, InputControllerConfiguration> _controllers = [];
+    private readonly Dictionary<string, InputAction> _actionLookup = [];
+    private readonly Dictionary<string, Dictionary<string, Action<IInputSchemeBuilder>>> _controllerSchemeBuilderLookup = [];
 
     #endregion
 
@@ -24,48 +24,73 @@ internal class InputDefinitionBuilder(string definitionName, IInputValidationSer
         {
             throw new ArgumentNullException(nameof(action));
         }
-        if (_actions.TryGetValue(action.ActionKey, out _))
+        if (_actionLookup.TryGetValue(action.ActionKey, out _))
         {
             throw new DuplicateNameException($"An action has already been added to the input definition with the key {action.ActionKey}.");
         }
 
-        _actions.Add(action.ActionKey, action);
+        _actionLookup.Add(action.ActionKey, action);
         return this;
     }
 
-    public IInputDefinitionBuilder AddInputController(InputControllerConfiguration controller)
+    public IInputDefinitionBuilder AddInputScheme(string controllerName, string schemeName, Action<IInputSchemeBuilder> buildAction)
     {
-        if (controller is null)
+        if (string.IsNullOrWhiteSpace(controllerName))
         {
-            throw new ArgumentNullException(nameof(controller));
+            throw new ArgumentException(nameof(controllerName));
         }
-        if (string.IsNullOrWhiteSpace(controller.ControllerName))
+        if (!supportedControllers.AnyByString(configuration => configuration.ControllerName, controllerName))
         {
-            throw new ArgumentNullException("Controller name can not be empty.");
+            throw new InvalidOperationException($"Unable to add input scheme {schemeName} because the input system does not support the {controllerName} controller.");
         }
-        if (_controllers.TryGetValue(controller.ControllerName, out _))
+        if (string.IsNullOrWhiteSpace(schemeName))
         {
-            throw new DuplicateNameException($"A controller with the name {controller.ControllerName} has already been added to the definition.");
+            throw new ArgumentException(nameof(schemeName));
+        }
+        if (buildAction is null)
+        {
+            throw new ArgumentNullException(nameof(buildAction));
+        }
+        if (!_controllerSchemeBuilderLookup.TryGetValue(controllerName, out var schemeLookup))
+        {
+            schemeLookup = [];
+            _controllerSchemeBuilderLookup.Add(controllerName, schemeLookup);
+        }
+        if (schemeLookup.TryGetValue(schemeName, out _))
+        {
+            throw new DuplicateNameException($"An input scheme has already been added to the input definition with the name {schemeName} for the {controllerName} controller.");
         }
 
-        _controllers.Add(controller.ControllerName, controller);
+        schemeLookup.Add(schemeName, buildAction);
         return this;
     }
 
-    public IInputDefinitionBuilder AllowCustomInputSchemes()
-    {
-        _allowCustomInputSchemes = true;
-        return this;
-    }
+    #endregion
+
+    #region Helpers
 
     public InputDefinition Build()
     {
-        var definition = new InputDefinition(definitionName, _allowCustomInputSchemes, _controllers.Values, _actions.Values);
+        List<InputScheme> schemes = [];
 
-        var validationContext = validationService.ValidateInputDefinition(definition);
-        validationContext.EnsureValid();
+        var schemeActions = _controllerSchemeBuilderLookup.SelectMany(controllerSchemeGroupLookup 
+            => controllerSchemeGroupLookup.Value.Select(controllerSchemeAction 
+                => new
+                {
+                    ControllerConfiguration = supportedControllers.FirstByString(controllerConfiguraiton => controllerConfiguraiton.ControllerName, controllerSchemeGroupLookup.Key),
+                    SchemeName = controllerSchemeAction.Key,
+                    Action = controllerSchemeAction.Value
+                }));
 
-        return definition;
+        foreach (var schemeActionData in schemeActions)
+        {
+            var schemeBuilder = new InputSchemeBuilder(definitionName, schemeActionData.ControllerConfiguration, schemeActionData.SchemeName);
+            schemeActionData.Action(schemeBuilder);
+
+            schemes.Add(schemeBuilder.Build());
+        }
+
+        return new InputDefinition(definitionName, _actionLookup.Values, schemes);
     }
 
     #endregion
