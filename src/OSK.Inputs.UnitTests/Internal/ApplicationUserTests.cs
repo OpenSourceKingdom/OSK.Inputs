@@ -345,7 +345,8 @@ public class ApplicationUserTests
     public void OnInputControllerConnected_InputReaderEventTriggered_TriggersUserEvent()
     {
         // Arrange
-        var testInputReader = new TestInputReader(new InputControllerIdentifier(123, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>());
+        var inputParameters = new InputReaderParameters(new InputControllerIdentifier(123, new InputControllerName("abc")), Mock.Of<IEnumerable<IInput>>());
+        var testInputReader = new TestInputReader(inputParameters);
         var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), testInputReader);
 
         _user.AddInputControllers(controller);
@@ -375,7 +376,8 @@ public class ApplicationUserTests
     public void OnInputControllerDisconnected_InputReaderEventTriggered_TriggersUserEvent()
     {
         // Arrange
-        var testInputReader = new TestInputReader(new InputControllerIdentifier(123, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>());
+        var inputParameters = new InputReaderParameters(new InputControllerIdentifier(123, new InputControllerName("abc")), Mock.Of<IEnumerable<IInput>>());
+        var testInputReader = new TestInputReader(inputParameters);
         var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), testInputReader);
 
         _user.AddInputControllers(controller);
