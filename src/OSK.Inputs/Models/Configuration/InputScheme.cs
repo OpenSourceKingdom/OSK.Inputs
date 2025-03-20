@@ -3,15 +3,34 @@ using System.Linq;
 
 namespace OSK.Inputs.Models.Configuration;
 
-public class InputScheme(string inputDefinitionName, string controllerName, string schemeName, bool isDefault, IEnumerable<InputActionMap> inputActions)
+public class InputScheme
 {
-    public string InputDefinitionName => inputDefinitionName;
+    #region Constructors
 
-    public string ControllerName => controllerName;
+    public InputScheme(string inputDefinitionName, string controllerName, string schemeName, bool isDefault, IEnumerable<InputActionMap> inputActions)
+        : this(inputDefinitionName, new InputControllerName(controllerName), schemeName, isDefault, inputActions)
+    {
 
-    public string SchemeName => schemeName;
+    }
 
-    public bool IsDefault => isDefault;
+    public InputScheme(string inputDefinitionName, InputControllerName controllerName, string schemeName, bool isDefault, IEnumerable<InputActionMap> inputActions)
+    {
+        InputDefinitionName = inputDefinitionName;
+        ControllerName = controllerName;
+        SchemeName = schemeName;
+        IsDefault = isDefault;
+        InputActionMaps = inputActions.ToArray();
+    }
 
-    public IReadOnlyCollection<InputActionMap> InputActionMaps { get; } = inputActions.ToArray();
+    #endregion
+
+    public string InputDefinitionName { get; }
+
+    public InputControllerName ControllerName { get; }
+
+    public string SchemeName { get; }
+
+    public bool IsDefault { get; }
+
+    public IReadOnlyCollection<InputActionMap> InputActionMaps { get; }
 }

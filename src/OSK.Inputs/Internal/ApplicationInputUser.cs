@@ -16,7 +16,7 @@ internal class ApplicationInputUser(int userId, InputDefinition inputDefinition,
     public event Action<int, InputController> OnActiveInputControllerChanged = (_, _) => { };
 
     private readonly Dictionary<int, InputController> _inputControllers = [];
-    private readonly Dictionary<string, InputScheme> _activeInputSchemeLookup = inputSchemes.ToDictionary(scheme => scheme.ControllerName);
+    private readonly Dictionary<string, InputScheme> _activeInputSchemeLookup = inputSchemes.ToDictionary(scheme => scheme.ControllerName.Name);
 
     private InputController? _activeInputController;
 
@@ -30,9 +30,9 @@ internal class ApplicationInputUser(int userId, InputDefinition inputDefinition,
 
     public IEnumerable<InputControllerIdentifier> ControllerIdentifiers => _inputControllers.Values.Select(controller => controller.ControllerIdentifier);
 
-    public InputScheme? GetActiveInputScheme(string controllerName)
+    public InputScheme? GetActiveInputScheme(InputControllerName controllerName)
     {
-        if (_activeInputSchemeLookup.TryGetValue(controllerName, out InputScheme inputScheme))
+        if (_activeInputSchemeLookup.TryGetValue(controllerName.Name, out InputScheme inputScheme))
         {
             return inputScheme;
         }

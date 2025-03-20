@@ -9,7 +9,7 @@ public interface IInputDefinitionBuilder
 {
     IInputDefinitionBuilder AddAction(InputAction action);
 
-    IInputDefinitionBuilder AddInputScheme(string controllerName, string schemeName, Action<IInputSchemeBuilder> buildAction);
+    IInputDefinitionBuilder AddInputScheme(InputControllerName controllerName, string schemeName, Action<IInputSchemeBuilder> buildAction);
 
     InputDefinition Build();
 }

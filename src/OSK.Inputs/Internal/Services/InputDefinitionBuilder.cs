@@ -33,13 +33,13 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputC
         return this;
     }
 
-    public IInputDefinitionBuilder AddInputScheme(string controllerName, string schemeName, Action<IInputSchemeBuilder> buildAction)
+    public IInputDefinitionBuilder AddInputScheme(InputControllerName controllerName, string schemeName, Action<IInputSchemeBuilder> buildAction)
     {
-        if (string.IsNullOrWhiteSpace(controllerName))
+        if (string.IsNullOrWhiteSpace(controllerName.Name))
         {
             throw new ArgumentException(nameof(controllerName));
         }
-        if (!supportedControllers.AnyByString(configuration => configuration.ControllerName, controllerName))
+        if (!supportedControllers.AnyByString(configuration => configuration.ControllerName.Name, controllerName.Name))
         {
             throw new InvalidOperationException($"Unable to add input scheme {schemeName} because the input system does not support the {controllerName} controller.");
         }
@@ -51,10 +51,10 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputC
         {
             throw new ArgumentNullException(nameof(buildAction));
         }
-        if (!_controllerSchemeBuilderLookup.TryGetValue(controllerName, out var schemeLookup))
+        if (!_controllerSchemeBuilderLookup.TryGetValue(controllerName.Name, out var schemeLookup))
         {
             schemeLookup = [];
-            _controllerSchemeBuilderLookup.Add(controllerName, schemeLookup);
+            _controllerSchemeBuilderLookup.Add(controllerName.Name, schemeLookup);
         }
         if (schemeLookup.TryGetValue(schemeName, out _))
         {
@@ -77,7 +77,7 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputC
             => controllerSchemeGroupLookup.Value.Select(controllerSchemeAction 
                 => new
                 {
-                    ControllerConfiguration = supportedControllers.FirstByString(controllerConfiguraiton => controllerConfiguraiton.ControllerName, controllerSchemeGroupLookup.Key),
+                    ControllerConfiguration = supportedControllers.FirstByString(controllerConfiguraiton => controllerConfiguraiton.ControllerName.Name, controllerSchemeGroupLookup.Key),
                     SchemeName = controllerSchemeAction.Key,
                     Action = controllerSchemeAction.Value
                 }));

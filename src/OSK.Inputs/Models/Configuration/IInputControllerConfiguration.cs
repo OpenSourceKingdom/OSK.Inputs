@@ -7,7 +7,7 @@ public interface IInputControllerConfiguration
 {
     #region Variables
 
-    public string ControllerName { get; }
+    public InputControllerName ControllerName { get; }
 
     public Type InputReaderType { get; }
 

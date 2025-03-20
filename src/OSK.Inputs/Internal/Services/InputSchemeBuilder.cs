@@ -75,7 +75,7 @@ internal class InputSchemeBuilder(string inputDefinitionName, IInputControllerCo
 
     public InputScheme Build()
     {
-        return new BuiltInInputScheme(inputDefinitionName, controllerConfiguration.ControllerName, schemeName, _isDefault, _inputActionMapLookup.Values);
+        return new BuiltInInputScheme(inputDefinitionName, controllerConfiguration.ControllerName.Name, schemeName, _isDefault, _inputActionMapLookup.Values);
     }
 
     #endregion

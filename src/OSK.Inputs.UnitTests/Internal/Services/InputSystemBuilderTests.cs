@@ -93,7 +93,7 @@ public class InputSystemBuilderTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m =>  m.ControllerName)
-            .Returns(controllerName!);
+            .Returns(new InputControllerName(controllerName));
         
         // Act/Assert
         Assert.Throws<ArgumentNullException>(() => _builder.AddInputController(mockControllerConfiguration.Object));
@@ -105,7 +105,7 @@ public class InputSystemBuilderTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
 
         _builder.AddInputController(mockControllerConfiguration.Object);
 
@@ -119,7 +119,7 @@ public class InputSystemBuilderTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
 
         //Act/Assert
         _builder.AddInputController(mockControllerConfiguration.Object);
@@ -209,7 +209,7 @@ public class InputSystemBuilderTests
 
         var mockInputController = new Mock<IInputControllerConfiguration>();
         mockInputController.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
 
         _builder
             .AddInputController(mockInputController.Object)

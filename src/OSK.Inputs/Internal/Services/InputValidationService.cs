@@ -184,7 +184,7 @@ internal class InputValidationService : IInputValidationService
         {
             return InputValidationContext.Error(InputControllerError, ValidationError_CollectionMissingData, "Input System configuration has no input controller configurations and is unusable.");
         }
-        if (supportedControllerConfigurations.Any(controllerConfiguration => string.IsNullOrWhiteSpace(controllerConfiguration.ControllerName)))
+        if (supportedControllerConfigurations.Any(controllerConfiguration => string.IsNullOrWhiteSpace(controllerConfiguration.ControllerName.Name)))
         {
             return InputValidationContext.Error(InputControllerError, ValidationError_MissingIdentifier, "One or more input controllers had an empty name.");
         }
@@ -248,12 +248,12 @@ internal class InputValidationService : IInputValidationService
             return InputValidationContext.Error(InputSchemeError, ValidationError_MismatchedTenant, $"The Input Scheme references a definition {inputScheme.InputDefinitionName} that was not added to the input system.");
         }
 
-        if (string.IsNullOrWhiteSpace(inputScheme.ControllerName))
+        if (string.IsNullOrWhiteSpace(inputScheme.ControllerName.Name))
         {
             return InputValidationContext.Error(InputSchemeError, ValidationError_InvalidData, "Controller name can not be empty.");
         }
 
-        var inputControllerConfiguration = supportedControllers.FirstOrDefaultByString(controller => controller.ControllerName, inputScheme.ControllerName);
+        var inputControllerConfiguration = supportedControllers.FirstOrDefaultByString(controller => controller.ControllerName.Name, inputScheme.ControllerName.Name);
         if (inputControllerConfiguration is null)
         {
             return InputValidationContext.Error(InputSchemeError, ValidationError_InvalidData,
@@ -265,7 +265,7 @@ internal class InputValidationService : IInputValidationService
             return InputValidationContext.Error(InputSchemeError, ValidationError_MissingIdentifier, "Input scheme name can not be empty.");
         }
 
-        if (isNewScheme && inputDefinition.InputSchemes.AnyByString(scheme => scheme.ControllerName, inputScheme.ControllerName))
+        if (isNewScheme && inputDefinition.InputSchemes.AnyByString(scheme => scheme.ControllerName.Name, inputScheme.ControllerName.Name))
         {
             return InputValidationContext.Error(InputSchemeError, ValidationError_DuplicateIdentifier, $"Input scheme with name {inputScheme.SchemeName} has already been added to the input definition {inputDefinition.Name}.");
         }

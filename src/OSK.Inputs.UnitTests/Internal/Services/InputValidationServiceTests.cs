@@ -63,7 +63,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns(controllerName!);
+            .Returns(new InputControllerName(controllerName));
 
         List<IInputControllerConfiguration>? controllerConfigurations = [ mockControllerConfiguration1.Object ];
 
@@ -85,11 +85,11 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns("default");
+            .Returns(new InputControllerName("default"));
 
         var mockControllerConfiguration2 = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration2.SetupGet(m => m.ControllerName)
-            .Returns("default");
+            .Returns(new InputControllerName("default"));
 
         List<IInputControllerConfiguration>? controllerConfigurations = [mockControllerConfiguration1.Object, mockControllerConfiguration2.Object];
 
@@ -113,7 +113,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns("default");
+            .Returns(new InputControllerName("default"));
         mockControllerConfiguration1.SetupGet(m => m.InputReaderType)
             .Returns(type!);
 
@@ -139,7 +139,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns("default");
+            .Returns(new InputControllerName("default"));
 
         mockControllerConfiguration1.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
@@ -170,7 +170,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration1 = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns("default");
+            .Returns(new InputControllerName("default"));
         mockControllerConfiguration1.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
@@ -203,7 +203,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
         
@@ -236,7 +236,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
@@ -266,7 +266,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
@@ -296,7 +296,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
@@ -329,7 +329,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
@@ -359,7 +359,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
@@ -395,7 +395,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
@@ -429,7 +429,7 @@ public class InputValidationServiceTests
 
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
@@ -531,12 +531,12 @@ public class InputValidationServiceTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("controller");
+            .Returns(new InputControllerName("controller"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
             new InputSystemConfiguration([new InputDefinition("abc", [], [])], [ mockControllerConfiguration.Object ], false, 2),
-            new InputScheme("abc", mockControllerConfiguration.Object.ControllerName, schemeName!, false, []));
+            new InputScheme("abc", mockControllerConfiguration.Object.ControllerName.Name, schemeName!, false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -552,7 +552,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("controller");
+            .Returns(new InputControllerName("controller"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -573,7 +573,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("controller");
+            .Returns(new InputControllerName("controller"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -594,7 +594,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("controller");
+            .Returns(new InputControllerName("controller"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -618,7 +618,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("controller");
+            .Returns(new InputControllerName("controller"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -639,7 +639,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("controller");
+            .Returns(new InputControllerName("controller"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -660,7 +660,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("controller");
+            .Returns(new InputControllerName("controller"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -679,7 +679,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns("controller");
+            .Returns(new InputControllerName("controller"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(

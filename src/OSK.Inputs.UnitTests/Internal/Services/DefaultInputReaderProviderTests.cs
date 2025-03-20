@@ -40,7 +40,7 @@ public class DefaultInputReaderProviderTests
     public void GetInputReader_Valid_ReturnsInputReader()
     {
         // Arrange
-        var inputControllerIdentifier = new InputControllerIdentifier(117, "Spartan");
+        var inputControllerIdentifier = new InputControllerIdentifier(117, new InputControllerName("Spartan"));
         var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));

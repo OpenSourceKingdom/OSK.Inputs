@@ -23,7 +23,7 @@ public class ApplicationUserTests
 
     public ApplicationUserTests()
     {
-        _testScheme = new InputScheme("Abc", "abc", "abc", false, []);
+        _testScheme = new InputScheme("Abc", new InputControllerName("abc"), "abc", false, []);
         _testDefinition = new InputDefinition("Abc", [], [ _testScheme ]);
 
         _user = new ApplicationInputUser(1, _testDefinition, [_testScheme]);
@@ -56,8 +56,8 @@ public class ApplicationUserTests
     {
         // Arrange
         InputController[] controllers = [
-            new InputController(new InputControllerIdentifier(123, "test"), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>()),
-            new InputController(new InputControllerIdentifier(234, "test"), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>()),
+            new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>()),
+            new InputController(new InputControllerIdentifier(234, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>()),
         ];
 
         _user.AddInputControllers(controllers);
@@ -91,7 +91,7 @@ public class ApplicationUserTests
     public void GetActiveInputScheme_NoSchemeForControllerName_ReturnsNull()
     {
         // Arrange/Act/Assert
-        Assert.Null(_user.GetActiveInputScheme("nope"));
+        Assert.Null(_user.GetActiveInputScheme(new InputControllerName("nope")));
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class ApplicationUserTests
     public void TryGetController_ValidController_ReturnsTrue()
     {
         // Arrange
-        var controller = new InputController(new InputControllerIdentifier(123, "test"), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>());
+        var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>());
 
         _user.AddInputControllers(controller);
 
@@ -151,7 +151,7 @@ public class ApplicationUserTests
     {
         // Arrange
         var mockInputReader = new Mock<IInputReader>();
-        var controller = new InputController(new InputControllerIdentifier(123, "test"), Mock.Of<IInputControllerConfiguration>(), mockInputReader.Object);
+        var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), mockInputReader.Object);
 
         _user.AddInputControllers(controller);
 
@@ -226,7 +226,7 @@ public class ApplicationUserTests
     public async Task ReadInputsAsync_NoActiveInputController_ControllerReturnsInput_ReturnsExpectedList_TriggersActiveControllerChangedEvent()
     {
         // Arrange
-        var controllerIdentifier = new InputControllerIdentifier(1, "abc");
+        var controllerIdentifier = new InputControllerIdentifier(1, new InputControllerName("abc"));
         ActivatedInput[] readInputs = [
             new ActivatedInput(controllerIdentifier, Mock.Of<IInput>(), "a", InputPhase.Start, InputPower.FullPower(1))
         ];
@@ -235,7 +235,7 @@ public class ApplicationUserTests
         inputReader.Setup(m => m.ReadInputsAsync(It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(readInputs);
 
-        var controller = new InputController(new InputControllerIdentifier(1, "abc"), Mock.Of<IInputControllerConfiguration>(), inputReader.Object);
+        var controller = new InputController(new InputControllerIdentifier(1, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader.Object);
         InputController[] controllers = [
             controller
         ];
@@ -263,7 +263,7 @@ public class ApplicationUserTests
     public async Task ReadInputsAsync_ActiveInputController_ControllerReturnsInputSkipsOtherControllers_ReturnsExpectedList()
     {
         // Arrange
-        var controllerIdentifier = new InputControllerIdentifier(1, "abc");
+        var controllerIdentifier = new InputControllerIdentifier(1, new InputControllerName("abc"));
         ActivatedInput[] readInputs1 = [
             new ActivatedInput(controllerIdentifier, Mock.Of<IInput>(), "a", InputPhase.Start, InputPower.FullPower(1))
         ];
@@ -272,11 +272,11 @@ public class ApplicationUserTests
         inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(readInputs1);
 
-        var controller1 = new InputController(new InputControllerIdentifier(1, "abc"), Mock.Of<IInputControllerConfiguration>(), inputReader1.Object);
+        var controller1 = new InputController(new InputControllerIdentifier(1, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader1.Object);
         _user.AddInputControllers(controller1);
         await _user.ReadInputsAsync();
 
-        var controller2 = new InputController(new InputControllerIdentifier(2, "abc"), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>());
+        var controller2 = new InputController(new InputControllerIdentifier(2, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>());
         _user.AddInputControllers(controller2);
 
         var eventCalled = false;
@@ -302,7 +302,7 @@ public class ApplicationUserTests
             .ReturnsAsync([
                 new ActivatedInput(new InputControllerIdentifier(), Mock.Of<IInput>(), "a", InputPhase.Start, InputPower.FullPower(1))
             ]);
-        var controller1 = new InputController(new InputControllerIdentifier(1, "abc"), Mock.Of<IInputControllerConfiguration>(), inputReader1.Object);
+        var controller1 = new InputController(new InputControllerIdentifier(1, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader1.Object);
         _user.AddInputControllers(controller1);
         
         await _user.ReadInputsAsync();
@@ -317,7 +317,7 @@ public class ApplicationUserTests
         ];
         inputReader2.Setup(m => m.ReadInputsAsync(It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(activatedInputs);
-        var controller2 = new InputController(new InputControllerIdentifier(2, "abc"), Mock.Of<IInputControllerConfiguration>(), inputReader2.Object);
+        var controller2 = new InputController(new InputControllerIdentifier(2, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader2.Object);
         _user.AddInputControllers(controller2);
 
         var eventCalled = false;
@@ -345,8 +345,8 @@ public class ApplicationUserTests
     public void OnInputControllerConnected_InputReaderEventTriggered_TriggersUserEvent()
     {
         // Arrange
-        var testInputReader = new TestInputReader(new InputControllerIdentifier(123, "abc"), Mock.Of<IInputControllerConfiguration>());
-        var controller = new InputController(new InputControllerIdentifier(123, "test"), Mock.Of<IInputControllerConfiguration>(), testInputReader);
+        var testInputReader = new TestInputReader(new InputControllerIdentifier(123, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>());
+        var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), testInputReader);
 
         _user.AddInputControllers(controller);
 
@@ -375,8 +375,8 @@ public class ApplicationUserTests
     public void OnInputControllerDisconnected_InputReaderEventTriggered_TriggersUserEvent()
     {
         // Arrange
-        var testInputReader = new TestInputReader(new InputControllerIdentifier(123, "abc"), Mock.Of<IInputControllerConfiguration>());
-        var controller = new InputController(new InputControllerIdentifier(123, "test"), Mock.Of<IInputControllerConfiguration>(), testInputReader);
+        var testInputReader = new TestInputReader(new InputControllerIdentifier(123, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>());
+        var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), testInputReader);
 
         _user.AddInputControllers(controller);
 

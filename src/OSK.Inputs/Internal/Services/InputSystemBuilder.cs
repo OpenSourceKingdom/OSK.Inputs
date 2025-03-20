@@ -48,16 +48,16 @@ internal class InputSystemBuilder(IServiceCollection services,
         {
             throw new ArgumentNullException(nameof(controllerConfiguration));
         }
-        if (string.IsNullOrWhiteSpace(controllerConfiguration.ControllerName))
+        if (string.IsNullOrWhiteSpace(controllerConfiguration.ControllerName.Name))
         {
             throw new ArgumentNullException(nameof(controllerConfiguration.ControllerName));
         }
-        if (_controllerConfigurationLookup.TryGetValue(controllerConfiguration.ControllerName, out var action))
+        if (_controllerConfigurationLookup.TryGetValue(controllerConfiguration.ControllerName.Name, out var action))
         {
             throw new DuplicateNameException($"An input controller with the name {controllerConfiguration.ControllerName} has already been added.");
         }
 
-        _controllerConfigurationLookup.Add(controllerConfiguration.ControllerName, controllerConfiguration);
+        _controllerConfigurationLookup.Add(controllerConfiguration.ControllerName.Name, controllerConfiguration);
         return this;
     }
 

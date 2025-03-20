@@ -71,7 +71,7 @@ public class InputDefinitionBuilderTests
     public void AddInputScheme_InvalidControllerName_ThrowsArgumentException(string? controllerName)
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(controllerName!, "abc", _ => { }));
+        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(new InputControllerName(controllerName), "abc", _ => { }));
     }
 
     [Fact]
@@ -79,10 +79,10 @@ public class InputDefinitionBuilderTests
     {
         // Arrange
         _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
 
         // Act/Assert
-        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme("def", "abc", _ => { }));
+        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(new InputControllerName("def"), "abc", _ => { }));
     }
 
     [Theory]
@@ -93,21 +93,17 @@ public class InputDefinitionBuilderTests
     {
         // Arrange
         _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
 
         // Act/Assert
-        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme("abc", schemeName!, _ => { }));
+        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(new InputControllerName("abc"), schemeName!, _ => { }));
     }
 
     [Fact]
     public void AddInputScheme_NullAction_ThrowsInvalidOperationException()
     {
-        // Arrange
-        _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns("abc");
-
-        // Act/Assert
-        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(_mockControllerConfiguration1.Name, "abc", null!));
+        // Arrange/Act/Assert
+        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(new InputControllerName("abc"), "abc", null!));
     }
 
     [Fact]
@@ -115,7 +111,7 @@ public class InputDefinitionBuilderTests
     {
         // Arrange
         _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
 
         _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "abc", _ => { });
 
@@ -128,7 +124,7 @@ public class InputDefinitionBuilderTests
     {
         // Arrange
         _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
 
         // Act/Assert
         _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "abc", _ => { });
@@ -148,9 +144,9 @@ public class InputDefinitionBuilderTests
         _builder.AddAction(action2);
 
         _mockControllerConfiguration1.Setup(m => m.ControllerName)
-            .Returns("abc");
+            .Returns(new InputControllerName("abc"));
         _mockControllerConfiguration2.Setup(m => m.ControllerName)
-            .Returns("def");
+            .Returns(new InputControllerName("def"));
 
         _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "Scheme1", _ => { });
         _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "Scheme2", _ => { });

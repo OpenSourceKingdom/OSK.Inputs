@@ -14,7 +14,7 @@ public class InputSchemeBuilderTests
     #region Variables
 
     private const string DefinitionName = "testDefinition";
-    private const string ControllerName = "testController";
+    private static InputControllerName ControllerName = new InputControllerName("testController");
     private const string SchemeName = "testScheme";
 
     private readonly Mock<IInputControllerConfiguration> _mockControllerConfiguration;

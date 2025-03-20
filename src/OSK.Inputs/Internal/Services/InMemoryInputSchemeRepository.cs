@@ -28,14 +28,14 @@ internal class InMemoryInputSchemeRepository(IOutputFactory outputFactory) : IIn
         return Task.FromResult(outputFactory.Succeed(customSchemes));
     }
 
-    public Task<IOutput<InputScheme>> GetCustomInputSchemeAsync(string inputDefinitionName, string controllerName,
+    public Task<IOutput<InputScheme>> GetCustomInputSchemeAsync(string inputDefinitionName, InputControllerName controllerName,
         string inputSchemeName, CancellationToken cancellationToken = default)
     {
         if (!_customInputSchemes.TryGetValue(inputDefinitionName, out var customControllerSchemeLookup))
         {
             return Task.FromResult(outputFactory.NotFound<InputScheme>($"No custom schemes were found for input definition {inputDefinitionName}"));
         }
-        if (!customControllerSchemeLookup.TryGetValue(controllerName, out var customSchemeLookup))
+        if (!customControllerSchemeLookup.TryGetValue(controllerName.Name, out var customSchemeLookup))
         {
             return Task.FromResult(outputFactory.NotFound<InputScheme>($"No custom schemes were found for the {controllerName} controller using the {inputDefinitionName} input defintiion"));
         }
@@ -57,24 +57,24 @@ internal class InMemoryInputSchemeRepository(IOutputFactory outputFactory) : IIn
             customControllerSchemeLookup = [];
             _customInputSchemes[inputDefinitionName] = customControllerSchemeLookup;
         }
-        if (!customControllerSchemeLookup.TryGetValue(inputScheme.ControllerName, out var customSchemeLookup))
+        if (!customControllerSchemeLookup.TryGetValue(inputScheme.ControllerName.Name, out var customSchemeLookup))
         {
             customSchemeLookup = [];
-            customControllerSchemeLookup[inputScheme.ControllerName] = customSchemeLookup;
+            customControllerSchemeLookup[inputScheme.ControllerName.Name] = customSchemeLookup;
         }
 
         customSchemeLookup[inputScheme.SchemeName] = inputScheme;
         return Task.FromResult(outputFactory.Succeed(inputScheme));
     }
 
-    public Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, string controllerName,
+    public Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputControllerName controllerName,
         string inputSchemeName, CancellationToken cancellationToken = default)
     {
         if (!_customInputSchemes.TryGetValue(inputDefinitionName, out var customControllerSchemeLookup))
         {
             return Task.FromResult(outputFactory.Succeed());
         }
-        if (!customControllerSchemeLookup.TryGetValue(controllerName, out var customSchemeLookup))
+        if (!customControllerSchemeLookup.TryGetValue(controllerName.Name, out var customSchemeLookup))
         {
             return Task.FromResult(outputFactory.Succeed());
         }
@@ -117,12 +117,12 @@ internal class InMemoryInputSchemeRepository(IOutputFactory outputFactory) : IIn
         return Task.FromResult(outputFactory.Succeed(inputScheme));
     }
 
-    public Task<IOutput> DeleteActiveInputSchemeAsync(int userId, string inputDefinitionId, string controllerName, CancellationToken cancellationToken = default)
+    public Task<IOutput> DeleteActiveInputSchemeAsync(int userId, string inputDefinitionId, InputControllerName controllerName, CancellationToken cancellationToken = default)
     {
         if (_activeSchemes.TryGetValue(userId, out var activeUserSchemes)
             && activeUserSchemes.TryGetValue(inputDefinitionId, out var schemeLookup))
         {
-            schemeLookup.Remove(controllerName);
+            schemeLookup.Remove(controllerName.Name);
         }
 
         return Task.FromResult(outputFactory.Succeed());

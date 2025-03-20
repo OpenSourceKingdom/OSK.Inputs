@@ -1,11 +1,12 @@
 ﻿using System;
+using OSK.Inputs.Models.Configuration;
 
 namespace OSK.Inputs.Models.Runtime;
-public struct InputControllerIdentifier(int controllerId, string controllerName)
+public struct InputControllerIdentifier(int controllerId, InputControllerName controllerName)
 {
     public int ControllerId => controllerId;
 
-    public string ControllerName => controllerName;
+    public InputControllerName ControllerName => controllerName;
 
     #region Operators
 
@@ -13,7 +14,7 @@ public struct InputControllerIdentifier(int controllerId, string controllerName)
     {
         return obj is InputControllerIdentifier identifier &&
                ControllerId == identifier.ControllerId &&
-               ControllerName.Equals(identifier.ControllerName, StringComparison.Ordinal);
+               ControllerName == identifier.ControllerName;
     }
 
     public override int GetHashCode()
@@ -23,12 +24,12 @@ public struct InputControllerIdentifier(int controllerId, string controllerName)
 
     public static bool operator ==(InputControllerIdentifier left, InputControllerIdentifier right)
     {
-        return left.ControllerId == right.ControllerId && left.ControllerName.Equals(right.ControllerName, StringComparison.Ordinal);
+        return left.ControllerId == right.ControllerId && left.ControllerName == right.ControllerName;
     }
 
     public static bool operator !=(InputControllerIdentifier left, InputControllerIdentifier right)
     {
-        return left.ControllerId != right.ControllerId || !left.ControllerName.Equals(right.ControllerName, StringComparison.Ordinal);
+        return left.ControllerId != right.ControllerId || left.ControllerName != right.ControllerName;
     }
 
     #endregion

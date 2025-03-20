@@ -68,7 +68,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return outputFactory.Succeed();
     }
 
-    public async Task<IOutput<ActiveInputScheme>> SetActiveInputSchemeAsync(int userId, string inputDefinitionId, string controllerName,
+    public async Task<IOutput<ActiveInputScheme>> SetActiveInputSchemeAsync(int userId, string inputDefinitionId, InputControllerName controllerName,
         string schemeId, CancellationToken cancellationToken = default)
     {
         if (!_userLookup.TryGetValue(userId, out var user))
@@ -81,7 +81,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         {
             return getInputDefinitionOutput.AsOutput<ActiveInputScheme>();
         }
-        if (inputSystemConfiguration.SupportedInputControllers.FirstOrDefaultByString(controllerConfiguration => controllerConfiguration.ControllerName, controllerName) is null)
+        if (inputSystemConfiguration.SupportedInputControllers.FirstOrDefaultByString(controllerConfiguration => controllerConfiguration.ControllerName.Name, controllerName.Name) is null)
         {
             return outputFactory.NotFound<ActiveInputScheme>($"The input controller with the name {controllerName} is not supported with the input system.");
         }
@@ -90,7 +90,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             return outputFactory.NotFound<ActiveInputScheme>($"The input scheme with the name {schemeId} was not found for the {controllerName} controller");
         }
 
-        var saveActiveSchemeOutput = await inputSchemeRepository.SaveActiveInputSchemeAsync(new ActiveInputScheme(userId, inputDefinitionId, controllerName, schemeId), cancellationToken);
+        var saveActiveSchemeOutput = await inputSchemeRepository.SaveActiveInputSchemeAsync(new ActiveInputScheme(userId, inputDefinitionId, controllerName.Name, schemeId), cancellationToken);
         if (!saveActiveSchemeOutput.IsSuccessful)
         {
             return saveActiveSchemeOutput;
@@ -109,7 +109,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return saveActiveSchemeOutput;
     }
 
-    public async Task<IOutput> ResetUserActiveInputSchemeAsync(int userId, string inputDefinitionId, string controllerName, CancellationToken cancellationToken = default)
+    public async Task<IOutput> ResetUserActiveInputSchemeAsync(int userId, string inputDefinitionId, InputControllerName controllerName, CancellationToken cancellationToken = default)
     {
         if (!_userLookup.TryGetValue(userId, out var user))
         {
@@ -165,14 +165,14 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return inputSchemeRepository.SaveCustomInputSchemeAsync(inputDefinition.Name, inputScheme, cancellationToken);
     }
 
-    public async Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, string controllerName, string schemeName,
+    public async Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputControllerName controllerName, string schemeName,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(inputDefinitionName))
         {
             throw new ArgumentNullException(nameof(inputDefinitionName));
         }
-        if (string.IsNullOrWhiteSpace(controllerName))
+        if (string.IsNullOrWhiteSpace(controllerName.Name))
         {
             throw new ArgumentNullException(nameof(controllerName));
         }
@@ -187,8 +187,8 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             return outputFactory.Succeed();
         }
 
-        var controller = inputSystemConfiguration.SupportedInputControllers.FirstOrDefaultByString(controller => controller.ControllerName,
-            controllerName);
+        var controller = inputSystemConfiguration.SupportedInputControllers.FirstOrDefaultByString(controller => controller.ControllerName.Name,
+            controllerName.Name);
         if (controller is null)
         {
             return outputFactory.Succeed();
@@ -333,7 +333,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
     private InputController GetInputController(InputControllerIdentifier controllerIdentifier)
     {
         var controllerConfiguration = inputSystemConfiguration.SupportedInputControllers.FirstOrDefaultByString(controllerConfiguration
-            => controllerConfiguration.ControllerName, controllerIdentifier.ControllerName);
+            => controllerConfiguration.ControllerName.Name, controllerIdentifier.ControllerName.Name);
         if (controllerConfiguration is null)
         {
             throw new InvalidOperationException($"No controller with the name of {controllerIdentifier.ControllerName} was configured for support with the input system.");
@@ -352,7 +352,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         }
 
         var userActiveInputSchemeLookup = getActiveInputSchemesOutput.Value.ToDictionary(scheme => scheme.ControllerName);
-        var activeInputSchemes = inputDefinition.InputSchemes.GroupBy(scheme => scheme.ControllerName).Select(controllerSchemeGroup =>
+        var activeInputSchemes = inputDefinition.InputSchemes.GroupBy(scheme => scheme.ControllerName.Name).Select(controllerSchemeGroup =>
         {
             var activeScheme = userActiveInputSchemeLookup.TryGetValue(controllerSchemeGroup.Key, out var activeInputScheme)
                 ? controllerSchemeGroup.FirstOrDefaultByString(scheme => scheme.SchemeName, activeInputScheme.ActiveInputSchemeName)
