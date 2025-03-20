@@ -1,9 +1,11 @@
-﻿namespace OSK.Inputs.Models.Runtime;
-public class PointerTranslation(float x, float y)
+﻿using System.Numerics;
+
+namespace OSK.Inputs.Models.Runtime;
+public class PointerTranslation(Vector2 start, Vector2? end)
 {
-    public static PointerTranslation None = new PointerTranslation(0, 0);
+    public Vector2 Start => start;
 
-    public float X => x;
+    public Vector2? End => end;
 
-    public float Y => y;
+    public Vector2 Delta { get; } = end.HasValue ? end.Value - start : Vector2.Zero;
 }

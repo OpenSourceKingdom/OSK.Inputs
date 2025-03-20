@@ -4,7 +4,6 @@ using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Options;
-using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
 
 namespace OSK.Inputs.UnitTests.Internal.Services;
