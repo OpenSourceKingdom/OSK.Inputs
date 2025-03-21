@@ -6,6 +6,9 @@ using OSK.Inputs.Ports;
 namespace OSK.Inputs;
 public static class InputSystemBuilderExtensions
 {
+    public static IInputSystemBuilder AddInputController<TController>(this IInputSystemBuilder builder)
+        where TController : IInputControllerConfiguration, new() => builder.AddInputController(new TController());
+
     public static IInputSystemBuilder AddInputController(this IInputSystemBuilder builder, string controllerName,
         Action<IInputControllerBuilder> controllerConfiguration)
         => builder.AddInputController(new InputControllerName(controllerName), controllerConfiguration);
