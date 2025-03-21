@@ -206,7 +206,7 @@ public class ApplicationUserTests
     {
         // Arrange
         var noInputReader = new Mock<IInputReader>();
-        noInputReader.Setup(m => m.ReadInputsAsync(It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
+        noInputReader.Setup(m => m.ReadInputsAsync(It.IsAny<InputReadContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         InputController[] controllers = [
@@ -232,7 +232,7 @@ public class ApplicationUserTests
         ];
 
         var inputReader = new Mock<IInputReader>();
-        inputReader.Setup(m => m.ReadInputsAsync(It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
+        inputReader.Setup(m => m.ReadInputsAsync(It.IsAny<InputReadContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(readInputs);
 
         var controller = new InputController(new InputControllerIdentifier(1, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader.Object);
@@ -269,7 +269,7 @@ public class ApplicationUserTests
         ];
 
         var inputReader1 = new Mock<IInputReader>();
-        inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
+        inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<InputReadContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(readInputs1);
 
         var controller1 = new InputController(new InputControllerIdentifier(1, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader1.Object);
@@ -298,7 +298,7 @@ public class ApplicationUserTests
     {
         // Arrange
         var inputReader1 = new Mock<IInputReader>();
-        inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
+        inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<InputReadContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([
                 new ActivatedInput(new InputControllerIdentifier(), Mock.Of<IInput>(), "a", InputPhase.Start, InputPower.FullPower(1))
             ]);
@@ -308,14 +308,14 @@ public class ApplicationUserTests
         await _user.ReadInputsAsync();
 
         // Reset reader to return nothing
-        inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
+        inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<InputReadContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var inputReader2 = new Mock<IInputReader>();
         ActivatedInput[] activatedInputs = [
                 new ActivatedInput(new InputControllerIdentifier(), Mock.Of<IInput>(), "a", InputPhase.Start, InputPower.FullPower(1))
         ];
-        inputReader2.Setup(m => m.ReadInputsAsync(It.IsAny<InputScheme>(), It.IsAny<CancellationToken>()))
+        inputReader2.Setup(m => m.ReadInputsAsync(It.IsAny<InputReadContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(activatedInputs);
         var controller2 = new InputController(new InputControllerIdentifier(2, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader2.Object);
         _user.AddInputControllers(controller2);

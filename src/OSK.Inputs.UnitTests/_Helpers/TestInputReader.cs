@@ -17,7 +17,7 @@ public class TestInputReader(InputReaderParameters parameters) : IInputReader
         throw new NotImplementedException();
     }
 
-    public Task<IEnumerable<ActivatedInput>> ReadInputsAsync(InputScheme inputScheme, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<ActivatedInput>> ReadInputsAsync(InputReadContext readContext, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

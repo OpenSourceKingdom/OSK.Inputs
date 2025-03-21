@@ -7,7 +7,8 @@ using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Runtime;
 
 namespace OSK.Inputs.Internal;
-internal class ApplicationInputUser(int userId, InputDefinition inputDefinition, IEnumerable<InputScheme> inputSchemes) : IApplicationInputUser, IDisposable
+internal class ApplicationInputUser(int userId, InputDefinition inputDefinition, 
+    IEnumerable<InputScheme> inputSchemes) : IApplicationInputUser, IDisposable
 {
     #region Variables
 
@@ -17,6 +18,9 @@ internal class ApplicationInputUser(int userId, InputDefinition inputDefinition,
 
     private readonly Dictionary<int, InputController> _inputControllers = [];
     private readonly Dictionary<string, InputScheme> _activeInputSchemeLookup = inputSchemes.ToDictionary(scheme => scheme.ControllerName.Name);
+    private readonly Dictionary<string, IEnumerable<InputActionSchemeMap>> _actionSchemeMaps = 
+        inputSchemes.ToDictionary(scheme => scheme.SchemeName, 
+            scheme => (IEnumerable<InputActionSchemeMap>) inputDefinition.GetInputActionSchemeMaps(scheme.ControllerName, scheme.SchemeName));
 
     private InputController? _activeInputController;
 
@@ -91,9 +95,11 @@ internal class ApplicationInputUser(int userId, InputDefinition inputDefinition,
         ActiveInputDefinition = inputDefinition;
 
         _activeInputSchemeLookup.Clear();
+        _actionSchemeMaps.Clear();
         foreach (var scheme in activeInputSchemes)
         {
             _activeInputSchemeLookup[GetInputSchemeLookupKey(scheme)] = scheme;
+            _actionSchemeMaps[scheme.SchemeName] = inputDefinition.GetInputActionSchemeMaps(scheme.ControllerName, scheme.SchemeName);
         }
     }
 
@@ -101,8 +107,8 @@ internal class ApplicationInputUser(int userId, InputDefinition inputDefinition,
     {
         if (_activeInputController is not null)
         {
-            var scheme = _activeInputSchemeLookup[GetInputSchemeLookupKey(_activeInputController.ControllerIdentifier)];
-            var activatedInputs = await _activeInputController.InputReader.ReadInputsAsync(scheme, cancellationToken);
+            var schemeMaps = _actionSchemeMaps[GetInputSchemeLookupKey(_activeInputController.ControllerIdentifier)];
+            var activatedInputs = await _activeInputController.InputReader.ReadInputsAsync(new InputReadContext(schemeMaps), cancellationToken);
             if (activatedInputs.Any())
             {
                 return activatedInputs.Select(input => new UserActivatedInput(userId, input));
@@ -120,9 +126,9 @@ internal class ApplicationInputUser(int userId, InputDefinition inputDefinition,
             {
                 break;
             }
-            if (_activeInputSchemeLookup.TryGetValue(GetInputSchemeLookupKey(controller.ControllerIdentifier), out var scheme))
+            if (_actionSchemeMaps.TryGetValue(GetInputSchemeLookupKey(controller.ControllerIdentifier), out var schemeMaps))
             {
-                var activatedInputs = await controller.InputReader.ReadInputsAsync(scheme, cancellationToken);
+                var activatedInputs = await controller.InputReader.ReadInputsAsync(new InputReadContext(schemeMaps), cancellationToken);
                 if (activatedInputs.Any())
                 {
                     _activeInputController = controller;

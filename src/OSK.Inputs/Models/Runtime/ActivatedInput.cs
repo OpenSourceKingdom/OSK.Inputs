@@ -17,7 +17,7 @@ public class ActivatedInput(InputControllerIdentifier controllerIdentifier, IInp
 
     public InputPower InputPower => inputPower;
 
-    public PointerTranslation PointerTranslation => pointerTranslation ?? PointerTranslation.None;
+    public PointerTranslation? PointerTranslation => pointerTranslation;
 
     #endregion
 }

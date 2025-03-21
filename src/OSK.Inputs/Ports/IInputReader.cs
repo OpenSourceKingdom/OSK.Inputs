@@ -14,5 +14,5 @@ public interface IInputReader: IDisposable
     event Action<InputControllerIdentifier> OnControllerDisconnected;
     event Action<InputControllerIdentifier> OnControllerReconnected;
 
-    Task<IEnumerable<ActivatedInput>> ReadInputsAsync(InputScheme inputScheme, CancellationToken cancellationToken = default);
+    Task<IEnumerable<ActivatedInput>> ReadInputsAsync(InputReadContext context, CancellationToken cancellationToken = default);
 }
