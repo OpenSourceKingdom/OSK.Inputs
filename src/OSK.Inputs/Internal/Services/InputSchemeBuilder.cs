@@ -20,7 +20,7 @@ internal class InputSchemeBuilder(string inputDefinitionName, IInputControllerCo
 
     #region IInputSchemeBuilder
 
-    public IInputSchemeBuilder AssignInput(string actionKey, IInput input, InputPhase inputPhase)
+    public IInputSchemeBuilder AssignInput(IInput input, InputPhase inputPhase, string actionKey)
     {
         if (string.IsNullOrWhiteSpace(actionKey))
         {

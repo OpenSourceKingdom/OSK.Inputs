@@ -11,7 +11,7 @@ public interface IInputControllerConfiguration
 
     public Type InputReaderType { get; }
 
-    public IReadOnlyCollection<IInput> Inputs { get; }
+    public IReadOnlyCollection<InputConfiguration> InputConfigurations { get; }
 
     bool IsValidInput(IInput input);
 

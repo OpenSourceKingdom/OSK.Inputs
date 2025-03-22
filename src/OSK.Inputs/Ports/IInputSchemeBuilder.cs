@@ -6,7 +6,7 @@ namespace OSK.Inputs.Ports;
 [HexagonalIntegration(HexagonalIntegrationType.LibraryProvided)]
 public interface IInputSchemeBuilder
 {
-    IInputSchemeBuilder AssignInput(string actionKey, IInput input, InputPhase inputPhase);
+    IInputSchemeBuilder AssignInput(IInput input, InputPhase inputPhase, string actionKey);
 
     IInputSchemeBuilder MakeDefault();
 }

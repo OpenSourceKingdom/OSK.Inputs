@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
-using OSK.Inputs.Models.Inputs;
+using OSK.Inputs.Models.Configuration;
 
 namespace OSK.Inputs.Models.Runtime;
-public class InputReaderParameters(InputControllerIdentifier controllerIdentifier, IEnumerable<IInput> inputs)
+public class InputReaderParameters(InputControllerIdentifier controllerIdentifier, IEnumerable<InputConfiguration> inputConfigurations)
 {
     public InputControllerIdentifier ControllerIdentifier => controllerIdentifier;
 
-    public IEnumerable<IInput> Inputs => inputs;
+    public IEnumerable<InputConfiguration> InputCnfigurations => inputConfigurations;
 }

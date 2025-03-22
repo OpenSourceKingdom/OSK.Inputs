@@ -1,4 +1,4 @@
-﻿using OSK.Inputs.Models.Inputs;
+﻿using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Runtime;
 using OSK.Inputs.Ports;
 
@@ -6,7 +6,7 @@ namespace OSK.Inputs.UnitTests._Helpers;
 public class TestInputReader(InputReaderParameters parameters) : IInputReader
 {
     public InputControllerIdentifier ControllerIdentifier => parameters.ControllerIdentifier;
-    public IEnumerable<IInput> Inputs => parameters.Inputs;
+    public IEnumerable<InputConfiguration> InputConfigurations => parameters.InputCnfigurations;
 
     public event Action<InputControllerIdentifier> OnControllerDisconnected = _ => { };
     public event Action<InputControllerIdentifier> OnControllerReconnected = _ => { };

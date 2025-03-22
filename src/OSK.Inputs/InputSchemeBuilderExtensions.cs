@@ -7,17 +7,17 @@ public static class InputSchemeBuilderExtensions
 {
     #region Assign Input
 
-    public static IInputSchemeBuilder AssignStartAction(this IInputSchemeBuilder builder, string actionKey, IInput input)
-        => builder.AssignInput(actionKey, input, InputPhase.Start);
+    public static IInputSchemeBuilder AssignStartAction(this IInputSchemeBuilder builder, IInput input, string actionKey)
+        => builder.AssignInput(input, InputPhase.Start, actionKey);
 
-    public static IInputSchemeBuilder AssignHoldAction(this IInputSchemeBuilder builder, string actionKey, IInput input)
-        => builder.AssignInput(actionKey, input, InputPhase.Hold);
+    public static IInputSchemeBuilder AssignHoldAction(this IInputSchemeBuilder builder, IInput input, string actionKey)
+        => builder.AssignInput(input, InputPhase.Hold, actionKey);
 
-    public static IInputSchemeBuilder AssignTranslationAction(this IInputSchemeBuilder builder, string actionKey, IInput input)
-        => builder.AssignInput(actionKey, input, InputPhase.Translation);
+    public static IInputSchemeBuilder AssignTranslationAction(this IInputSchemeBuilder builder, IInput input, string actionKey)
+        => builder.AssignInput(input, InputPhase.Translation, actionKey);
 
-    public static IInputSchemeBuilder AssignEndAction(this IInputSchemeBuilder builder, string actionKey, IInput input)
-        => builder.AssignInput(actionKey, input, InputPhase.End);
+    public static IInputSchemeBuilder AssignEndAction(this IInputSchemeBuilder builder, IInput input, string actionKey)
+        => builder.AssignInput(input, InputPhase.End, actionKey);
 
     #endregion
 }

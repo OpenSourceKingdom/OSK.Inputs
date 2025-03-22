@@ -1,7 +1,6 @@
 ﻿using Moq;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
-using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Models.Runtime;
 using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
@@ -46,9 +45,9 @@ public class DefaultInputReaderProviderTests
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
-        var inputs = new List<IInput>();
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
-            .Returns(inputs);
+        var inputConfigurations = new List<InputConfiguration>();
+        mockControllerConfiguration.SetupGet(m => m.InputConfigurations)
+            .Returns(inputConfigurations);
 
         // Act
         var reader = _provider.GetInputReader(mockControllerConfiguration.Object, inputControllerIdentifier);
@@ -61,7 +60,7 @@ public class DefaultInputReaderProviderTests
         Assert.Equal(inputControllerIdentifier.ControllerName, testReader.ControllerIdentifier.ControllerName);
         Assert.Equal(inputControllerIdentifier.ControllerId, testReader.ControllerIdentifier.ControllerId);
 
-        Assert.Equal(inputs, testReader.Inputs);
+        Assert.Equal(inputConfigurations, testReader.InputConfigurations);
     }
 
     #endregion
