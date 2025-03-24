@@ -3,7 +3,7 @@
 namespace OSK.Inputs.Models.Runtime;
 
 public class ActivatedInput(InputControllerIdentifier controllerIdentifier, IInput input, string actionKey,
-    InputPhase inputPhase, InputPower inputPower, PointerTranslation? pointerTranslation = null)
+    InputPhase inputPhase, InputPower inputPower)
 {
     #region Variables
 
@@ -16,8 +16,6 @@ public class ActivatedInput(InputControllerIdentifier controllerIdentifier, IInp
     public InputPhase TriggeredPhase => inputPhase;
 
     public InputPower InputPower => inputPower;
-
-    public PointerTranslation? PointerTranslation => pointerTranslation;
 
     #endregion
 }

@@ -9,25 +9,25 @@ public class XboxControllerConfigurator(Type inputReaderType) : InputControllerC
 {
     public static readonly InputControllerName XboxControllerName = new InputControllerName("XboxController");
 
-    public XboxControllerConfigurator WithXInput(Action<DigitalInputOptions>? optionConfigurator = null)
+    public XboxControllerConfigurator WithX(Action<DigitalInputOptions>? optionConfigurator = null)
     {
         AddInputConfiguration(GamePadInputs.X, optionConfigurator);
         return this;
     }
 
-    public XboxControllerConfigurator WithYInput(Action<DigitalInputOptions>? optionConfigurator = null)
+    public XboxControllerConfigurator WithY(Action<DigitalInputOptions>? optionConfigurator = null)
     {
         AddInputConfiguration(GamePadInputs.Y, optionConfigurator);
         return this;
     }
 
-    public XboxControllerConfigurator WithBInput(Action<DigitalInputOptions>? optionConfigurator = null)
+    public XboxControllerConfigurator WithB(Action<DigitalInputOptions>? optionConfigurator = null)
     {
         AddInputConfiguration(GamePadInputs.B, optionConfigurator);
         return this;
     }
 
-    public XboxControllerConfigurator WithAInput(Action<DigitalInputOptions>? optionConfigurator = null)
+    public XboxControllerConfigurator WithA(Action<DigitalInputOptions>? optionConfigurator = null)
     {
         AddInputConfiguration(GamePadInputs.A, optionConfigurator);
         return this;
@@ -68,7 +68,6 @@ public class XboxControllerConfigurator(Type inputReaderType) : InputControllerC
         AddInputConfiguration(GamePadInputs.DpadRight, optionConfigurator);
         return this;
     }
-
 
     public XboxControllerConfigurator WithDpadDown(Action<DigitalInputOptions>? optionConfigurator = null)
     {

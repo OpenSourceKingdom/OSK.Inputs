@@ -255,7 +255,7 @@ public class ApplicationUserTests
         var result = await _user.ReadInputsAsync();
 
         // Assert
-        Assert.True(readInputs.All(input => result.Any(r => r.Input.Name == input.Input.Name)));
+        Assert.True(readInputs.All(input => result.Any(r => r.ActivatedInput.Input.Name == input.Input.Name)));
         Assert.True(eventCalled);
     }
 
@@ -289,7 +289,7 @@ public class ApplicationUserTests
         var result = await _user.ReadInputsAsync();
 
         // Assert
-        Assert.True(readInputs1.All(input => result.Any(r => r.Input.Name == input.Input.Name)));
+        Assert.True(readInputs1.All(input => result.Any(r => r.ActivatedInput.Input.Name == input.Input.Name)));
         Assert.False(eventCalled);
     }
 
@@ -333,7 +333,7 @@ public class ApplicationUserTests
         var result = await _user.ReadInputsAsync();
 
         // Assert
-        Assert.True(activatedInputs.All(input => result.Any(r => r.Input.Name == input.Input.Name)));
+        Assert.True(activatedInputs.All(input => result.Any(r => r.ActivatedInput.Input.Name == input.Input.Name)));
         Assert.True(eventCalled);
     }
 

@@ -9,25 +9,25 @@ public class PlayStationControllerConfigurator(Type inputReaderType) : InputCont
 {
     public static readonly InputControllerName PlayStationControllerName = new InputControllerName("PlayStationController");
 
-    public PlayStationControllerConfigurator WithSquareInput(Action<DigitalInputOptions>? optionConfigurator = null)
+    public PlayStationControllerConfigurator WithSquare(Action<DigitalInputOptions>? optionConfigurator = null)
     {
         AddInputConfiguration(GamePadInputs.Square, optionConfigurator);
         return this;
     }
 
-    public PlayStationControllerConfigurator WithCircleInput(Action<DigitalInputOptions>? optionConfigurator = null)
+    public PlayStationControllerConfigurator WithCircle(Action<DigitalInputOptions>? optionConfigurator = null)
     {
         AddInputConfiguration(GamePadInputs.Circle, optionConfigurator);
         return this;
     }
 
-    public PlayStationControllerConfigurator WithTriangleInput(Action<DigitalInputOptions>? optionConfigurator = null)
+    public PlayStationControllerConfigurator WithTriangle(Action<DigitalInputOptions>? optionConfigurator = null)
     {
         AddInputConfiguration(GamePadInputs.Triangle, optionConfigurator);
         return this;
     }
 
-    public PlayStationControllerConfigurator WithXInput(Action<DigitalInputOptions>? optionConfigurator = null)
+    public PlayStationControllerConfigurator WithX(Action<DigitalInputOptions>? optionConfigurator = null)
     {
         AddInputConfiguration(GamePadInputs.X, optionConfigurator);
         return this;
@@ -69,13 +69,11 @@ public class PlayStationControllerConfigurator(Type inputReaderType) : InputCont
         return this;
     }
 
-
     public PlayStationControllerConfigurator WithDpadDown(Action<DigitalInputOptions>? optionConfigurator = null)
     {
         AddInputConfiguration(GamePadInputs.DpadDown, optionConfigurator);
         return this;
     }
-
 
     public PlayStationControllerConfigurator WithDpadUp(Action<DigitalInputOptions>? optionConfigurator = null)
     {

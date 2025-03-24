@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Ports;
@@ -6,51 +7,52 @@ using OSK.Inputs.Ports;
 namespace OSK.Inputs;
 public static class InputSystemBuilderExtensions
 {
+    #region Public
+
     public static IInputSystemBuilder AddXboxController<TInputReader>(this IInputSystemBuilder builder, Action<XboxControllerConfigurator> configurator)
         where TInputReader : IInputReader
     {
-        if (configurator is null)
-        {
-            throw new ArgumentNullException(nameof(configurator));
-        }
-
-        var xboxConfigurator = new XboxControllerConfigurator(typeof(TInputReader));
-        configurator(xboxConfigurator);
-
-        builder.AddInputController(xboxConfigurator.BuildControllerConfiguration());
-
-        return builder;
+        return builder.AddInputController<XboxControllerConfigurator, TInputReader>(configurator);
     }
 
     public static IInputSystemBuilder AddPlayStationController<TInputReader>(this IInputSystemBuilder builder, Action<PlayStationControllerConfigurator> configurator)
         where TInputReader : IInputReader
     {
-        if (configurator is null)
-        {
-            throw new ArgumentNullException(nameof(configurator));
-        }
-
-        var playStationConfigurator = new PlayStationControllerConfigurator(typeof(TInputReader));
-        configurator(playStationConfigurator);
-
-        builder.AddInputController(playStationConfigurator.BuildControllerConfiguration());
-
-        return builder;
+        return builder.AddInputController<PlayStationControllerConfigurator, TInputReader>(configurator);
     }
 
     public static IInputSystemBuilder AddKeyboardAndMouseController<TInputReader>(this IInputSystemBuilder builder, Action<KeyboardAndMouseConfigurator> configurator)
         where TInputReader : IInputReader
     {
-        if (configurator is null)
+        return builder.AddInputController<KeyboardAndMouseConfigurator, TInputReader>(configurator);
+    }
+
+    public static IInputSystemBuilder AddSensorController<TInputReader>(this IInputSystemBuilder builder, Action<SensorControllerConfigurator> configurator)
+        where TInputReader : IInputReader
+    {
+        return builder.AddInputController<SensorControllerConfigurator, TInputReader>(configurator);
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private static IInputSystemBuilder AddInputController<TConfigurator, TInputReader>(this IInputSystemBuilder builder, Action<TConfigurator> configuratorAction)
+        where TInputReader : IInputReader
+        where TConfigurator : InputControllerConfigurator
+    {
+        if (configuratorAction is null)
         {
-            throw new ArgumentNullException(nameof(configurator));
+            throw new ArgumentNullException(nameof(configuratorAction));
         }
 
-        var keyboardAndMouseConfigurator = new KeyboardAndMouseConfigurator(typeof(TInputReader));
-        configurator(keyboardAndMouseConfigurator);
+        var configurator = (TConfigurator)Activator.CreateInstance(typeof(TConfigurator), typeof(TInputReader));
+        configuratorAction(configurator);
 
-        builder.AddInputController(keyboardAndMouseConfigurator.BuildControllerConfiguration());
+        builder.AddInputController(configurator.BuildControllerConfiguration());
 
         return builder;
     }
+
+    #endregion
 }
