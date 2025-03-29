@@ -6,10 +6,10 @@ using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal;
-internal class DefaultInputControllerConfiguration(InputControllerName controllerName, Type readerType, IEnumerable<InputConfiguration> inputConfigurations,
+internal class DefaultInputControllerConfiguration(InputControllerName controllerName, Type readerType, IEnumerable<IInput> inputs,
     Func<IInput, bool>? validator) : IInputControllerConfiguration
 {
-    private readonly Dictionary<string, InputConfiguration> _inputLookup = inputConfigurations?.ToDictionary(inputConfig => inputConfig.Input.Name) ?? [];
+    private readonly Dictionary<string, IInput> _inputLookup = inputs?.ToDictionary(input => input.Name) ?? [];
 
     /// <summary>
     /// Strongly typed controller name
@@ -24,7 +24,7 @@ internal class DefaultInputControllerConfiguration(InputControllerName controlle
     /// <summary>
     /// The collection of <see cref="IInput"/>s associated to this controller
     /// </summary>
-    public IReadOnlyCollection<InputConfiguration> InputConfigurations { get; } = inputConfigurations?.ToArray() ?? [];
+    public IReadOnlyCollection<IInput> Inputs { get; } = inputs?.ToArray() ?? [];
 
     /// <summary>
     /// Used to validate input schemes that are associated with this controller

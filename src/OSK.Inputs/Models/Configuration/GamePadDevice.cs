@@ -1,6 +1,14 @@
-﻿namespace OSK.Inputs.Models.Inputs;
-public static class GamePadInputs
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using OSK.Inputs.Models.Inputs;
+
+namespace OSK.Inputs.Models.Configuration;
+
+public abstract class GamePadDevice(InputControllerName inputControllerName, Type inputReaderType): InputDevice(inputControllerName, inputReaderType)
 {
+    #region Static
+
     public static readonly DigitalInput Menu = new DigitalInput("Menu");
 
     public static readonly DigitalInput X = new DigitalInput("X");
@@ -26,4 +34,6 @@ public static class GamePadInputs
     public static readonly AnalogInput LeftJoyStick = new AnalogInput("Left_JoyStick");
     public static readonly DigitalInput RightJoyStickClick = new DigitalInput("Right_JoyStick_Click");
     public static readonly AnalogInput RightJoyStick = new AnalogInput("Right_JoyStick");
+
+    #endregion
 }

@@ -17,7 +17,7 @@ internal class DefaultInputReaderProvider(IServiceProvider serviceProvider) : II
         }
 
         return (IInputReader)ActivatorUtilities.CreateInstance(serviceProvider, controllerConfiguration.InputReaderType, 
-            new InputReaderParameters(controllerIdentifier, controllerConfiguration.InputConfigurations));
+            new InputReaderParameters(controllerIdentifier, controllerConfiguration.Inputs));
     }
 
     #endregion

@@ -222,11 +222,11 @@ internal class InputValidationService : IInputValidationService
                 $"The input controller {controllerConfiguration.ControllerName}'s input reader type, {controllerConfiguration.InputReaderType.FullName}, does not implement the {nameof(IInputReader)} interface.");
         }
 
-        if (controllerConfiguration.InputConfigurations is null || !controllerConfiguration.InputConfigurations.Any())
+        if (controllerConfiguration.Inputs is null || !controllerConfiguration.Inputs.Any())
         {
             context.AddErrors(ValidationError_CollectionMissingData, $"The {controllerConfiguration.ControllerName} has no inputs and is unusable.");
         }
-        else if (controllerConfiguration.InputConfigurations.Any(inputConfiguration => string.IsNullOrWhiteSpace(inputConfiguration.Input.Name)))
+        else if (controllerConfiguration.Inputs.Any(input => string.IsNullOrWhiteSpace(input.Name)))
         {
             context.AddErrors(ValidationError_InvalidData, $"The input controller {controllerConfiguration.ControllerName} bas inputs with empty names.");
         }
