@@ -1,0 +1,28 @@
+name: Package Cleanup
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      keepCount:
+        description: 'The number of versions to keep'
+        required: false
+        default: '2'
+  registry_package:
+    types: [published]
+
+jobs:
+  CleanupPackages:
+
+    runs-on: ubuntu-latest
+  
+    steps:
+      - name: Delete old packages
+        uses: SmartsquareGmbH/delete-old-packages@v0.8.1
+        with:
+          keep: ${{ github.event.inputs.keepCount }}
+          type: nuget
+          organization: OpenSourceKingdom
+          names: |
+            ${{ github.event.repository.name }}
