@@ -9,7 +9,7 @@ internal class DefaultInputReaderProvider(IServiceProvider serviceProvider) : II
 {
     #region IInputReaderProvider
 
-    public IInputReader GetInputReader(IInputControllerConfiguration controllerConfiguration, InputControllerIdentifier controllerIdentifier)
+    public IInputReader GetInputReader(IInputDeviceConfiguration controllerConfiguration, InputControllerIdentifier controllerIdentifier)
     {
         if (controllerConfiguration is null)
         {

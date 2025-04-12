@@ -92,7 +92,7 @@ internal class InputValidationService : IInputValidationService
     #region Helpers
 
     private InputValidationContext ValidateInputDefinitions(IReadOnlyCollection<InputDefinition> inputDefinitions,
-        IReadOnlyCollection<IInputControllerConfiguration> supportedInputControllerConfigurations)
+        IReadOnlyCollection<IInputDeviceConfiguration> supportedInputControllerConfigurations)
     {
         if (inputDefinitions is null || !inputDefinitions.Any())
         {
@@ -123,7 +123,7 @@ internal class InputValidationService : IInputValidationService
         return InputValidationContext.Success;
     }
 
-    private InputValidationContext ValidateInputDefinition(InputDefinition inputDefinition, IEnumerable<IInputControllerConfiguration> supportedInputControllerConfigurations)
+    private InputValidationContext ValidateInputDefinition(InputDefinition inputDefinition, IEnumerable<IInputDeviceConfiguration> supportedInputControllerConfigurations)
     {
         if (!inputDefinition.InputActions.Any())
         {
@@ -178,7 +178,7 @@ internal class InputValidationService : IInputValidationService
         return InputValidationContext.Success;
     }
 
-    private InputValidationContext ValidateInputControllers(IReadOnlyCollection<IInputControllerConfiguration> supportedControllerConfigurations)
+    private InputValidationContext ValidateInputControllers(IReadOnlyCollection<IInputDeviceConfiguration> supportedControllerConfigurations)
     {
         if (supportedControllerConfigurations is null || !supportedControllerConfigurations.Any())
         {
@@ -208,7 +208,7 @@ internal class InputValidationService : IInputValidationService
         return InputValidationContext.Success;
     }
 
-    private InputValidationContext ValidateInputController(IInputControllerConfiguration controllerConfiguration)
+    private InputValidationContext ValidateInputController(IInputDeviceConfiguration controllerConfiguration)
     {
         var context = new InputValidationContext(InputControllerError);
 
@@ -235,7 +235,7 @@ internal class InputValidationService : IInputValidationService
     }
 
     private InputValidationContext ValidateInputScheme(InputScheme inputScheme, bool isNewScheme, IEnumerable<InputDefinition> inputDefinitions, 
-        IEnumerable<IInputControllerConfiguration> supportedControllers)
+        IEnumerable<IInputDeviceConfiguration> supportedControllers)
     {
         if (string.IsNullOrWhiteSpace(inputScheme.InputDefinitionName))
         {
@@ -290,19 +290,16 @@ internal class InputValidationService : IInputValidationService
     private InputValidationContext ValidateInpurSchemeActionMaps(InputScheme scheme)
     {
         var context = new InputValidationContext(InputActionMapError);
-        var invalidInputKeys = scheme.InputActionMaps.GroupBy(map => map.InputKey, StringComparer.OrdinalIgnoreCase)
+        var invalidInputKeys = scheme.InputActionMaps.GroupBy(map => map.InputKey)
             .Select(group => new
             {
                 InputKey = group.Key,
-                IsEmptyName = string.IsNullOrWhiteSpace(group.Key),
-                IsDuplicateName = group.Count() > 1
+                IsDuplicate = group.Count() > 1
             })
-            .Where(group => group.IsDuplicateName || group.IsEmptyName)
+            .Where(group => group.IsDuplicate)
             .Select(group =>
             {
-                return group.IsEmptyName
-                    ? $"An input key for input scheme {scheme.SchemeName} had an empty name"
-                    : $"The input key {group.InputKey} already exists on the input scheme {scheme.SchemeName}";
+                return $"The input id {group.InputKey} already exists on the input scheme {scheme.SchemeName}";
             });
         if (invalidInputKeys.Any())
         {

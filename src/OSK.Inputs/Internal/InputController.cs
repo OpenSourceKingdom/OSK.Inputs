@@ -4,13 +4,13 @@ using OSK.Inputs.Models.Runtime;
 using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal;
-internal class InputController(InputControllerIdentifier controllerIdentifier, IInputControllerConfiguration configuration, IInputReader inputReader) : IDisposable
+internal class InputController(InputControllerIdentifier controllerIdentifier, IInputDeviceConfiguration configuration, IInputReader inputReader) : IDisposable
 {
     #region Variables
 
     public InputControllerIdentifier ControllerIdentifier => controllerIdentifier;
 
-    public IInputControllerConfiguration Configuration => configuration;
+    public IInputDeviceConfiguration Configuration => configuration;
 
     public IInputReader InputReader => inputReader;
 

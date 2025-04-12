@@ -13,6 +13,7 @@ public class ApplicationUserTests
     #region Variables
 
     private readonly InputDefinition _testDefinition;
+    private readonly List<IInputDeviceConfiguration> _deviceConfigurations;
     private readonly InputScheme _testScheme;
 
     private ApplicationInputUser _user;
@@ -23,10 +24,29 @@ public class ApplicationUserTests
 
     public ApplicationUserTests()
     {
-        _testScheme = new InputScheme("Abc", new InputControllerName("abc"), "abc", false, []);
+        _deviceConfigurations = [];
+
+        var mockController = new Mock<IInputDeviceConfiguration>();
+        mockController.SetupGet(m => m.ControllerName)
+            .Returns(new InputDeviceName("abc"));
+        mockController.SetupGet(m => m.Inputs)
+            .Returns([]);
+
+        _deviceConfigurations.Add(mockController.Object);
+
+        var mockController2 = new Mock<IInputDeviceConfiguration>();
+        mockController2.SetupGet(m => m.ControllerName)
+            .Returns(new InputDeviceName("NewController"));
+        mockController2.SetupGet(m => m.Inputs)
+            .Returns([]);
+
+        _deviceConfigurations.Add(mockController2.Object);
+
+        _testScheme = new InputScheme("Abc", new InputDeviceName("abc"), "abc", false, []);
         _testDefinition = new InputDefinition("Abc", [], [ _testScheme ]);
 
-        _user = new ApplicationInputUser(1, _testDefinition, [_testScheme]);
+        _user = new ApplicationInputUser(1, new InputSystemConfiguration([_testDefinition], _deviceConfigurations, false, 1));
+        _user.SetActiveInputDefinition(_testDefinition, [ _testScheme ]);
     }
 
     #endregion
@@ -56,8 +76,8 @@ public class ApplicationUserTests
     {
         // Arrange
         InputController[] controllers = [
-            new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>()),
-            new InputController(new InputControllerIdentifier(234, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>()),
+            new InputController(new InputControllerIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>()),
+            new InputController(new InputControllerIdentifier(234, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>()),
         ];
 
         _user.AddInputControllers(controllers);
@@ -91,7 +111,7 @@ public class ApplicationUserTests
     public void GetActiveInputScheme_NoSchemeForControllerName_ReturnsNull()
     {
         // Arrange/Act/Assert
-        Assert.Null(_user.GetActiveInputScheme(new InputControllerName("nope")));
+        Assert.Null(_user.GetActiveInputScheme(new InputDeviceName("nope")));
     }
 
     [Fact]
@@ -123,7 +143,7 @@ public class ApplicationUserTests
     public void TryGetController_ValidController_ReturnsTrue()
     {
         // Arrange
-        var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>());
+        var controller = new InputController(new InputControllerIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
 
         _user.AddInputControllers(controller);
 
@@ -151,7 +171,7 @@ public class ApplicationUserTests
     {
         // Arrange
         var mockInputReader = new Mock<IInputReader>();
-        var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), mockInputReader.Object);
+        var controller = new InputController(new InputControllerIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), mockInputReader.Object);
 
         _user.AddInputControllers(controller);
 
@@ -175,7 +195,7 @@ public class ApplicationUserTests
         var newTestDefinition = new InputDefinition("whatdayaknow", [], [ newTestScheme ]);
 
         // Act
-        _user.SetActiveInputSchemes(newTestDefinition, [newTestScheme]);
+        _user.SetActiveInputDefinition(newTestDefinition, [newTestScheme]);
 
         // Assert
         Assert.Equal(newTestDefinition, _user.ActiveInputDefinition);
@@ -210,7 +230,7 @@ public class ApplicationUserTests
             .ReturnsAsync([]);
 
         InputController[] controllers = [
-            new InputController(new InputControllerIdentifier(), Mock.Of<IInputControllerConfiguration>(), noInputReader.Object)
+            new InputController(new InputControllerIdentifier(), Mock.Of<IInputDeviceConfiguration>(), noInputReader.Object)
         ];
 
         _user.AddInputControllers(controllers);
@@ -226,7 +246,7 @@ public class ApplicationUserTests
     public async Task ReadInputsAsync_NoActiveInputController_ControllerReturnsInput_ReturnsExpectedList_TriggersActiveControllerChangedEvent()
     {
         // Arrange
-        var controllerIdentifier = new InputControllerIdentifier(1, new InputControllerName("abc"));
+        var controllerIdentifier = new InputControllerIdentifier(1, new InputDeviceName("abc"));
         ActivatedInput[] readInputs = [
             new ActivatedInput(controllerIdentifier, Mock.Of<IInput>(), "a", InputPhase.Start, InputPower.FullPower(1))
         ];
@@ -235,7 +255,7 @@ public class ApplicationUserTests
         inputReader.Setup(m => m.ReadInputsAsync(It.IsAny<InputReadContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(readInputs);
 
-        var controller = new InputController(new InputControllerIdentifier(1, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader.Object);
+        var controller = new InputController(new InputControllerIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader.Object);
         InputController[] controllers = [
             controller
         ];
@@ -263,7 +283,7 @@ public class ApplicationUserTests
     public async Task ReadInputsAsync_ActiveInputController_ControllerReturnsInputSkipsOtherControllers_ReturnsExpectedList()
     {
         // Arrange
-        var controllerIdentifier = new InputControllerIdentifier(1, new InputControllerName("abc"));
+        var controllerIdentifier = new InputControllerIdentifier(1, new InputDeviceName("abc"));
         ActivatedInput[] readInputs1 = [
             new ActivatedInput(controllerIdentifier, Mock.Of<IInput>(), "a", InputPhase.Start, InputPower.FullPower(1))
         ];
@@ -272,11 +292,11 @@ public class ApplicationUserTests
         inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<InputReadContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(readInputs1);
 
-        var controller1 = new InputController(new InputControllerIdentifier(1, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader1.Object);
+        var controller1 = new InputController(new InputControllerIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
         _user.AddInputControllers(controller1);
         await _user.ReadInputsAsync();
 
-        var controller2 = new InputController(new InputControllerIdentifier(2, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), Mock.Of<IInputReader>());
+        var controller2 = new InputController(new InputControllerIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
         _user.AddInputControllers(controller2);
 
         var eventCalled = false;
@@ -302,7 +322,7 @@ public class ApplicationUserTests
             .ReturnsAsync([
                 new ActivatedInput(new InputControllerIdentifier(), Mock.Of<IInput>(), "a", InputPhase.Start, InputPower.FullPower(1))
             ]);
-        var controller1 = new InputController(new InputControllerIdentifier(1, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader1.Object);
+        var controller1 = new InputController(new InputControllerIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
         _user.AddInputControllers(controller1);
         
         await _user.ReadInputsAsync();
@@ -317,7 +337,7 @@ public class ApplicationUserTests
         ];
         inputReader2.Setup(m => m.ReadInputsAsync(It.IsAny<InputReadContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(activatedInputs);
-        var controller2 = new InputController(new InputControllerIdentifier(2, new InputControllerName("abc")), Mock.Of<IInputControllerConfiguration>(), inputReader2.Object);
+        var controller2 = new InputController(new InputControllerIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader2.Object);
         _user.AddInputControllers(controller2);
 
         var eventCalled = false;
@@ -345,9 +365,9 @@ public class ApplicationUserTests
     public void OnInputControllerConnected_InputReaderEventTriggered_TriggersUserEvent()
     {
         // Arrange
-        var inputParameters = new InputReaderParameters(new InputControllerIdentifier(123, new InputControllerName("abc")), Mock.Of<IEnumerable<IInput>>());
+        var inputParameters = new InputReaderParameters(new InputControllerIdentifier(123, new InputDeviceName("abc")), Mock.Of<IEnumerable<IInput>>());
         var testInputReader = new TestInputReader(inputParameters);
-        var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), testInputReader);
+        var controller = new InputController(new InputControllerIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
 
         _user.AddInputControllers(controller);
 
@@ -376,9 +396,9 @@ public class ApplicationUserTests
     public void OnInputControllerDisconnected_InputReaderEventTriggered_TriggersUserEvent()
     {
         // Arrange
-        var inputParameters = new InputReaderParameters(new InputControllerIdentifier(123, new InputControllerName("abc")), Mock.Of<IEnumerable<IInput>>());
+        var inputParameters = new InputReaderParameters(new InputControllerIdentifier(123, new InputDeviceName("abc")), Mock.Of<IEnumerable<IInput>>());
         var testInputReader = new TestInputReader(inputParameters);
-        var controller = new InputController(new InputControllerIdentifier(123, new InputControllerName("test")), Mock.Of<IInputControllerConfiguration>(), testInputReader);
+        var controller = new InputController(new InputControllerIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
 
         _user.AddInputControllers(controller);
 

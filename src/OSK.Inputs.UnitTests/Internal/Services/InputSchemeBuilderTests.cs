@@ -12,10 +12,10 @@ public class InputSchemeBuilderTests
     #region Variables
 
     private const string DefinitionName = "testDefinition";
-    private static InputControllerName ControllerName = new InputControllerName("testController");
+    private static InputDeviceName ControllerName = new InputDeviceName("testController");
     private const string SchemeName = "testScheme";
 
-    private readonly Mock<IInputControllerConfiguration> _mockControllerConfiguration;
+    private readonly Mock<IInputDeviceConfiguration> _mockControllerConfiguration;
 
     private readonly InputSchemeBuilder _builder;
 
@@ -78,10 +78,10 @@ public class InputSchemeBuilderTests
         _mockControllerConfiguration.Setup(m => m.IsValidInput(It.Is<IInput>(input => input.Name == "a")))
             .Returns(false);
 
-        var mockInputA = new Mock<HardwareInput>("a");
-        var mockInputB = new Mock<HardwareInput>("b");
+        var mockInputA = new Mock<HardwareInput>(1, "a", "a");
+        var mockInputB = new Mock<HardwareInput>(1, "b", "b");
 
-        var combinationInput = new CombinationInput("Abc", [mockInputA.Object, mockInputB.Object]);
+        var combinationInput = new CombinationInput(1, "Abc", "Abc", [mockInputA.Object, mockInputB.Object]);
 
         // Act/Assert
         Assert.Throws<InvalidOperationException>(() => _builder.AssignInput(combinationInput, InputPhase.Start, "abc"));
@@ -91,8 +91,8 @@ public class InputSchemeBuilderTests
     public void AssignInput_CombinationInput_DuplicateInputsInCombinationInput_ThrowsInvalidOperationException()
     {
         // Arrange
-        var mockInputA = new Mock<HardwareInput>("a");
-        var combinationInput = new CombinationInput("Abc", [mockInputA.Object, mockInputA.Object]);
+        var mockInputA = new Mock<HardwareInput>(1, "a", "a");
+        var combinationInput = new CombinationInput(1, "Abc", "Abc", [mockInputA.Object, mockInputA.Object]);
 
         // Act/Assert
         Assert.Throws<DuplicateNameException>(() => _builder.AssignInput(combinationInput, InputPhase.Start, "abc"));
@@ -122,10 +122,10 @@ public class InputSchemeBuilderTests
         _mockControllerConfiguration.Setup(m => m.IsValidInput(It.IsAny<IInput>()))
             .Returns(true);
 
-        var mockInputA = new Mock<HardwareInput>("a");
-        var mockInputB = new Mock<HardwareInput>("b");
+        var mockInputA = new Mock<HardwareInput>(1, "a", "a");
+        var mockInputB = new Mock<HardwareInput>(1, "b", "b");
 
-        var combinationInput = new CombinationInput("Abc", [mockInputA.Object, mockInputB.Object]);
+        var combinationInput = new CombinationInput(1, "Abc", "Abc", [mockInputA.Object, mockInputB.Object]);
 
         // Act/Assert
         _builder.AssignInput(combinationInput, InputPhase.Start, "abc");
@@ -138,7 +138,7 @@ public class InputSchemeBuilderTests
         _mockControllerConfiguration.Setup(m => m.IsValidInput(It.IsAny<IInput>()))
             .Returns(true);
 
-        var mockInputA = new Mock<HardwareInput>("a");
+        var mockInputA = new Mock<HardwareInput>(1, "a", "a");
 
         // Act/Assert
         _builder.AssignInput(mockInputA.Object, InputPhase.Start, "abc");

@@ -7,7 +7,7 @@ using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal.Services;
 
-internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputControllerConfiguration> supportedControllers) : IInputDefinitionBuilder
+internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputDeviceConfiguration> supportedControllers) : IInputDefinitionBuilder
 {
     #region Variables
 
@@ -33,15 +33,15 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputC
         return this;
     }
 
-    public IInputDefinitionBuilder AddInputScheme(InputControllerName controllerName, string schemeName, Action<IInputSchemeBuilder> buildAction)
+    public IInputDefinitionBuilder AddInputScheme(InputDeviceName deviceName, string schemeName, Action<IInputSchemeBuilder> buildAction)
     {
-        if (string.IsNullOrWhiteSpace(controllerName.Name))
+        if (string.IsNullOrWhiteSpace(deviceName.Name))
         {
-            throw new ArgumentException(nameof(controllerName));
+            throw new ArgumentException(nameof(deviceName));
         }
-        if (!supportedControllers.AnyByString(configuration => configuration.ControllerName.Name, controllerName.Name))
+        if (!supportedControllers.AnyByString(configuration => configuration.ControllerName.Name, deviceName.Name))
         {
-            throw new InvalidOperationException($"Unable to add input scheme {schemeName} because the input system does not support the {controllerName} controller.");
+            throw new InvalidOperationException($"Unable to add input scheme {schemeName} because the input system does not support the {deviceName} controller.");
         }
         if (string.IsNullOrWhiteSpace(schemeName))
         {
@@ -51,14 +51,14 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputC
         {
             throw new ArgumentNullException(nameof(buildAction));
         }
-        if (!_controllerSchemeBuilderLookup.TryGetValue(controllerName.Name, out var schemeLookup))
+        if (!_controllerSchemeBuilderLookup.TryGetValue(deviceName.Name, out var schemeLookup))
         {
             schemeLookup = [];
-            _controllerSchemeBuilderLookup.Add(controllerName.Name, schemeLookup);
+            _controllerSchemeBuilderLookup.Add(deviceName.Name, schemeLookup);
         }
         if (schemeLookup.TryGetValue(schemeName, out _))
         {
-            throw new DuplicateNameException($"An input scheme has already been added to the input definition with the name {schemeName} for the {controllerName} controller.");
+            throw new DuplicateNameException($"An input scheme has already been added to the input definition with the name {schemeName} for the {deviceName} controller.");
         }
 
         schemeLookup.Add(schemeName, buildAction);

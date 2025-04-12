@@ -5,35 +5,38 @@ using OSK.Inputs.Models.Inputs;
 
 namespace OSK.Inputs.Models.Configuration;
 
-public abstract class GamePadDevice(InputControllerName inputControllerName, Type inputReaderType): InputDevice(inputControllerName, inputReaderType)
+public abstract class GamePadDevice(InputDeviceName inputControllerName, Type inputReaderType): InputDevice(inputControllerName, inputReaderType)
 {
     #region Static
 
-    public static readonly DigitalInput Menu = new DigitalInput("Menu");
+    public const string DeviceTypeName = "Gamepad";
 
-    public static readonly DigitalInput X = new DigitalInput("X");
-    public static readonly DigitalInput Y = new DigitalInput("Y");
-    public static readonly DigitalInput A = new DigitalInput("A");
-    public static readonly DigitalInput B = new DigitalInput("B");
+    public static readonly GamePadButtonInput Menu = new GamePadButtonInput(1, "Menu");
+    public static readonly GamePadButtonInput Options = new GamePadButtonInput(2, "Options");
 
-    public static readonly DigitalInput Square = new DigitalInput("Square");
-    public static readonly DigitalInput Triangle = new DigitalInput("Triangle");
-    public static readonly DigitalInput Circle = new DigitalInput("Circle");
+    public static readonly GamePadButtonInput X = new GamePadButtonInput(10, "X");
+    public static readonly GamePadButtonInput Y = new GamePadButtonInput(11, "Y");
+    public static readonly GamePadButtonInput A = new GamePadButtonInput(12, "A");
+    public static readonly GamePadButtonInput B = new GamePadButtonInput(13, "B");
 
-    public static readonly DigitalInput RightTrigger = new DigitalInput("Right_Trigger");
-    public static readonly DigitalInput RightBumper = new DigitalInput("Right_Bumper");
-    public static readonly DigitalInput LeftTrigger = new DigitalInput("Left_Trigger");
-    public static readonly DigitalInput LeftBumper = new DigitalInput("Left_Bumper");
+    public static readonly GamePadButtonInput Square = new GamePadButtonInput(14, "Square");
+    public static readonly GamePadButtonInput Triangle = new GamePadButtonInput(15, "Triangle");
+    public static readonly GamePadButtonInput Circle = new GamePadButtonInput(16, "Circle");
 
-    public static readonly DigitalInput DpadLeft = new DigitalInput("Dpad_Left");
-    public static readonly DigitalInput DpadRight = new DigitalInput("Dpad_Right");
-    public static readonly DigitalInput DpadUp = new DigitalInput("Dpad_Up");
-    public static readonly DigitalInput DpadDown = new DigitalInput("Dpad_Down");
+    public static readonly GamePadButtonInput RightTrigger = new GamePadButtonInput(30, "Right Trigger");
+    public static readonly GamePadButtonInput RightBumper = new GamePadButtonInput(31, "Right Bumper");
+    public static readonly GamePadButtonInput LeftTrigger = new GamePadButtonInput(32, "Left Trigger");
+    public static readonly GamePadButtonInput LeftBumper = new GamePadButtonInput(33, "Left Bumper");
 
-    public static readonly DigitalInput LeftJoyStickClick = new DigitalInput("Left_JoyStick_Click");
-    public static readonly AnalogInput LeftJoyStick = new AnalogInput("Left_JoyStick");
-    public static readonly DigitalInput RightJoyStickClick = new DigitalInput("Right_JoyStick_Click");
-    public static readonly AnalogInput RightJoyStick = new AnalogInput("Right_JoyStick");
+    public static readonly GamePadButtonInput DpadLeft = new GamePadButtonInput(40, "Dpad Left");
+    public static readonly GamePadButtonInput DpadRight = new GamePadButtonInput(41, "Dpad Right");
+    public static readonly GamePadButtonInput DpadUp = new GamePadButtonInput(42, "Dpad Up");
+    public static readonly GamePadButtonInput DpadDown = new GamePadButtonInput(43, "Dpad Down");
+
+    public static readonly GamePadButtonInput LeftJoyStickClick = new GamePadButtonInput(50, "Left JoyStick Click");
+    public static readonly GamePadStickInput LeftJoyStick = new GamePadStickInput(51, "Left JoyStick");
+    public static readonly GamePadButtonInput RightJoyStickClick = new GamePadButtonInput(52, "Right JoyStick Click");
+    public static readonly GamePadStickInput RightJoyStick = new GamePadStickInput(53, "Right JoyStick");
 
     #endregion
 }

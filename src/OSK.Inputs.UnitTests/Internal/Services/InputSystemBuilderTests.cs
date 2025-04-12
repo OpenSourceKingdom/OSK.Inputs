@@ -88,12 +88,12 @@ public class InputSystemBuilderTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]
-    public void AddInputController_InvalidControllerName_ThrowsArgumentNullException(string? controllerName)
+    public void AddInputController_InvalidControllerName_ThrowsArgumentNullException(string? deviceName)
     {
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
         mockControllerConfiguration.SetupGet(m =>  m.ControllerName)
-            .Returns(new InputControllerName(controllerName));
+            .Returns(new InputDeviceName(deviceName));
         
         // Act/Assert
         Assert.Throws<ArgumentNullException>(() => _builder.AddInputController(mockControllerConfiguration.Object));
@@ -103,9 +103,9 @@ public class InputSystemBuilderTests
     public void AddInputController_DuplicateControllerName_ThrowsDuplicateNameException()
     {
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputControllerName("abc"));
+            .Returns(new InputDeviceName("abc"));
 
         _builder.AddInputController(mockControllerConfiguration.Object);
 
@@ -117,9 +117,9 @@ public class InputSystemBuilderTests
     public void AddInputController_Valid_ReturnsSuccesfully()
     {
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputControllerConfiguration>();
+        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputControllerName("abc"));
+            .Returns(new InputDeviceName("abc"));
 
         //Act/Assert
         _builder.AddInputController(mockControllerConfiguration.Object);
@@ -207,9 +207,9 @@ public class InputSystemBuilderTests
         _mockInputValidationService.Setup(m => m.ValidateInputSystemConfiguration(It.IsAny<InputSystemConfiguration>()))
             .Returns(InputValidationContext.Success);
 
-        var mockInputController = new Mock<IInputControllerConfiguration>();
+        var mockInputController = new Mock<IInputDeviceConfiguration>();
         mockInputController.SetupGet(m => m.ControllerName)
-            .Returns(new InputControllerName("abc"));
+            .Returns(new InputDeviceName("abc"));
 
         _builder
             .AddInputController(mockInputController.Object)

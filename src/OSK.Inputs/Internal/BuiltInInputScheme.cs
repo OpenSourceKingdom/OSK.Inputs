@@ -3,8 +3,8 @@ using OSK.Inputs.Models.Configuration;
 
 namespace OSK.Inputs.Internal;
 
-internal class BuiltInInputScheme(string inputDefinitionName, string controllerName, string schemeName, bool isDefault,
+internal class BuiltInInputScheme(string inputDefinitionName, string deviceName, string schemeName, bool isDefault,
     IEnumerable<InputActionMap> actionMaps) 
-    : InputScheme(inputDefinitionName, controllerName, schemeName, isDefault, actionMaps)
+    : InputScheme(inputDefinitionName, deviceName, schemeName, isDefault, actionMaps)
 {
 }

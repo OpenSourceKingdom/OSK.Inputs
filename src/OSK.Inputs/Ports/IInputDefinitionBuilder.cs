@@ -9,7 +9,7 @@ public interface IInputDefinitionBuilder
 {
     IInputDefinitionBuilder AddAction(InputAction action);
 
-    IInputDefinitionBuilder AddInputScheme(InputControllerName controllerName, string schemeName, Action<IInputSchemeBuilder> buildAction);
+    IInputDefinitionBuilder AddInputScheme(InputDeviceName deviceName, string schemeName, Action<IInputSchemeBuilder> buildAction);
 
     InputDefinition Build();
 }

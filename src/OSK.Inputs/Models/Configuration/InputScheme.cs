@@ -7,16 +7,16 @@ public class InputScheme
 {
     #region Constructors
 
-    public InputScheme(string inputDefinitionName, string controllerName, string schemeName, bool isDefault, IEnumerable<InputActionMap> inputActions)
-        : this(inputDefinitionName, new InputControllerName(controllerName), schemeName, isDefault, inputActions)
+    public InputScheme(string inputDefinitionName, string deviceName, string schemeName, bool isDefault, IEnumerable<InputActionMap> inputActions)
+        : this(inputDefinitionName, new InputDeviceName(deviceName), schemeName, isDefault, inputActions)
     {
 
     }
 
-    public InputScheme(string inputDefinitionName, InputControllerName controllerName, string schemeName, bool isDefault, IEnumerable<InputActionMap> inputActions)
+    public InputScheme(string inputDefinitionName, InputDeviceName deviceName, string schemeName, bool isDefault, IEnumerable<InputActionMap> inputActions)
     {
         InputDefinitionName = inputDefinitionName;
-        ControllerName = controllerName;
+        ControllerName = deviceName;
         SchemeName = schemeName;
         IsDefault = isDefault;
         InputActionMaps = inputActions.ToArray();
@@ -26,7 +26,7 @@ public class InputScheme
 
     public string InputDefinitionName { get; }
 
-    public InputControllerName ControllerName { get; }
+    public InputDeviceName ControllerName { get; }
 
     public string SchemeName { get; }
 

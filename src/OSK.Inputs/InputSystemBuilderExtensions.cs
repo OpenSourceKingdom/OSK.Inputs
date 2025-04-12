@@ -12,32 +12,32 @@ public static class InputSystemBuilderExtensions
     public static IInputSystemBuilder AddXboxController<TInputReader>(this IInputSystemBuilder builder, Action<XboxControllerDevice> configurator)
         where TInputReader : IInputReader
     {
-        return builder.AddInputController<XboxControllerDevice, TInputReader>(configurator);
+        return builder.AddInputDevice<XboxControllerDevice, TInputReader>(configurator);
     }
 
     public static IInputSystemBuilder AddPlayStationController<TInputReader>(this IInputSystemBuilder builder, Action<PlayStationControllerDevice> configurator)
         where TInputReader : IInputReader
     {
-        return builder.AddInputController<PlayStationControllerDevice, TInputReader>(configurator);
+        return builder.AddInputDevice<PlayStationControllerDevice, TInputReader>(configurator);
     }
 
-    public static IInputSystemBuilder AddKeyboardAndMouseController<TInputReader>(this IInputSystemBuilder builder, Action<KeyboardAndMouseDevice> configurator)
+    public static IInputSystemBuilder AddKeyboardAndMouseController<TInputReader>(this IInputSystemBuilder builder, Action<Keyboard> configurator)
         where TInputReader : IInputReader
     {
-        return builder.AddInputController<KeyboardAndMouseDevice, TInputReader>(configurator);
+        return builder.AddInputDevice<Keyboard, TInputReader>(configurator);
     }
 
     public static IInputSystemBuilder AddSensorController<TInputReader>(this IInputSystemBuilder builder, Action<SensorControllerDevice> configurator)
         where TInputReader : IInputReader
     {
-        return builder.AddInputController<SensorControllerDevice, TInputReader>(configurator);
+        return builder.AddInputDevice<SensorControllerDevice, TInputReader>(configurator);
     }
 
     #endregion
 
     #region Helpers
 
-    private static IInputSystemBuilder AddInputController<TConfigurator, TInputReader>(this IInputSystemBuilder builder, Action<TConfigurator> configuratorAction)
+    private static IInputSystemBuilder AddInputDevice<TConfigurator, TInputReader>(this IInputSystemBuilder builder, Action<TConfigurator> configuratorAction)
         where TInputReader : IInputReader
         where TConfigurator : InputDevice
     {
@@ -49,7 +49,7 @@ public static class InputSystemBuilderExtensions
         var configurator = (TConfigurator)Activator.CreateInstance(typeof(TConfigurator), typeof(TInputReader));
         configuratorAction(configurator);
 
-        builder.AddInputController(configurator.BuildControllerConfiguration());
+        builder.AddInputController(configurator.BuildDeviceConfiguration());
 
         return builder;
     }

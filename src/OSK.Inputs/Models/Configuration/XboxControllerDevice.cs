@@ -9,7 +9,7 @@ public class XboxControllerDevice(Type inputReaderType) : GamePadDevice(XboxCont
 {
     #region Static
 
-    public static readonly InputControllerName XboxControllerName = new InputControllerName("XboxController");
+    public static readonly InputDeviceName XboxControllerName = new InputDeviceName("XboxController");
 
     #endregion
 

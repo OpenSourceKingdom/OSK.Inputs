@@ -9,9 +9,9 @@ public class SensorControllerDevice(Type inputReaderType): InputDevice(SensorCon
 {
     #region Static
 
-    public static readonly InputControllerName SensorControllerName = new InputControllerName("SensorController");
+    public static readonly InputDeviceName SensorControllerName = new InputDeviceName("SensorController");
 
-    public static readonly AccelerometerInput Accelerometer = new AccelerometerInput();
+    public static readonly AccelerometerInput Accelerometer = new AccelerometerInput(1);
 
     public static readonly TouchInput OneTouch = new TouchInput(1);
     public static readonly TouchInput TwoTouch = new TouchInput(2);

@@ -12,8 +12,8 @@ public class InputDefinitionBuilderTests
 
     private const string TestDefinitionName = "test123";
 
-    private readonly Mock<IInputControllerConfiguration> _mockControllerConfiguration1;
-    private readonly Mock<IInputControllerConfiguration> _mockControllerConfiguration2;
+    private readonly Mock<IInputDeviceConfiguration> _mockControllerConfiguration1;
+    private readonly Mock<IInputDeviceConfiguration> _mockControllerConfiguration2;
 
     private readonly InputDefinitionBuilder _builder;
 
@@ -68,10 +68,10 @@ public class InputDefinitionBuilderTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]
-    public void AddInputScheme_InvalidControllerName_ThrowsArgumentException(string? controllerName)
+    public void AddInputScheme_InvalidControllerName_ThrowsArgumentException(string? deviceName)
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(new InputControllerName(controllerName), "abc", _ => { }));
+        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(new InputDeviceName(deviceName), "abc", _ => { }));
     }
 
     [Fact]
@@ -79,10 +79,10 @@ public class InputDefinitionBuilderTests
     {
         // Arrange
         _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns(new InputControllerName("abc"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act/Assert
-        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(new InputControllerName("def"), "abc", _ => { }));
+        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(new InputDeviceName("def"), "abc", _ => { }));
     }
 
     [Theory]
@@ -93,17 +93,17 @@ public class InputDefinitionBuilderTests
     {
         // Arrange
         _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns(new InputControllerName("abc"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act/Assert
-        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(new InputControllerName("abc"), schemeName!, _ => { }));
+        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(new InputDeviceName("abc"), schemeName!, _ => { }));
     }
 
     [Fact]
     public void AddInputScheme_NullAction_ThrowsInvalidOperationException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(new InputControllerName("abc"), "abc", null!));
+        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(new InputDeviceName("abc"), "abc", null!));
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class InputDefinitionBuilderTests
     {
         // Arrange
         _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns(new InputControllerName("abc"));
+            .Returns(new InputDeviceName("abc"));
 
         _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "abc", _ => { });
 
@@ -124,7 +124,7 @@ public class InputDefinitionBuilderTests
     {
         // Arrange
         _mockControllerConfiguration1.SetupGet(m => m.ControllerName)
-            .Returns(new InputControllerName("abc"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act/Assert
         _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "abc", _ => { });
@@ -144,9 +144,9 @@ public class InputDefinitionBuilderTests
         _builder.AddAction(action2);
 
         _mockControllerConfiguration1.Setup(m => m.ControllerName)
-            .Returns(new InputControllerName("abc"));
+            .Returns(new InputDeviceName("abc"));
         _mockControllerConfiguration2.Setup(m => m.ControllerName)
-            .Returns(new InputControllerName("def"));
+            .Returns(new InputDeviceName("def"));
 
         _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "Scheme1", _ => { });
         _builder.AddInputScheme(_mockControllerConfiguration1.Object.ControllerName, "Scheme2", _ => { });

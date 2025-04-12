@@ -2,11 +2,11 @@
 using OSK.Inputs.Models.Configuration;
 
 namespace OSK.Inputs.Models.Runtime;
-public struct InputControllerIdentifier(int controllerId, InputControllerName controllerName)
+public struct InputControllerIdentifier(int controllerId, InputDeviceName deviceName)
 {
     public int ControllerId => controllerId;
 
-    public InputControllerName ControllerName => controllerName;
+    public InputDeviceName ControllerName => deviceName;
 
     #region Operators
 
