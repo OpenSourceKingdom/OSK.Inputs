@@ -1,9 +1,9 @@
 ﻿namespace OSK.Inputs.Models.Runtime;
-public class ActiveInputScheme(int userId, string inputDefinitionName, string controllerName, string schemeName)
+public class ActiveInputScheme(int userId, string inputDefinitionName, string deviceName, string schemeName)
 {
     public string InputDefinitionName => inputDefinitionName;
 
-    public string ControllerName => controllerName;
+    public string ControllerName => deviceName;
 
     public string ActiveInputSchemeName => schemeName;
 

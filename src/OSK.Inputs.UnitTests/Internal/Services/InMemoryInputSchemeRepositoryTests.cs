@@ -133,7 +133,7 @@ public class InMemoryInputSchemeRepositoryTests
         await _repository.SaveCustomInputSchemeAsync(inputScheme.InputDefinitionName, inputScheme);
 
         // Act
-        var result = await _repository.GetCustomInputSchemeAsync("def", new InputControllerName("abc"), "abc");
+        var result = await _repository.GetCustomInputSchemeAsync("def", new InputDeviceName("abc"), "abc");
 
         // Assert
         Assert.False(result.IsSuccessful);
@@ -149,7 +149,7 @@ public class InMemoryInputSchemeRepositoryTests
         await _repository.SaveCustomInputSchemeAsync(inputScheme.InputDefinitionName, inputScheme);
 
         // Act
-        var result = await _repository.GetCustomInputSchemeAsync("abc", new InputControllerName("def"), "abc");
+        var result = await _repository.GetCustomInputSchemeAsync("abc", new InputDeviceName("def"), "abc");
 
         // Assert
         Assert.False(result.IsSuccessful);
@@ -165,7 +165,7 @@ public class InMemoryInputSchemeRepositoryTests
         await _repository.SaveCustomInputSchemeAsync(inputScheme.InputDefinitionName, inputScheme);
 
         // Act
-        var result = await _repository.GetCustomInputSchemeAsync("abc", new InputControllerName("abc"), "def");
+        var result = await _repository.GetCustomInputSchemeAsync("abc", new InputDeviceName("abc"), "def");
 
         // Assert
         Assert.False(result.IsSuccessful);
@@ -196,7 +196,7 @@ public class InMemoryInputSchemeRepositoryTests
     public async Task DeleteCustomInputSchemeAsync_InputDefinitionNotInDataSet_ReturnsSuccessfully()
     {
         // Arrange/Act
-        var result = await _repository.DeleteCustomInputSchemeAsync("abc", new InputControllerName("abc"), "abc");
+        var result = await _repository.DeleteCustomInputSchemeAsync("abc", new InputDeviceName("abc"), "abc");
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -209,7 +209,7 @@ public class InMemoryInputSchemeRepositoryTests
         var inputScheme = new InputScheme("abc", "def", "hij", false, []);
 
         // Act
-        var result = await _repository.DeleteCustomInputSchemeAsync("abc", new InputControllerName("abc"), "abc");
+        var result = await _repository.DeleteCustomInputSchemeAsync("abc", new InputDeviceName("abc"), "abc");
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -222,7 +222,7 @@ public class InMemoryInputSchemeRepositoryTests
         var inputScheme = new InputScheme("abc", "def", "hij", false, []);
 
         // Act
-        var result = await _repository.DeleteCustomInputSchemeAsync("abc", new InputControllerName("def"), "abc");
+        var result = await _repository.DeleteCustomInputSchemeAsync("abc", new InputDeviceName("def"), "abc");
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -350,7 +350,7 @@ public class InMemoryInputSchemeRepositoryTests
     public async Task DeleteActiveInputSchemeAsync_UserIdNotInDataSet_ReturnsSuccessfully()
     {
         // Arrange/Act
-        var result = await _repository.DeleteActiveInputSchemeAsync(1, "abc", new InputControllerName("abc"));
+        var result = await _repository.DeleteActiveInputSchemeAsync(1, "abc", new InputDeviceName("abc"));
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -363,7 +363,7 @@ public class InMemoryInputSchemeRepositoryTests
         await _repository.SaveActiveInputSchemeAsync(new ActiveInputScheme(1, "abc", "abc", "abc"));
 
         // Act
-        var result = await _repository.DeleteActiveInputSchemeAsync(1, "def", new InputControllerName("abc"));
+        var result = await _repository.DeleteActiveInputSchemeAsync(1, "def", new InputDeviceName("abc"));
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -377,7 +377,7 @@ public class InMemoryInputSchemeRepositoryTests
         await _repository.SaveActiveInputSchemeAsync(new ActiveInputScheme(1, "abc", "abc", "abc"));
 
         // Act
-        var result = await _repository.DeleteActiveInputSchemeAsync(1, "abc", new InputControllerName("def"));
+        var result = await _repository.DeleteActiveInputSchemeAsync(1, "abc", new InputDeviceName("def"));
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -391,7 +391,7 @@ public class InMemoryInputSchemeRepositoryTests
         await _repository.SaveActiveInputSchemeAsync(new ActiveInputScheme(1, "abc", "abc", "abc"));
 
         // Act
-        var result = await _repository.DeleteActiveInputSchemeAsync(1, "abc", new InputControllerName("abc"));
+        var result = await _repository.DeleteActiveInputSchemeAsync(1, "abc", new InputDeviceName("abc"));
 
         // Assert
         Assert.True(result.IsSuccessful);

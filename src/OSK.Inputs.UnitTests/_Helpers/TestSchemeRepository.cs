@@ -7,12 +7,12 @@ namespace OSK.Inputs.UnitTests._Helpers;
 
 public class TestSchemeRepository : IInputSchemeRepository
 {
-    public Task<IOutput> DeleteActiveInputSchemeAsync(int userId, string inputDefinitionName, InputControllerName controllerName, CancellationToken cancellationToken = default)
+    public Task<IOutput> DeleteActiveInputSchemeAsync(int userId, string inputDefinitionName, InputDeviceName deviceName, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
-    public Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputControllerName controllerName, string inputSchemeName, CancellationToken cancellationToken = default)
+    public Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputDeviceName deviceName, string inputSchemeName, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
@@ -22,7 +22,7 @@ public class TestSchemeRepository : IInputSchemeRepository
         throw new NotImplementedException();
     }
 
-    public Task<IOutput<InputScheme>> GetCustomInputSchemeAsync(string inputDefinitionName, InputControllerName controllerName, string inputSchemeName, CancellationToken cancellationToken = default)
+    public Task<IOutput<InputScheme>> GetCustomInputSchemeAsync(string inputDefinitionName, InputDeviceName deviceName, string inputSchemeName, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

@@ -67,7 +67,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return outputFactory.Succeed();
     }
 
-    public async Task<IOutput<ActiveInputScheme>> SetActiveInputSchemeAsync(int userId, string inputDefinitionId, InputControllerName controllerName,
+    public async Task<IOutput<ActiveInputScheme>> SetActiveInputSchemeAsync(int userId, string inputDefinitionId, InputDeviceName deviceName,
         string schemeId, CancellationToken cancellationToken = default)
     {
         if (!_userLookup.TryGetValue(userId, out var user))
@@ -80,16 +80,16 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         {
             return getInputDefinitionOutput.AsOutput<ActiveInputScheme>();
         }
-        if (inputSystemConfiguration.SupportedInputControllers.FirstOrDefaultByString(controllerConfiguration => controllerConfiguration.ControllerName.Name, controllerName.Name) is null)
+        if (inputSystemConfiguration.SupportedInputControllers.FirstOrDefaultByString(controllerConfiguration => controllerConfiguration.ControllerName.Name, deviceName.Name) is null)
         {
-            return outputFactory.NotFound<ActiveInputScheme>($"The input controller with the name {controllerName} is not supported with the input system.");
+            return outputFactory.NotFound<ActiveInputScheme>($"The input controller with the name {deviceName} is not supported with the input system.");
         }
         if (getInputDefinitionOutput.Value.InputSchemes.FirstOrDefaultByString(scheme => scheme.SchemeName, schemeId) is null)
         {
-            return outputFactory.NotFound<ActiveInputScheme>($"The input scheme with the name {schemeId} was not found for the {controllerName} controller");
+            return outputFactory.NotFound<ActiveInputScheme>($"The input scheme with the name {schemeId} was not found for the {deviceName} controller");
         }
 
-        var saveActiveSchemeOutput = await inputSchemeRepository.SaveActiveInputSchemeAsync(new ActiveInputScheme(userId, inputDefinitionId, controllerName.Name, schemeId), cancellationToken);
+        var saveActiveSchemeOutput = await inputSchemeRepository.SaveActiveInputSchemeAsync(new ActiveInputScheme(userId, inputDefinitionId, deviceName.Name, schemeId), cancellationToken);
         if (!saveActiveSchemeOutput.IsSuccessful)
         {
             return saveActiveSchemeOutput;
@@ -108,16 +108,16 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return saveActiveSchemeOutput;
     }
 
-    public async Task<IOutput> ResetUserActiveInputSchemeAsync(int userId, string inputDefinitionId, InputControllerName controllerName, CancellationToken cancellationToken = default)
+    public async Task<IOutput> ResetUserActiveInputSchemeAsync(int userId, string inputDefinitionId, InputDeviceName deviceName, CancellationToken cancellationToken = default)
     {
         if (!_userLookup.TryGetValue(userId, out var user))
         {
             return outputFactory.NotFound<ActiveInputScheme>($"User id {userId} was not found.");
         }
 
-        var deleteActiveSchemeResult = await inputSchemeRepository.DeleteActiveInputSchemeAsync(userId, inputDefinitionId, controllerName, cancellationToken);
+        var deleteActiveSchemeResult = await inputSchemeRepository.DeleteActiveInputSchemeAsync(userId, inputDefinitionId, deviceName, cancellationToken);
         if (deleteActiveSchemeResult.IsSuccessful && user.ActiveInputDefinition.Name.Equals(inputDefinitionId, StringComparison.Ordinal) 
-                && user.GetActiveInputScheme(controllerName) != null)
+                && user.GetActiveInputScheme(deviceName) != null)
         {
             var getActiveInputSchemesOutput = await GetActiveInputSchemesForUserAsync(userId, user.ActiveInputDefinition, cancellationToken);
             if (!getActiveInputSchemesOutput.IsSuccessful)
@@ -164,16 +164,16 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return inputSchemeRepository.SaveCustomInputSchemeAsync(inputDefinition.Name, inputScheme, cancellationToken);
     }
 
-    public async Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputControllerName controllerName, string schemeName,
+    public async Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputDeviceName deviceName, string schemeName,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(inputDefinitionName))
         {
             throw new ArgumentNullException(nameof(inputDefinitionName));
         }
-        if (string.IsNullOrWhiteSpace(controllerName.Name))
+        if (string.IsNullOrWhiteSpace(deviceName.Name))
         {
-            throw new ArgumentNullException(nameof(controllerName));
+            throw new ArgumentNullException(nameof(deviceName));
         }
         if (string.IsNullOrWhiteSpace(schemeName))
         {
@@ -187,7 +187,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         }
 
         var controller = inputSystemConfiguration.SupportedInputControllers.FirstOrDefaultByString(controller => controller.ControllerName.Name,
-            controllerName.Name);
+            deviceName.Name);
         if (controller is null)
         {
             return outputFactory.Succeed();
@@ -196,7 +196,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         var inputScheme = inputDefinition.InputSchemes.FirstOrDefaultByString(scheme => scheme.SchemeName, schemeName);
         if (inputScheme is BuiltInInputScheme)
         {
-            return outputFactory.Fail($"Input controller {controllerName} input scheme {inputScheme} for input definition {inputDefinitionName} can not be deleted because it is built in.");
+            return outputFactory.Fail($"Input controller {deviceName} input scheme {inputScheme} for input definition {inputDefinitionName} can not be deleted because it is built in.");
         }
 
         if (!inputSystemConfiguration.AllowCustomInputSchemes)
@@ -204,7 +204,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             return outputFactory.Succeed();
         }
 
-        var deleteResult = await inputSchemeRepository.DeleteCustomInputSchemeAsync(inputDefinitionName, controllerName, schemeName, cancellationToken);
+        var deleteResult = await inputSchemeRepository.DeleteCustomInputSchemeAsync(inputDefinitionName, deviceName, schemeName, cancellationToken);
         return deleteResult.IsSuccessful || deleteResult.StatusCode.SpecificityCode == OutputSpecificityCode.DataNotFound
             ? outputFactory.Succeed()
             : deleteResult;

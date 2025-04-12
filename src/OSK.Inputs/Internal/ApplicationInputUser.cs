@@ -34,9 +34,9 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 
     public IEnumerable<InputControllerIdentifier> ControllerIdentifiers => _inputControllers.Values.Select(controller => controller.ControllerIdentifier);
 
-    public InputScheme? GetActiveInputScheme(InputControllerName controllerName)
+    public InputScheme? GetActiveInputScheme(InputDeviceName deviceName)
     {
-        if (_activeInputSchemeLookup.TryGetValue(controllerName.Name, out InputScheme inputScheme))
+        if (_activeInputSchemeLookup.TryGetValue(deviceName.Name, out InputScheme inputScheme))
         {
             return inputScheme;
         }
@@ -160,7 +160,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
         InputDefinition inputDefinition, IEnumerable<InputScheme> activeSchemes)
     {
         var inputControllerInputLookup = configuration.SupportedInputControllers.ToDictionary(controller => controller.ControllerName,
-            controller => controller.Inputs.ToDictionary(input => input.Name));
+            controller => controller.Inputs.ToDictionary(input => input.Id));
         var actionConfigurationLookup = inputDefinition.InputActions.ToDictionary(action => action.ActionKey);
         var activeInputSchemeLookup = activeSchemes.ToDictionary(scheme => scheme.ControllerName);
 

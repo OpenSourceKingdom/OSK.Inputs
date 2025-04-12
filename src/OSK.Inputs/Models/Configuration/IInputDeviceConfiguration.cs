@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using OSK.Inputs.Models.Inputs;
 
 namespace OSK.Inputs.Models.Configuration;
-public interface IInputControllerConfiguration
+public interface IInputDeviceConfiguration
 {
     #region Variables
 
-    public InputControllerName ControllerName { get; }
+    public InputDeviceName ControllerName { get; }
 
     public Type InputReaderType { get; }
 

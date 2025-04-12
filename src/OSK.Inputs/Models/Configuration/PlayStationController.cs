@@ -9,7 +9,7 @@ public class PlayStationControllerDevice(Type inputReaderType) : GamePadDevice(P
 {
     #region Static
 
-    public static readonly InputControllerName PlayStationControllerName = new InputControllerName("PlayStationController");
+    public static readonly InputDeviceName PlayStationControllerName = new InputDeviceName("PlayStationController");
 
     #endregion
 

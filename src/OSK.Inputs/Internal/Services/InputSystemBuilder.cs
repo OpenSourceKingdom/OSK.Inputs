@@ -8,7 +8,7 @@ using OSK.Inputs.Ports;
 namespace OSK.Inputs.Internal.Services;
 
 internal class InputSystemBuilder(IServiceCollection services, 
-    Func<string, IEnumerable<IInputControllerConfiguration>, IInputDefinitionBuilder>? definitionBuilderFactory = null,
+    Func<string, IEnumerable<IInputDeviceConfiguration>, IInputDefinitionBuilder>? definitionBuilderFactory = null,
     Func<IInputValidationService>? validationServiceFactory = null) : IInputSystemBuilder
 {
     #region Variables
@@ -17,7 +17,7 @@ internal class InputSystemBuilder(IServiceCollection services,
     private int _maxLocalUsers = 1;
     private bool _allowCustomSchemes;
     private readonly Dictionary<string, Action<IInputDefinitionBuilder>> _builderActionLookup = new Dictionary<string, Action<IInputDefinitionBuilder>>(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, IInputControllerConfiguration> _controllerConfigurationLookup = new Dictionary<string, IInputControllerConfiguration>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, IInputDeviceConfiguration> _controllerConfigurationLookup = new Dictionary<string, IInputDeviceConfiguration>(StringComparer.OrdinalIgnoreCase);
 
     #endregion
 
@@ -42,7 +42,7 @@ internal class InputSystemBuilder(IServiceCollection services,
         return this;
     }
 
-    public IInputSystemBuilder AddInputController(IInputControllerConfiguration controllerConfiguration)
+    public IInputSystemBuilder AddInputController(IInputDeviceConfiguration controllerConfiguration)
     {
         if (controllerConfiguration is null)
         {

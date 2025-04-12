@@ -1,11 +1,11 @@
 ﻿using System;
 
 namespace OSK.Inputs.Models.Configuration;
-public struct InputControllerName(string? name): IEquatable<InputControllerName>
+public struct InputDeviceName(string? name): IEquatable<InputDeviceName>
 {
     public string Name => name ?? string.Empty;
 
-    public bool Equals(InputControllerName other)
+    public bool Equals(InputDeviceName other)
     {
         return Name == other.Name;
     }
@@ -19,7 +19,7 @@ public struct InputControllerName(string? name): IEquatable<InputControllerName>
 
     public override bool Equals(object obj)
     {
-        return obj is InputControllerName other && Equals(other);
+        return obj is InputDeviceName other && Equals(other);
     }
 
     public override int GetHashCode()
@@ -27,12 +27,12 @@ public struct InputControllerName(string? name): IEquatable<InputControllerName>
         return Name is null ? 0 : Name.GetHashCode();
     }
 
-    public static bool operator ==(InputControllerName left, InputControllerName right)
+    public static bool operator ==(InputDeviceName left, InputDeviceName right)
     {
         return left.Equals(right);
     }
 
-    public static bool operator !=(InputControllerName left, InputControllerName right)
+    public static bool operator !=(InputDeviceName left, InputDeviceName right)
     {
         return !(left == right);
     }

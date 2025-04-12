@@ -30,11 +30,11 @@ public interface IInputManager
     ValueTask<IOutput<IEnumerable<InputDefinition>>> GetInputDefinitionsAsync(CancellationToken cancellationToken = default);
 
     Task<IOutput> SetUserActiveInputDefinitionAsync(int userId, string inputDefinitionName, CancellationToken cancellationToken = default);
-    Task<IOutput> ResetUserActiveInputSchemeAsync(int userId, string inputDefinitionId, InputControllerName controllerName, CancellationToken cancellationToken = default);
-    Task<IOutput<ActiveInputScheme>> SetActiveInputSchemeAsync(int userId, string inputDefinitionId, InputControllerName controllerName, string schemeId,
+    Task<IOutput> ResetUserActiveInputSchemeAsync(int userId, string inputDefinitionId, InputDeviceName deviceName, CancellationToken cancellationToken = default);
+    Task<IOutput<ActiveInputScheme>> SetActiveInputSchemeAsync(int userId, string inputDefinitionId, InputDeviceName deviceName, string schemeId,
         CancellationToken cancellationToken = default);
     Task<IOutput<InputScheme>> SaveCustomInputSchemeAsync(InputScheme inputScheme, CancellationToken cancellationToken = default);
-    Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputControllerName controllerName, string schemeName,
+    Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputDeviceName deviceName, string schemeName,
         CancellationToken cancellationToken = default);
 
     Task<InputActivationContext> ReadInputsAsync(InputReadOptions readOptions, CancellationToken cancellationToken = default);

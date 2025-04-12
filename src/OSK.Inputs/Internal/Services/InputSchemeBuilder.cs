@@ -8,7 +8,7 @@ using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal.Services;
 
-internal class InputSchemeBuilder(string inputDefinitionName, IInputControllerConfiguration controllerConfiguration, string schemeName) 
+internal class InputSchemeBuilder(string inputDefinitionName, IInputDeviceConfiguration controllerConfiguration, string schemeName) 
     : IInputSchemeBuilder
 {
     #region Variables
@@ -61,7 +61,7 @@ internal class InputSchemeBuilder(string inputDefinitionName, IInputControllerCo
             throw new DuplicateNameException($"The input scheme {schemeName} for the controller {controllerConfiguration.ControllerName} using input definition {inputDefinitionName} already has an input associated to the action key {actionKey} and input phase {inputPhase}.");
         }
 
-        _inputActionMapLookup.Add(actionLookupKey, new InputActionMap(actionKey, input.Name, inputPhase));
+        _inputActionMapLookup.Add(actionLookupKey, new InputActionMap(actionKey, input.Id, inputPhase));
         return this;
     }
 
