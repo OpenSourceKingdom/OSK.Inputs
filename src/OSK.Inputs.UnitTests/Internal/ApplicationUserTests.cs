@@ -13,6 +13,7 @@ public class ApplicationUserTests
     #region Variables
 
     private readonly InputDefinition _testDefinition;
+    private readonly List<IInputControllerConfiguration> _controllerConfigurations;
     private readonly InputScheme _testScheme;
 
     private ApplicationInputUser _user;
@@ -23,10 +24,29 @@ public class ApplicationUserTests
 
     public ApplicationUserTests()
     {
+        _controllerConfigurations = [];
+
+        var mockController = new Mock<IInputControllerConfiguration>();
+        mockController.SetupGet(m => m.ControllerName)
+            .Returns(new InputControllerName("abc"));
+        mockController.SetupGet(m => m.Inputs)
+            .Returns([]);
+
+        _controllerConfigurations.Add(mockController.Object);
+
+        var mockController2 = new Mock<IInputControllerConfiguration>();
+        mockController2.SetupGet(m => m.ControllerName)
+            .Returns(new InputControllerName("NewController"));
+        mockController2.SetupGet(m => m.Inputs)
+            .Returns([]);
+
+        _controllerConfigurations.Add(mockController2.Object);
+
         _testScheme = new InputScheme("Abc", new InputControllerName("abc"), "abc", false, []);
         _testDefinition = new InputDefinition("Abc", [], [ _testScheme ]);
 
-        _user = new ApplicationInputUser(1, _testDefinition, [_testScheme]);
+        _user = new ApplicationInputUser(1, new InputSystemConfiguration([_testDefinition], _controllerConfigurations, false, 1));
+        _user.SetActiveInputDefinition(_testDefinition, [ _testScheme ]);
     }
 
     #endregion
@@ -175,7 +195,7 @@ public class ApplicationUserTests
         var newTestDefinition = new InputDefinition("whatdayaknow", [], [ newTestScheme ]);
 
         // Act
-        _user.SetActiveInputSchemes(newTestDefinition, [newTestScheme]);
+        _user.SetActiveInputDefinition(newTestDefinition, [newTestScheme]);
 
         // Assert
         Assert.Equal(newTestDefinition, _user.ActiveInputDefinition);

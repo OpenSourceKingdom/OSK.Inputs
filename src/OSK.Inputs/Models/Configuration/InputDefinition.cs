@@ -22,30 +22,6 @@ public class InputDefinition(string name, IEnumerable<InputAction> inputActions,
 
     #region Helpers
 
-    public IReadOnlyCollection<InputActionSchemeMap> GetInputActionSchemeMaps(InputControllerName controllerName, string schemeName)
-    {
-        if (!_inputSchemeLookup.TryGetValue(controllerName.Name, out var schemes))
-        {
-            return [];
-        }
-
-        var inputScheme = schemes.FirstOrDefaultByString(scheme => scheme.SchemeName, schemeName);
-        if (inputScheme is null)
-        {
-            return [];
-        }
-
-        var inputActionLookup = InputActions.ToDictionary(action => action.ActionKey);
-
-        List<InputActionSchemeMap> actionSchemeMaps = [];
-        foreach (var inputMap in inputScheme.InputActionMaps)
-        {
-            actionSchemeMaps.Add(new InputActionSchemeMap(inputMap.InputKey, inputMap.InputPhase, inputActionLookup[inputMap.ActionKey].Options));
-        }
-
-        return actionSchemeMaps;
-    }
-
     public InputDefinition Clone(IEnumerable<InputScheme>? additionalInputSchemes = null)
     {
         var inputSchemes = additionalInputSchemes is null 

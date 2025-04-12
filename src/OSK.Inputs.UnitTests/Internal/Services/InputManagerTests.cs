@@ -41,6 +41,9 @@ public class InputManagerTests
         _mockControllerConfiguration.SetupGet(m => m.ControllerName)
             .Returns(new InputControllerName("TestController"));
 
+        _mockControllerConfiguration.SetupGet(m => m.Inputs)
+            .Returns([]);
+
         _mockValidationService = new();
         _mockInputSchemeRepository = new();
         _mockInputReaderProvider = new();
@@ -266,7 +269,7 @@ public class InputManagerTests
 
         // Assert
         Assert.True(result.IsSuccessful);
-        Assert.Equal(user.Value.ActiveInputDefinition, definition);
+        Assert.True(user.Value.ActiveInputDefinition.DeepEquals(definition));
         _mockInputSchemeRepository.Verify(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -893,7 +896,7 @@ public class InputManagerTests
 
         // Assert
         Assert.True(result.IsSuccessful);
-        Assert.Equal(result.Value.ActiveInputDefinition, definition);
+        Assert.True(result.Value.ActiveInputDefinition.DeepEquals(definition));
     }
 
     [Fact]

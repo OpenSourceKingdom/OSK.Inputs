@@ -57,13 +57,12 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             return getInputDefinitionOutput;
         }
 
-        var definition = inputSystemConfiguration.InputDefinitions.FirstByString(definition => definition.Name, inputDefinitionName);
-        var getActiveInputSchemes = await GetActiveInputSchemesForUserAsync(userId, definition, cancellationToken);
+        var getActiveInputSchemes = await GetActiveInputSchemesForUserAsync(userId, getInputDefinitionOutput.Value, cancellationToken);
         if (!getActiveInputSchemes.IsSuccessful)
         {
             return outputFactory.Fail("Unable to set the active input scheme for the input definition.");
         }
-        user.SetActiveInputSchemes(definition, getActiveInputSchemes.Value);
+        user.SetActiveInputDefinition(getInputDefinitionOutput.Value, getActiveInputSchemes.Value);
 
         return outputFactory.Succeed();
     }
@@ -103,7 +102,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             {
                 return outputFactory.Fail<ActiveInputScheme>("Unable to set the active input scheme after saving.", getActiveInputSchemes.StatusCode.SpecificityCode);
             }
-            user.SetActiveInputSchemes(user.ActiveInputDefinition, getActiveInputSchemes.Value);
+            user.SetActiveInputDefinition(user.ActiveInputDefinition, getActiveInputSchemes.Value);
         }
 
         return saveActiveSchemeOutput;
@@ -126,7 +125,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
                 return getActiveInputSchemesOutput;
             }
 
-            user.SetActiveInputSchemes(user.ActiveInputDefinition, getActiveInputSchemesOutput.Value);
+            user.SetActiveInputDefinition(user.ActiveInputDefinition, getActiveInputSchemesOutput.Value);
         }
 
         return deleteActiveSchemeResult;
@@ -233,15 +232,17 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             return getInputDefinitionOutput.AsOutput<IApplicationInputUser>();
         }
 
-        var getInputSchemesOutput = await GetActiveInputSchemesForUserAsync(userId, getInputDefinitionOutput.Value, cancellationToken);
-        if (!getInputSchemesOutput.IsSuccessful)
+        var getActiveInputSchemesOutput = await GetActiveInputSchemesForUserAsync(userId, getInputDefinitionOutput.Value, cancellationToken);
+        if (!getActiveInputSchemesOutput.IsSuccessful)
         {
-            return getInputSchemesOutput.AsOutput<IApplicationInputUser>();
+            return getActiveInputSchemesOutput.AsOutput<IApplicationInputUser>();
         }
 
         var definition = inputSystemConfiguration.InputDefinitions.FirstByString(definition => definition.Name, activeDefinitionName);
         var inputControllers = options.ControllerIdentifiers.Select(GetInputController);
-        user = new ApplicationInputUser(userId, definition, getInputSchemesOutput.Value);
+        user = new ApplicationInputUser(userId, inputSystemConfiguration);
+        user.SetActiveInputDefinition(getInputDefinitionOutput.Value, getActiveInputSchemesOutput.Value);
+
         user.OnInputControllerConnected += NotifiyUserInputControllerConnected;
         user.OnInputControllerDisconnected += NotifiyUserInputControllerDisconnected;
 
