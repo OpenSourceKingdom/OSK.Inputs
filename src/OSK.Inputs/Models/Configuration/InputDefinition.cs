@@ -10,7 +10,7 @@ public class InputDefinition(string name, IEnumerable<InputAction> inputActions,
 
     public string Name => name;
 
-    public IReadOnlyCollection<InputAction> InputActions { get; } = inputActions.ToArray();
+    public IReadOnlyCollection<InputAction> InputActions => _actionLookup.Values;
 
     public IEnumerable<InputScheme> InputSchemes => _inputSchemeLookup.Values.SelectMany(schemesByController => schemesByController);
 
@@ -18,9 +18,13 @@ public class InputDefinition(string name, IEnumerable<InputAction> inputActions,
         .ToDictionary(inputControllerSchemeGroup => inputControllerSchemeGroup.Key, 
                       inputControllerSchemeGroup => inputControllerSchemeGroup.OrderBy(scheme => scheme.IsDefault).ThenBy(scheme => scheme.SchemeName).ToArray());
 
+    private Dictionary<string, InputAction> _actionLookup = inputActions.ToDictionary(action => action.ActionKey);
+
     #endregion
 
     #region Helpers
+
+    public InputAction this[string actionName] => _actionLookup[actionName];
 
     public InputDefinition Clone(IEnumerable<InputScheme>? additionalInputSchemes = null)
     {

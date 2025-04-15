@@ -22,7 +22,7 @@ public interface IInputManager
 
     Task<IOutput<IApplicationInputUser>> JoinUserAsync(int userId, JoinUserOptions options, CancellationToken cancellationToken = default);
     void RemoveUser(int userId);
-    void PairController(int userId, InputControllerIdentifier controllerIdentifier);
+    void PairController(int userId, InputDeviceIdentifier controllerIdentifier);
     IEnumerable<IApplicationInputUser> GetApplicationInputUsers();
     IApplicationInputUser GetApplicationInputUser(int userId);
 

@@ -6,7 +6,7 @@ public interface IApplicationInputUser
 {
     int Id { get; }
 
-    IEnumerable<InputControllerIdentifier> ControllerIdentifiers { get; }
+    IEnumerable<InputDeviceIdentifier> ControllerIdentifiers { get; }
 
     InputDefinition ActiveInputDefinition { get; }
 

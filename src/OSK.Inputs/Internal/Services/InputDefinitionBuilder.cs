@@ -24,6 +24,10 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputD
         {
             throw new ArgumentNullException(nameof(action));
         }
+        if (action.ActionExecutor is null)
+        {
+            throw new InvalidOperationException($"Action {action.ActionKey} on definition {definitionName} did not have a valid action executor and is unusable.");
+        }
         if (_actionLookup.TryGetValue(action.ActionKey, out _))
         {
             throw new DuplicateNameException($"An action has already been added to the input definition with the key {action.ActionKey}.");

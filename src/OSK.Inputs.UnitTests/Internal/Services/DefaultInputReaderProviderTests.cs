@@ -34,14 +34,14 @@ public class DefaultInputReaderProviderTests
     public void GetInputReader_NullInputConfiguration_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _provider.GetInputReader(null!, new InputControllerIdentifier()));
+        Assert.Throws<ArgumentNullException>(() => _provider.GetInputReader(null!, new InputDeviceIdentifier()));
     }
 
     [Fact]
     public void GetInputReader_Valid_ReturnsInputReader()
     {
         // Arrange
-        var inputControllerIdentifier = new InputControllerIdentifier(117, new InputDeviceName("Spartan"));
+        var inputControllerIdentifier = new InputDeviceIdentifier(117, new InputDeviceName("Spartan"));
         var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
@@ -58,8 +58,8 @@ public class DefaultInputReaderProviderTests
 
         var testReader = (TestInputReader)reader;
 
-        Assert.Equal(inputControllerIdentifier.ControllerName, testReader.ControllerIdentifier.ControllerName);
-        Assert.Equal(inputControllerIdentifier.ControllerId, testReader.ControllerIdentifier.ControllerId);
+        Assert.Equal(inputControllerIdentifier.DeviceName, testReader.ControllerIdentifier.DeviceName);
+        Assert.Equal(inputControllerIdentifier.DeviceId, testReader.ControllerIdentifier.DeviceId);
 
         Assert.Equal(inputs, testReader.Inputs);
     }

@@ -1,9 +1,9 @@
 ﻿using OSK.Inputs.Models.Runtime;
 
 namespace OSK.Inputs.Models.Events;
-public class ApplicationUserInputControllerEvent(IApplicationInputUser user, InputControllerIdentifier controllerIdentifier)
+public class ApplicationUserInputControllerEvent(IApplicationInputUser user, InputDeviceIdentifier controllerIdentifier)
 {
     public IApplicationInputUser User => user;
 
-    public InputControllerIdentifier ControllerIdentifier => controllerIdentifier;
+    public InputDeviceIdentifier ControllerIdentifier => controllerIdentifier;
 }

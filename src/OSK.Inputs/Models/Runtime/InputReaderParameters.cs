@@ -3,9 +3,9 @@ using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
 
 namespace OSK.Inputs.Models.Runtime;
-public class InputReaderParameters(InputControllerIdentifier controllerIdentifier, IEnumerable<IInput> inputs)
+public class InputReaderParameters(InputDeviceIdentifier controllerIdentifier, IEnumerable<IInput> inputs)
 {
-    public InputControllerIdentifier ControllerIdentifier => controllerIdentifier;
+    public InputDeviceIdentifier ControllerIdentifier => controllerIdentifier;
 
     public IEnumerable<IInput> Inputs => inputs;
 }

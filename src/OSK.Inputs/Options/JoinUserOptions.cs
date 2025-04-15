@@ -10,7 +10,7 @@ public class JoinUserOptions
 
     #endregion
 
-    public IEnumerable<InputControllerIdentifier> ControllerIdentifiers { get; set; } = [];
+    public IEnumerable<InputDeviceIdentifier> ControllerIdentifiers { get; set; } = [];
 
     public string? ActiveInputDefinitionName { get; set; } = null;
 }
