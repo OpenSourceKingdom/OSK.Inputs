@@ -10,8 +10,8 @@ namespace OSK.Inputs.Ports;
 [HexagonalIntegration(HexagonalIntegrationType.IntegrationRequired)]
 public interface IInputReader: IDisposable
 {
-    event Action<InputControllerIdentifier> OnControllerDisconnected;
-    event Action<InputControllerIdentifier> OnControllerReconnected;
+    event Action<InputDeviceIdentifier> OnControllerDisconnected;
+    event Action<InputDeviceIdentifier> OnControllerReconnected;
 
-    Task<IEnumerable<ActivatedInput>> ReadInputsAsync(InputReadContext context, CancellationToken cancellationToken = default);
+    Task ReadInputsAsync(UserInputReadContext context, CancellationToken cancellationToken = default);
 }

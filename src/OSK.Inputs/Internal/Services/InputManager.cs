@@ -261,9 +261,9 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         }
     }
 
-    public void PairController(int userId, InputControllerIdentifier controllerIdentifier)
+    public void PairController(int userId, InputDeviceIdentifier controllerIdentifier)
     {
-        var pairedUser = _userLookup.Values.FirstOrDefault(user => user.TryGetController(controllerIdentifier.ControllerId, out _));
+        var pairedUser = _userLookup.Values.FirstOrDefault(user => user.TryGetController(controllerIdentifier.DeviceId, out _));
         if (pairedUser is not null)
         {
             if (pairedUser.Id == userId)
@@ -315,33 +315,33 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
 
     #region Helpers
 
-    private void NotifiyUserInputControllerConnected(int userId, InputController controller)
+    private void NotifiyUserInputControllerConnected(int userId, InputDevice controller)
     {
         if (_userLookup.TryGetValue(userId, out var applicationInputUser))
         {
-            OnInputControllerConnected(new ApplicationUserInputControllerEvent(applicationInputUser, controller.ControllerIdentifier));
+            OnInputControllerConnected(new ApplicationUserInputControllerEvent(applicationInputUser, controller.DeviceIdentifier));
         }
     }
 
-    private void NotifiyUserInputControllerDisconnected(int userId, InputController controller)
+    private void NotifiyUserInputControllerDisconnected(int userId, InputDevice controller)
     {
         if (_userLookup.TryGetValue(userId, out var applicationInputUser))
         {
-            OnInputControllerDisconnected(new ApplicationUserInputControllerEvent(applicationInputUser, controller.ControllerIdentifier));
+            OnInputControllerDisconnected(new ApplicationUserInputControllerEvent(applicationInputUser, controller.DeviceIdentifier));
         }
     }
 
-    private InputController GetInputController(InputControllerIdentifier controllerIdentifier)
+    private InputDevice GetInputController(InputDeviceIdentifier controllerIdentifier)
     {
         var controllerConfiguration = inputSystemConfiguration.SupportedInputControllers.FirstOrDefaultByString(controllerConfiguration
-            => controllerConfiguration.ControllerName.Name, controllerIdentifier.ControllerName.Name);
+            => controllerConfiguration.ControllerName.Name, controllerIdentifier.DeviceName.Name);
         if (controllerConfiguration is null)
         {
-            throw new InvalidOperationException($"No controller with the name of {controllerIdentifier.ControllerName} was configured for support with the input system.");
+            throw new InvalidOperationException($"No controller with the name of {controllerIdentifier.DeviceName} was configured for support with the input system.");
         }
 
         var inputReader = inputReaderProvider.GetInputReader(controllerConfiguration, controllerIdentifier);
-        return new InputController(controllerIdentifier, controllerConfiguration, inputReader);
+        return new InputDevice(controllerIdentifier, controllerConfiguration, inputReader);
     }
 
     private async Task<IOutput<IEnumerable<InputScheme>>> GetActiveInputSchemesForUserAsync(int userId, InputDefinition inputDefinition, CancellationToken cancellationToken)

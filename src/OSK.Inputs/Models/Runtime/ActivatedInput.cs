@@ -2,20 +2,22 @@
 
 namespace OSK.Inputs.Models.Runtime;
 
-public class ActivatedInput(InputControllerIdentifier controllerIdentifier, IInput input, string actionKey,
-    InputPhase inputPhase, InputPower inputPower)
+public class ActivatedInput(int userId, InputActionMapPair inputActionMapPair,
+    InputPhase triggeredPhase, InputPower inputPower, PointerInformation pointerInformation)
 {
     #region Variables
 
-    public InputControllerIdentifier ControllerIdentifier => controllerIdentifier;
+    public int UserId => userId;
 
-    public IInput Input => input;
+    public IInput Input => inputActionMapPair.DeviceInput;
 
-    public string ActionKey => actionKey;
+    public string ActionKey => inputActionMapPair.ActionKey;
 
-    public InputPhase TriggeredPhase => inputPhase;
+    public InputPhase TriggeredPhase => triggeredPhase;
 
     public InputPower InputPower => inputPower;
+
+    public PointerInformation PointerInformation => pointerInformation;
 
     #endregion
 }

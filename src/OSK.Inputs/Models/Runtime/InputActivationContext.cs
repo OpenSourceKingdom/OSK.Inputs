@@ -2,28 +2,35 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
+using OSK.Inputs.Models.Events;
 
 namespace OSK.Inputs.Models.Runtime;
 
-public class InputActivationContext(IServiceProvider serviceProvider, IEnumerable<UserActivatedInput> activatedInputs)
+public delegate ValueTask InputActivationDelegate(InputActivationEvent @event);
+
+public class InputActivationContext(IServiceProvider serviceProvider, IEnumerable<UserActionCommand> activatedInputs)
 {
-    #region Variables
-
-    public IServiceProvider Services => serviceProvider;
-
-    private readonly IReadOnlyDictionary<int, IReadOnlyCollection<UserActivatedInput>> _activatedUserInputs =
-        new ReadOnlyDictionary<int, IReadOnlyCollection<UserActivatedInput>>(
-            activatedInputs.GroupBy(input => input.UserId).ToDictionary(userInputGroup => userInputGroup.Key,
-                userInputGroup => (IReadOnlyCollection<UserActivatedInput>)[.. userInputGroup]));
-
-    #endregion
-
     #region Helpers
 
-    public IReadOnlyCollection<UserActivatedInput> GetAllActivatedInputs => _activatedUserInputs.Values.SelectMany(userInputs => userInputs).ToArray();
+    public async ValueTask ExecuteCommandsAsync(Func<InputActivationDelegate, InputActivationEvent, ValueTask>? middleware)
+    {
+        foreach (var command in activatedInputs)
+        {
+            InputActivationDelegate executionDelegate =
+                @event => command.InputAction.ActionExecutor(@event);
 
-    public IReadOnlyCollection<UserActivatedInput> GetActivatedInputsByUser(int userId)
-        => _activatedUserInputs.TryGetValue(userId, out var userInputs) ? userInputs : Array.Empty<UserActivatedInput>();
+            var activationEvent = new InputActivationEvent(serviceProvider, command.ActivatedInput);
+            if (middleware != null)
+            {
+                await middleware(executionDelegate, activationEvent);
+            }
+            else
+            {
+                await executionDelegate(activationEvent);
+            }
+        }
+    }
 
     #endregion
 }

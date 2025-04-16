@@ -6,18 +6,18 @@ using OSK.Inputs.Ports;
 namespace OSK.Inputs.UnitTests._Helpers;
 public class TestInputReader(InputReaderParameters parameters) : IInputReader
 {
-    public InputControllerIdentifier ControllerIdentifier => parameters.ControllerIdentifier;
+    public InputDeviceIdentifier ControllerIdentifier => parameters.ControllerIdentifier;
     public IEnumerable<IInput> Inputs => parameters.Inputs;
 
-    public event Action<InputControllerIdentifier> OnControllerDisconnected = _ => { };
-    public event Action<InputControllerIdentifier> OnControllerReconnected = _ => { };
+    public event Action<InputDeviceIdentifier> OnControllerDisconnected = _ => { };
+    public event Action<InputDeviceIdentifier> OnControllerReconnected = _ => { };
 
     public void Dispose()
     {
         throw new NotImplementedException();
     }
 
-    public Task<IEnumerable<ActivatedInput>> ReadInputsAsync(InputReadContext readContext, CancellationToken cancellationToken = default)
+    public Task ReadInputsAsync(UserInputReadContext readContext, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

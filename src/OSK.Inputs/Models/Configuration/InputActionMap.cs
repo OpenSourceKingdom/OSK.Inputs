@@ -6,7 +6,7 @@ public struct InputActionMap(string actionKey, int inputKey, InputPhase inputPha
 {
     public readonly string ActionKey => actionKey;
 
-    public readonly int InputKey => inputKey;
+    public readonly int InputId => inputKey;
 
     public readonly InputPhase InputPhase => inputPhase;
 }

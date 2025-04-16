@@ -21,10 +21,16 @@ public static class InputSystemBuilderExtensions
         return builder.AddInputDevice<PlayStationControllerDevice, TInputReader>(configurator);
     }
 
-    public static IInputSystemBuilder AddKeyboardAndMouseController<TInputReader>(this IInputSystemBuilder builder, Action<Keyboard> configurator)
+    public static IInputSystemBuilder AddKeyboard<TInputReader>(this IInputSystemBuilder builder, Action<Keyboard> configurator)
         where TInputReader : IInputReader
     {
         return builder.AddInputDevice<Keyboard, TInputReader>(configurator);
+    }
+
+    public static IInputSystemBuilder AddMouse<TInputReader>(this IInputSystemBuilder builder, Action<Mouse> configurator)
+        where TInputReader : IInputReader
+    {
+        return builder.AddInputDevice<Mouse, TInputReader>(configurator);
     }
 
     public static IInputSystemBuilder AddSensorController<TInputReader>(this IInputSystemBuilder builder, Action<SensorControllerDevice> configurator)

@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using OSK.Inputs.Models.Configuration;
+using OSK.Inputs.Models.Events;
+using OSK.Inputs.Models.Runtime;
 using OSK.Inputs.Options;
 using OSK.Inputs.Ports;
 
@@ -7,25 +11,29 @@ namespace OSK.Inputs;
 
 public static class InputDefinitionBuilderExtensions
 {
-    public static IInputDefinitionBuilder AddAction(this IInputDefinitionBuilder builder, string actionName)
-        => builder.AddAction(actionName, null, null);
+    public static IInputDefinitionBuilder AddAction<TService>(this IInputDefinitionBuilder builder, string actionName, 
+        Func<TService, InputActivationEvent, ValueTask> actionExecutor)
+        where TService: notnull
+        => builder.AddAction(actionName, null, @event => actionExecutor(@event.Services.GetRequiredService<TService>(), @event));
 
-    public static IInputDefinitionBuilder AddAction(this IInputDefinitionBuilder builder, string actionName, Action<InputActionOptions>? configureOptions)
-        => builder.AddAction(actionName, null, configureOptions);
+    public static IInputDefinitionBuilder AddAction<TService>(this IInputDefinitionBuilder builder, string actionName,
+        string? description, Func<TService, InputActivationEvent, ValueTask> actionExecutor)
+        where TService : notnull
+        => builder.AddAction(actionName, description, @event => actionExecutor(@event.Services.GetRequiredService<TService>(), @event));
 
-    public static IInputDefinitionBuilder AddAction(this IInputDefinitionBuilder builder, string actionName, string? description)
-        => builder.AddAction(actionName, description, null);
+    public static IInputDefinitionBuilder AddAction(this IInputDefinitionBuilder builder, string actionName, 
+        Func<InputActivationEvent, ValueTask> actionExecutor)
+        => builder.AddAction(actionName, null, actionExecutor);
 
-    public static IInputDefinitionBuilder AddAction(this IInputDefinitionBuilder builder, string actionName, string? description, Action<InputActionOptions>? configureOptions)
+    public static IInputDefinitionBuilder AddAction(this IInputDefinitionBuilder builder, string actionName, string? description, 
+        Func<InputActivationEvent, ValueTask> actionExecutor)
     {
-        InputActionOptions? options = null;
-        if (configureOptions is not null)
+        if (actionExecutor is null)
         {
-            options = new();
-            configureOptions(options);
+            throw new ArgumentNullException(nameof(actionExecutor));
         }
 
-        builder.AddAction(new InputAction(actionName, description, options));
+        builder.AddAction(new InputAction(actionName, actionExecutor, description));
         return builder;
     }
 }

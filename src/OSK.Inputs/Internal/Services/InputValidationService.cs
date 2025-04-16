@@ -175,6 +175,11 @@ internal class InputValidationService : IInputValidationService
 
     private InputValidationContext ValidateInputAction(InputAction inputAction)
     {
+        if (inputAction.ActionExecutor is null)
+        {
+            return InputValidationContext.Error(InputActionError, ValidationError_InvalidData, $"Input action {inputAction.ActionKey} does not have a valid action executor and is unusable.");
+        }
+
         return InputValidationContext.Success;
     }
 
@@ -290,7 +295,7 @@ internal class InputValidationService : IInputValidationService
     private InputValidationContext ValidateInpurSchemeActionMaps(InputScheme scheme)
     {
         var context = new InputValidationContext(InputActionMapError);
-        var invalidInputKeys = scheme.InputActionMaps.GroupBy(map => map.InputKey)
+        var invalidInputKeys = scheme.InputActionMaps.GroupBy(map => map.InputId)
             .Select(group => new
             {
                 InputKey = group.Key,

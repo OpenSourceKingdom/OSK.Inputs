@@ -39,25 +39,35 @@ public class InputDefinitionBuilderTests
     [InlineData(" ")]
     public void AddAction_InvalidActionKey_ThrowsArgumentNullException(string? actionKey)
     {
-        // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _builder.AddAction(new InputAction(actionKey!, null)));
+        // Arrange
+        var action = new InputAction(actionKey!, _ => ValueTask.CompletedTask , null);
+
+        // Act/Assert
+        Assert.Throws<ArgumentNullException>(() => _builder.AddAction(action));
     }
 
     [Fact]
     public void AddAction_DuplicateActionKey_ThrowsDuplicateNameException()
     {
         // Arrange
-        _builder.AddAction(new InputAction("test", null));
+        _builder.AddAction(new InputAction("test", _ => ValueTask.CompletedTask , null));
 
         // Act/Assert
-        Assert.Throws<DuplicateNameException>(() => _builder.AddAction(new InputAction("test", null)));
+        Assert.Throws<DuplicateNameException>(() => _builder.AddAction(new InputAction("test", _ => ValueTask.CompletedTask , null)));
+    }
+
+    [Fact]
+    public void AddAction_NullActionExecutor_ThrowsInvalidOperaitonException()
+    {
+        // Arrange/Act/Assert
+        Assert.Throws<InvalidOperationException>(() => _builder.AddAction(new InputAction("test", null!, null)));
     }
 
     [Fact]
     public void AddAction_Valid_ReturnsSuccessfully()
     {
         // Arrange/Act/Assert
-        _builder.AddAction(new InputAction("test", null));
+        _builder.AddAction(new InputAction("test", _ => ValueTask.CompletedTask , null));
     }
 
     #endregion
@@ -138,8 +148,8 @@ public class InputDefinitionBuilderTests
     public void Build_Valid_ReturnsInputDefinition()
     {
         // Arrange
-        var action1 = new InputAction("Fire", "Triggers a boom");
-        var action2 = new InputAction("Reload", "Does a thing for resupply");
+        var action1 = new InputAction("Fire", _ => ValueTask.CompletedTask, "Triggers a boom");
+        var action2 = new InputAction("Reload", _ => ValueTask.CompletedTask, "Does a thing for resupply");
         _builder.AddAction(action1);
         _builder.AddAction(action2);
 

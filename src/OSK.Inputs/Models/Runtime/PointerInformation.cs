@@ -1,14 +1,23 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace OSK.Inputs.Models.Runtime;
-public class PointerInformation(int pointerId, Vector2 start, Vector2? end = null, IEnumerable<Vector2>? previousDeltas = null)
+public class PointerInformation(int pointerId, Vector2[] pointerPositions)
 {
-    public Vector2 Start => start;
+    public const int DefaultPointerId = 999;
 
-    public Vector2 End => end ?? start;
+    public int PointerId => pointerId;
 
-    public Vector2 Delta { get; } = end.HasValue ? end.Value - start : Vector2.Zero;
+    public Vector2 CurrentPosition => pointerPositions[^1];
 
-    public IEnumerable<Vector2> PreviousDeltas { get; } = previousDeltas ?? [];
+    public Vector2 PreviousPosition => pointerPositions.Length > 1
+        ? pointerPositions[^2]
+        : CurrentPosition;
+
+    public Vector2 Delta { get; } = pointerPositions.Length <= 1 
+        ? Vector2.Zero 
+        : pointerPositions[^1] - pointerPositions[^2];
+
+    public Vector2[] PointerPositions => pointerPositions;
 }

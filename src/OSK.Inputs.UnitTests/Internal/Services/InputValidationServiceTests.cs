@@ -319,13 +319,12 @@ public class InputValidationServiceTests
     }
 
     [Theory]
-    [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
     public void ValidateInputSystemConfiguration_InputDefinitionWithEmptyInputActionKeys_ReturnsInputDefinitionInvalidDataError(string? inputActionKey)
     {
         // Arrange
-        List<InputDefinition> definitions = [new InputDefinition("abc", [new InputAction(inputActionKey!, null)], [])];
+        List<InputDefinition> definitions = [new InputDefinition("abc", [new InputAction(inputActionKey!, _ => ValueTask.CompletedTask, null)], [])];
 
         var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
@@ -352,10 +351,14 @@ public class InputValidationServiceTests
     }
 
     [Fact]
-    public void ValidateInputSystemConfiguration_InputDefinitionWithDuplicateInputActionKeys_ReturnsInputDefinitionInvalidDataError()
+    public void ValidateInputSystemConfiguration_InputActionWithNullActionExecutor_ReturnsInputDefinitionInvalidDataError()
     {
         // Arrange
-        List<InputDefinition> definitions = [new InputDefinition("abc", [new InputAction("a", null), new InputAction("a", null)], [])];
+        List<InputDefinition> definitions = [
+            new InputDefinition("abc", [
+                new InputAction("a", null!, null)
+                ], [])
+            ];
 
         var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.ControllerName)
@@ -377,7 +380,7 @@ public class InputValidationServiceTests
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.Equal(InputValidationService.InputDefinitionError, validationContext.ErrorCategory);
+        Assert.Equal(InputValidationService.InputActionError, validationContext.ErrorCategory);
         Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
@@ -389,7 +392,7 @@ public class InputValidationServiceTests
         // Arrange
         List<InputDefinition> definitions = [
             new InputDefinition("abc", 
-                [ new InputAction("a", null) ], 
+                [ new InputAction("a", _ => ValueTask.CompletedTask, null) ], 
                 [ new InputScheme("abc", "abc", "abc", false, [ new InputActionMap("a", 1, InputPhase.Start) ]) ])
          ];
 
@@ -423,7 +426,7 @@ public class InputValidationServiceTests
         // Arrange
         List<InputDefinition> definitions = [
             new InputDefinition("abc",
-                [ new InputAction("a", null) ],
+                [ new InputAction("a", _ => ValueTask.CompletedTask, null) ],
                 [ new InputScheme("abc", "abc", "abc", false, [ new InputActionMap("a", 1, InputPhase.Start) ]) ])
          ];
 
@@ -640,7 +643,12 @@ public class InputValidationServiceTests
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [new InputAction("abc", null), new InputAction("def", null)], [])], 
+            new InputSystemConfiguration([
+                new InputDefinition("abc", 
+                [
+                    new InputAction("abc", _ => ValueTask.CompletedTask, null), 
+                    new InputAction("def", _ => ValueTask.CompletedTask, null)
+                ], [])], 
                 [mockControllerConfiguration.Object], false, 2),
             new InputScheme("abc", "controller", "abc", false, [new InputActionMap("abc", 1, InputPhase.Start)]));
 
@@ -659,7 +667,11 @@ public class InputValidationServiceTests
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [new InputAction("abc", null), new InputAction("def", null)], [])],
+            new InputSystemConfiguration([new InputDefinition("abc", 
+            [
+                new InputAction("abc", _ => ValueTask.CompletedTask, null), 
+                new InputAction("def", _ => ValueTask.CompletedTask, null)], 
+                [])],
                 [mockControllerConfiguration.Object], false, 2),
             new InputScheme("abc", "controller", "abc", false, 
             [ new InputActionMap("abc", 1, InputPhase.Start), new InputActionMap("def", 2, InputPhase.Start)]));
