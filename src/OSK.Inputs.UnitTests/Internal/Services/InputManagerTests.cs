@@ -39,7 +39,7 @@ public class InputManagerTests
         _mockControllerConfiguration = new();
         _mockControllerConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
-        _mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        _mockControllerConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("TestController"));
 
         _mockControllerConfiguration.SetupGet(m => m.Inputs)
@@ -104,7 +104,7 @@ public class InputManagerTests
         var testDefinition2 = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.Last();
 
         var customScheme = new InputScheme(testDefinition.Name,
-            _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName,
+            _4UserManagerWithCustomSchemes.Configuration.SupportedInputDevices.First().DeviceName,
             "custom", false, []);
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.Is<string>(name => name == testDefinition.Name),
@@ -308,13 +308,13 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, "notreal", controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, "notreal", device.DeviceName, inputDefinition.InputSchemes.First().SchemeName);
 
         // Assert
         Assert.False(result.IsSuccessful);
@@ -328,7 +328,7 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
@@ -348,13 +348,13 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, "notreal");
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, device.DeviceName, "notreal");
 
         // Assert
         Assert.False(result.IsSuccessful);
@@ -368,7 +368,7 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
         _mockInputSchemeRepository.Setup(m => m.SaveActiveInputSchemeAsync(It.IsAny<ActiveInputScheme>(), It.IsAny<CancellationToken>()))
@@ -377,7 +377,7 @@ public class InputManagerTests
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, device.DeviceName, inputDefinition.InputSchemes.First().SchemeName);
 
         // Assert
         Assert.False(result.IsSuccessful);
@@ -398,7 +398,7 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
         var userJoined = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
@@ -411,7 +411,7 @@ public class InputManagerTests
             .ReturnsAsync(_outputFactory.Fail<IEnumerable<ActiveInputScheme>>("Bad Day", OutputSpecificityCode.SpecificityNotRecognized));
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, device.DeviceName, inputDefinition.InputSchemes.First().SchemeName);
 
         // Assert
         Assert.False(result.IsSuccessful);
@@ -432,7 +432,7 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.Last();
 
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
@@ -443,7 +443,7 @@ public class InputManagerTests
             .ReturnsAsync((ActiveInputScheme scheme, CancellationToken _) => _outputFactory.Succeed(scheme));
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, device.DeviceName, inputDefinition.InputSchemes.First().SchemeName);
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -460,7 +460,7 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.Last();
 
         ActiveInputScheme activeScheme = new ActiveInputScheme(1, "", "", "");
@@ -477,7 +477,7 @@ public class InputManagerTests
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName, inputDefinition.InputSchemes.First().SchemeName);
+        var result = await _2UserManagerWithNoCustomSchemes.SetActiveInputSchemeAsync(1, inputDefinition.Name, device.DeviceName, inputDefinition.InputSchemes.First().SchemeName);
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -516,13 +516,13 @@ public class InputManagerTests
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Fail("A bad day", OutputSpecificityCode.DataTooLarge));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName);
+        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, device.DeviceName);
 
         // Assert
         Assert.False(result.IsSuccessful);
@@ -547,7 +547,7 @@ public class InputManagerTests
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed());
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
@@ -556,7 +556,7 @@ public class InputManagerTests
             .ReturnsAsync(_outputFactory.Fail<IEnumerable<ActiveInputScheme>>("a bad day", OutputSpecificityCode.DataTooLarge));
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName);
+        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, device.DeviceName);
 
         // Assert
         Assert.False(result.IsSuccessful);
@@ -577,7 +577,7 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.Last();
 
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
@@ -589,7 +589,7 @@ public class InputManagerTests
             .ReturnsAsync(_outputFactory.Succeed());
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName);
+        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, device.DeviceName);
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -607,13 +607,13 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, controller.ControllerName);
+        var result = await _2UserManagerWithNoCustomSchemes.ResetUserActiveInputSchemeAsync(1, inputDefinition.Name, device.DeviceName);
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -664,8 +664,8 @@ public class InputManagerTests
     {
         // Arrange
         var definition = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First();
-        var controller = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First();
-        var scheme = new InputScheme(definition.Name, controller.ControllerName, "abc", false, []);
+        var device = _4UserManagerWithCustomSchemes.Configuration.SupportedInputDevices.First();
+        var scheme = new InputScheme(definition.Name, device.DeviceName, "abc", false, []);
 
         var validationContext = new InputValidationContext("test");
         validationContext.AddErrors(1, "Oh ya");
@@ -743,7 +743,7 @@ public class InputManagerTests
     {
         // Arrange
         var definitionName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().Name;
-        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
+        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputDevices.First().DeviceName;
         var schemeName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().InputSchemes.First().SchemeName;
 
         // Act
@@ -781,7 +781,7 @@ public class InputManagerTests
     {
         // Arrange
         var definitionName = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First().Name;
-        var deviceName = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
+        var deviceName = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First().DeviceName;
 
         // Act
         var deleteOutput = await _2UserManagerWithNoCustomSchemes.DeleteCustomInputSchemeAsync(definitionName, deviceName, deviceName.Name);
@@ -795,7 +795,7 @@ public class InputManagerTests
     {
         // Arrange
         var definitionName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().Name;
-        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
+        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputDevices.First().DeviceName;
         var schemeName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().InputSchemes.First().SchemeName;
 
         _mockInputSchemeRepository.Setup(m => m.DeleteCustomInputSchemeAsync(It.IsAny<string>(), It.IsAny<InputDeviceName>(), It.IsAny<string>(),
@@ -844,7 +844,7 @@ public class InputManagerTests
     {
         // Arrange
         var definition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
 
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[]));
@@ -852,7 +852,7 @@ public class InputManagerTests
         // Act/Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, new JoinUserOptions()
         {
-            ControllerIdentifiers = [new InputDeviceIdentifier(1, new InputDeviceName("notreal"))]
+            DeviceIdentifiers = [new InputDeviceIdentifier(1, new InputDeviceName("notreal"))]
         }));
     }
 
@@ -904,7 +904,7 @@ public class InputManagerTests
         var result = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, new JoinUserOptions()
         {
             ActiveInputDefinitionName = definition.Name,
-            ControllerIdentifiers =[ new InputDeviceIdentifier(1, _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName) ]
+            DeviceIdentifiers =[ new InputDeviceIdentifier(1, _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First().DeviceName) ]
         });
 
         // Assert
@@ -917,7 +917,7 @@ public class InputManagerTests
     {
         // Arrange
         var definition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
-        var controller = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputControllers.First();
+        var device = _2UserManagerWithNoCustomSchemes.Configuration.SupportedInputDevices.First();
 
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[]));
@@ -928,7 +928,7 @@ public class InputManagerTests
         var joinUserOutput2 = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, new JoinUserOptions()
         {
             ActiveInputDefinitionName = "Bad",
-            ControllerIdentifiers = [new InputDeviceIdentifier(1, new InputDeviceName("Bad"))]
+            DeviceIdentifiers = [new InputDeviceIdentifier(1, new InputDeviceName("Bad"))]
         });
 
         // Assert
@@ -1002,16 +1002,16 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
-        var controllerIndentifier = new InputDeviceIdentifier(1, deviceName);
+        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputDevices.First().DeviceName;
+        var deviceIdentifier = new InputDeviceIdentifier(1, deviceName);
 
         await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
         await _4UserManagerWithCustomSchemes.JoinUserAsync(2, JoinUserOptions.Default);
 
-        _4UserManagerWithCustomSchemes.PairController(1, controllerIndentifier);
+        _4UserManagerWithCustomSchemes.PairController(1, deviceIdentifier);
 
         // Act/Assert
-        Assert.Throws<InvalidOperationException>(() => _4UserManagerWithCustomSchemes.PairController(2, controllerIndentifier));
+        Assert.Throws<InvalidOperationException>(() => _4UserManagerWithCustomSchemes.PairController(2, deviceIdentifier));
     }
 
     [Fact]
@@ -1028,16 +1028,16 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
-        var controllerIndentifier = new InputDeviceIdentifier(1, deviceName);
+        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputDevices.First().DeviceName;
+        var deviceIdentifier = new InputDeviceIdentifier(1, deviceName);
 
         var user = await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
 
         // Act
-        _4UserManagerWithCustomSchemes.PairController(1, controllerIndentifier);
+        _4UserManagerWithCustomSchemes.PairController(1, deviceIdentifier);
 
         // Assert
-        Assert.Single(user.Value.ControllerIdentifiers, identifier => identifier == controllerIndentifier);
+        Assert.Single(user.Value.DeviceIdentifiers, identifier => identifier == deviceIdentifier);
     }
 
     [Fact]
@@ -1054,17 +1054,17 @@ public class InputManagerTests
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<ActiveInputScheme>()));
 
-        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputControllers.First().ControllerName;
-        var controllerIndentifier = new InputDeviceIdentifier(1, deviceName);
+        var deviceName = _4UserManagerWithCustomSchemes.Configuration.SupportedInputDevices.First().DeviceName;
+        var deviceIdentifier = new InputDeviceIdentifier(1, deviceName);
 
         var user = await _4UserManagerWithCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
-        _4UserManagerWithCustomSchemes.PairController(1, controllerIndentifier);
+        _4UserManagerWithCustomSchemes.PairController(1, deviceIdentifier);
 
         // Act
-        _4UserManagerWithCustomSchemes.PairController(1, controllerIndentifier);
+        _4UserManagerWithCustomSchemes.PairController(1, deviceIdentifier);
 
         // Assert
-        Assert.Single(user.Value.ControllerIdentifiers, identifier => identifier == controllerIndentifier);
+        Assert.Single(user.Value.DeviceIdentifiers, identifier => identifier == deviceIdentifier);
     }
 
     #endregion

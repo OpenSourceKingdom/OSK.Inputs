@@ -9,15 +9,15 @@ internal class DefaultInputReaderProvider(IServiceProvider serviceProvider) : II
 {
     #region IInputReaderProvider
 
-    public IInputReader GetInputReader(IInputDeviceConfiguration controllerConfiguration, InputDeviceIdentifier controllerIdentifier)
+    public IInputReader GetInputReader(IInputDeviceConfiguration deviceConfiguration, InputDeviceIdentifier deviceIdentifier)
     {
-        if (controllerConfiguration is null)
+        if (deviceConfiguration is null)
         {
-            throw new ArgumentNullException(nameof(controllerConfiguration));
+            throw new ArgumentNullException(nameof(deviceConfiguration));
         }
 
-        return (IInputReader)ActivatorUtilities.CreateInstance(serviceProvider, controllerConfiguration.InputReaderType, 
-            new InputReaderParameters(controllerIdentifier, controllerConfiguration.Inputs));
+        return (IInputReader)ActivatorUtilities.CreateInstance(serviceProvider, deviceConfiguration.InputReaderType, 
+            new InputReaderParameters(deviceIdentifier, deviceConfiguration.Inputs));
     }
 
     #endregion

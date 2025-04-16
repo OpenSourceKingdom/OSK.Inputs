@@ -5,13 +5,13 @@ using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Options;
 
 namespace OSK.Inputs.Models.Configuration;
-public class SensorControllerDevice(Type inputReaderType): InputDevice(SensorControllerName, inputReaderType)
+public class SensorController(Type inputReaderType): InputDevice(SensorControllerName, inputReaderType)
 {
     #region Static
 
     public static readonly InputDeviceName SensorControllerName = new InputDeviceName("SensorController");
 
-    public static readonly AccelerometerInput Accelerometer = new AccelerometerInput(1);
+    public static readonly AccelerometerInput Accelerometer = new AccelerometerInput(20);
 
     public static readonly TouchInput OneTouch = new TouchInput(1);
     public static readonly TouchInput TwoTouch = new TouchInput(2);

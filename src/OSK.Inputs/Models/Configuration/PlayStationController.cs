@@ -5,7 +5,7 @@ using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Options;
 
 namespace OSK.Inputs.Models.Configuration;
-public class PlayStationControllerDevice(Type inputReaderType) : GamePadDevice(PlayStationControllerName, inputReaderType)
+public class PlayStationController(Type inputReaderType) : GamePadDevice(PlayStationControllerName, inputReaderType)
 {
     #region Static
 

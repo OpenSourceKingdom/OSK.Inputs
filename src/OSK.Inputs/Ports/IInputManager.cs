@@ -16,13 +16,13 @@ public interface IInputManager
 {
     InputSystemConfiguration Configuration { get; }
 
-    event Action<ApplicationUserInputControllerEvent> OnInputControllerDisconnected;
-    event Action<ApplicationUserInputControllerEvent> OnInputControllerConnected;
-    event Action<ApplicationUserInputControllerEvent> OnInputControllerAdded;
+    event Action<ApplicationUserInputDeviceEvent> OnInputDeviceDisconnected;
+    event Action<ApplicationUserInputDeviceEvent> OnInputDeviceConnected;
+    event Action<ApplicationUserInputDeviceEvent> OnInputDeviceAdded;
 
     Task<IOutput<IApplicationInputUser>> JoinUserAsync(int userId, JoinUserOptions options, CancellationToken cancellationToken = default);
     void RemoveUser(int userId);
-    void PairController(int userId, InputDeviceIdentifier controllerIdentifier);
+    void PairController(int userId, InputDeviceIdentifier deviceIdentifier);
     IEnumerable<IApplicationInputUser> GetApplicationInputUsers();
     IApplicationInputUser GetApplicationInputUser(int userId);
 

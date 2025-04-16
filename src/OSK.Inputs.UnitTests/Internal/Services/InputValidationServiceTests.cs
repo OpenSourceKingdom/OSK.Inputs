@@ -36,19 +36,19 @@ public class InputValidationServiceTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void ValidateInputSystemConfiguration_EmptyControllerConfiguration_ReturnsInputControllerMissingDataError(bool useNull)
+    public void ValidateInputSystemConfiguration_EmptyDeviceConfiguration_ReturnsInputDeviceMissingDataError(bool useNull)
     {
         // Arrange
         List<InputDefinition> definitions = [];
-        List<IInputDeviceConfiguration>? controllerConfigurations = useNull ? null : [];
+        List<IInputDeviceConfiguration>? deviceConfigurations = useNull ? null : [];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations!, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations!, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.Equal(InputValidationService.InputDeviceError, validationContext.ErrorCategory);
         Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_CollectionMissingData));
     }
 
@@ -56,106 +56,106 @@ public class InputValidationServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]
-    public void ValidateInputSystemConfiguration_InvalidControllerConfigurationNames_ReturnsInputControllerMissingIdentifierError(string? deviceName)
+    public void ValidateInputSystemConfiguration_InvalidDeviceConfigurationNames_ReturnsInputDeviceMissingIdentifierError(string? deviceName)
     {
         // Arrange
         List<InputDefinition> definitions = [];
 
-        var mockControllerConfiguration1 = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration1 = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration1.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName(deviceName));
 
-        List<IInputDeviceConfiguration>? controllerConfigurations = [ mockControllerConfiguration1.Object ];
+        List<IInputDeviceConfiguration>? deviceConfigurations = [ mockDeviceConfiguration1.Object ];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.Equal(InputValidationService.InputDeviceError, validationContext.ErrorCategory);
         Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_MissingIdentifier));
     }
 
     [Fact]
-    public void ValidateInputSystemConfiguration_DuplicateControllerConfigurationNames_ReturnsInputControllerDuplicateIdentifierError()
+    public void ValidateInputSystemConfiguration_DuplicateDeviceConfigurationNames_ReturnsInputDeviceDuplicateIdentifierError()
     {
         // Arrange
         List<InputDefinition> definitions = [];
 
-        var mockControllerConfiguration1 = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration1 = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration1.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("default"));
 
-        var mockControllerConfiguration2 = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration2.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration2 = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration2.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("default"));
 
-        List<IInputDeviceConfiguration>? controllerConfigurations = [mockControllerConfiguration1.Object, mockControllerConfiguration2.Object];
+        List<IInputDeviceConfiguration>? deviceConfigurations = [mockDeviceConfiguration1.Object, mockDeviceConfiguration2.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.Equal(InputValidationService.InputDeviceError, validationContext.ErrorCategory);
         Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_DuplicateIdentifier));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData(typeof(int))]
-    public void ValidateInputSystemConfiguration_InvalidControllerConfigurationInputReaderType_ReturnsInputControllerInvalidDataError(Type? type)
+    public void ValidateInputSystemConfiguration_InvalidDeviceConfigurationInputReaderType_ReturnsInputDeviceInvalidDataError(Type? type)
     {
         // Arrange
         List<InputDefinition> definitions = [];
 
-        var mockControllerConfiguration1 = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration1 = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration1.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("default"));
-        mockControllerConfiguration1.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration1.SetupGet(m => m.InputReaderType)
             .Returns(type!);
 
-        List<IInputDeviceConfiguration>? controllerConfigurations = [mockControllerConfiguration1.Object];
+        List<IInputDeviceConfiguration>? deviceConfigurations = [mockDeviceConfiguration1.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.Equal(InputValidationService.InputDeviceError, validationContext.ErrorCategory);
         Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void ValidateInputSystemConfiguration_ControllerConfigurationEmptyInputs_ReturnsInputControllerMissingDataError(bool useNull)
+    public void ValidateInputSystemConfiguration_DeviceConfigurationEmptyInputs_ReturnsInputDeviceMissingDataError(bool useNull)
     {
         // Arrange
         List<InputDefinition> definitions = [];
 
-        var mockControllerConfiguration1 = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration1 = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration1.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("default"));
 
-        mockControllerConfiguration1.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration1.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
-        mockControllerConfiguration1.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration1.SetupGet(m => m.Inputs)
             .Returns(useNull ? null! : []);
 
-        List<IInputDeviceConfiguration>? controllerConfigurations = [mockControllerConfiguration1.Object];
+        List<IInputDeviceConfiguration>? deviceConfigurations = [mockDeviceConfiguration1.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.Equal(InputValidationService.InputDeviceError, validationContext.ErrorCategory);
         Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_CollectionMissingData));
     }
 
@@ -163,33 +163,33 @@ public class InputValidationServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]
-    public void ValidateInputSystemConfiguration_ControllerConfigurationInvalidInputNames_ReturnsInputControllerInvalidDataError(string? inputName)
+    public void ValidateInputSystemConfiguration_DeviceConfigurationInvalidInputNames_ReturnsInputDeviceInvalidDataError(string? inputName)
     {
         // Arrange
         List<InputDefinition> definitions = [];
 
-        var mockControllerConfiguration1 = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration1.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration1 = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration1.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("default"));
-        mockControllerConfiguration1.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration1.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
             .Returns(inputName!);
 
-        mockControllerConfiguration1.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration1.SetupGet(m => m.Inputs)
             .Returns([ mockInput.Object ]);
 
-        List<IInputDeviceConfiguration>? controllerConfigurations = [mockControllerConfiguration1.Object];
+        List<IInputDeviceConfiguration>? deviceConfigurations = [mockDeviceConfiguration1.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
 
         // Assert
-        Assert.Equal(InputValidationService.InputControllerError, validationContext.ErrorCategory);
+        Assert.Equal(InputValidationService.InputDeviceError, validationContext.ErrorCategory);
         Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
     }
 
@@ -201,21 +201,21 @@ public class InputValidationServiceTests
         // Arrange
         List<InputDefinition>? definitions = useNull ? null : [];
 
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
-        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
         
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
             .Returns("abc");
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration.SetupGet(m => m.Inputs)
             .Returns([mockInput.Object]);
 
-        List<IInputDeviceConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+        List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions!, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions!, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -234,21 +234,21 @@ public class InputValidationServiceTests
         // Arrange
         List<InputDefinition> definitions = [new InputDefinition(definitionName!, [], [])];
 
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
-        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
             .Returns("abc");
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration.SetupGet(m => m.Inputs)
             .Returns([mockInput.Object]);
 
-        List<IInputDeviceConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+        List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -264,21 +264,21 @@ public class InputValidationServiceTests
         // Arrange
         List<InputDefinition> definitions = [new InputDefinition("abc", [], []), new InputDefinition("abc", [], [])];
 
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
-        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
             .Returns("abc");
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration.SetupGet(m => m.Inputs)
             .Returns([mockInput.Object]);
 
-        List<IInputDeviceConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+        List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act  
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -294,21 +294,21 @@ public class InputValidationServiceTests
         // Arrange
         List<InputDefinition> definitions = [new InputDefinition("abc", [], [])];
 
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
-        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
             .Returns("abc");
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration.SetupGet(m => m.Inputs)
             .Returns([mockInput.Object]);
 
-        List<IInputDeviceConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+        List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -326,21 +326,21 @@ public class InputValidationServiceTests
         // Arrange
         List<InputDefinition> definitions = [new InputDefinition("abc", [new InputAction(inputActionKey!, _ => ValueTask.CompletedTask, null)], [])];
 
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
-        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
             .Returns("abc");
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration.SetupGet(m => m.Inputs)
             .Returns([mockInput.Object]);
 
-        List<IInputDeviceConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+        List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -360,21 +360,21 @@ public class InputValidationServiceTests
                 ], [])
             ];
 
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
-        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
             .Returns("abc");
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration.SetupGet(m => m.Inputs)
             .Returns([mockInput.Object]);
 
-        List<IInputDeviceConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+        List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -396,21 +396,21 @@ public class InputValidationServiceTests
                 [ new InputScheme("abc", "abc", "abc", false, [ new InputActionMap("a", 1, InputPhase.Start) ]) ])
          ];
 
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
-        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
             .Returns("abc");
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration.SetupGet(m => m.Inputs)
             .Returns([mockInput.Object]);
 
-        List<IInputDeviceConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+        List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, maxLocalusers);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, maxLocalusers);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -430,21 +430,21 @@ public class InputValidationServiceTests
                 [ new InputScheme("abc", "abc", "abc", false, [ new InputActionMap("a", 1, InputPhase.Start) ]) ])
          ];
 
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
-        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
+        mockDeviceConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
 
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
             .Returns("abc");
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
+        mockDeviceConfiguration.SetupGet(m => m.Inputs)
             .Returns([mockInput.Object]);
 
-        List<IInputDeviceConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
+        List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -518,7 +518,7 @@ public class InputValidationServiceTests
         // Arrange/Act
         var validationContext = _service.ValidateCustomInputScheme(
             new InputSystemConfiguration([new InputDefinition("abc", [], [])], [], false, 2),
-            new InputScheme("abc", "controller", "abc", false, []));
+            new InputScheme("abc", "device", "abc", false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -532,14 +532,14 @@ public class InputValidationServiceTests
     public void ValidateCustomInputScheme_InputSchemeInvalidSchemeName_AddsMissingIdentifierErrorToContext(string? schemeName)
     {
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputDeviceName("controller"));
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("device"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [ mockControllerConfiguration.Object ], false, 2),
-            new InputScheme("abc", mockControllerConfiguration.Object.ControllerName.Name, schemeName!, false, []));
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [ mockDeviceConfiguration.Object ], false, 2),
+            new InputScheme("abc", mockDeviceConfiguration.Object.DeviceName.Name, schemeName!, false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -553,14 +553,14 @@ public class InputValidationServiceTests
     public void ValidateCustomInputScheme_DuplicateInputSchemeName_AddsDuplicateIdentifierErrorToContext(string schemeName1, string schemeName2)
     {
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputDeviceName("controller"));
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("device"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [ new InputScheme("abc", "controller", schemeName1, false, []) ])], [ mockControllerConfiguration.Object ], false, 2),
-            new InputScheme("abc", "controller", schemeName2, false, []));
+            new InputSystemConfiguration([new InputDefinition("abc", [], [ new InputScheme("abc", "device", schemeName1, false, []) ])], [ mockDeviceConfiguration.Object ], false, 2),
+            new InputScheme("abc", "device", schemeName2, false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -568,17 +568,17 @@ public class InputValidationServiceTests
     }
 
     [Fact]
-    public void ValidateCustomInputScheme_DuplicateInputControllerConfigurationActionMapInputKey_AddsInvalidDataErrorToContext()
+    public void ValidateCustomInputScheme_DuplicateInputDeviceConfigurationActionMapInputKey_AddsInvalidDataErrorToContext()
     {
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputDeviceName("controller"));
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("device"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockControllerConfiguration.Object], false, 2),
-            new InputScheme("abc", "controller", "abc", false, [
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockDeviceConfiguration.Object], false, 2),
+            new InputScheme("abc", "device", "abc", false, [
                     new InputActionMap("actionKey", 1, InputPhase.Start),
                     new InputActionMap("actionKey2", 1, InputPhase.Start)
              ]));
@@ -592,17 +592,17 @@ public class InputValidationServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void ValidateCustomInputScheme_InvalidInputControllerConfigurationActionMapActionKey_AddsInvalidDataErrorToContext(string? actionKey)
+    public void ValidateCustomInputScheme_InvalidInputDeviceConfigurationActionMapActionKey_AddsInvalidDataErrorToContext(string? actionKey)
     {
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputDeviceName("controller"));
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("device"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockControllerConfiguration.Object], false, 2),
-            new InputScheme("abc", "controller", "abc", false, [new InputActionMap(actionKey!, 1, InputPhase.Start)]));
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockDeviceConfiguration.Object], false, 2),
+            new InputScheme("abc", "device", "abc", false, [new InputActionMap(actionKey!, 1, InputPhase.Start)]));
 
         // Assert
         Assert.Equal(InputValidationService.InputActionMapError, validationContext.ErrorCategory);
@@ -613,17 +613,17 @@ public class InputValidationServiceTests
     [InlineData("aBcD", "abcd")]
     [InlineData("efgh", "efgh")]
     [InlineData("IJKL", "IJKL")]
-    public void ValidateCustomInputScheme_DuplicateInputControllerConfigurationActionMapActionKey_AddsInvalidDataErrorToContext(string actionKey1, string actionKey2)
+    public void ValidateCustomInputScheme_DuplicateInputDeviceConfigurationActionMapActionKey_AddsInvalidDataErrorToContext(string actionKey1, string actionKey2)
     {        
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputDeviceName("controller"));
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("device"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockControllerConfiguration.Object], false, 2),
-            new InputScheme("abc", "controller", "abc", false, [
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockDeviceConfiguration.Object], false, 2),
+            new InputScheme("abc", "device", "abc", false, [
                     new InputActionMap(actionKey1, 1, InputPhase.Start),
                     new InputActionMap(actionKey2, 2, InputPhase.Start)
              ]));
@@ -637,9 +637,9 @@ public class InputValidationServiceTests
     public void ValidateCustomInputScheme_SchemeMissingActionKeysInDefinition_AddsMissingDataErrorToContext()
     {
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputDeviceName("controller"));
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("device"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -649,8 +649,8 @@ public class InputValidationServiceTests
                     new InputAction("abc", _ => ValueTask.CompletedTask, null), 
                     new InputAction("def", _ => ValueTask.CompletedTask, null)
                 ], [])], 
-                [mockControllerConfiguration.Object], false, 2),
-            new InputScheme("abc", "controller", "abc", false, [new InputActionMap("abc", 1, InputPhase.Start)]));
+                [mockDeviceConfiguration.Object], false, 2),
+            new InputScheme("abc", "device", "abc", false, [new InputActionMap("abc", 1, InputPhase.Start)]));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -661,9 +661,9 @@ public class InputValidationServiceTests
     public void ValidateCustomInputScheme_Valid_ReturnsSuccessfully()
     {
         // Arrange
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputDeviceName("controller"));
+        var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
+        mockDeviceConfiguration.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("device"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -672,8 +672,8 @@ public class InputValidationServiceTests
                 new InputAction("abc", _ => ValueTask.CompletedTask, null), 
                 new InputAction("def", _ => ValueTask.CompletedTask, null)], 
                 [])],
-                [mockControllerConfiguration.Object], false, 2),
-            new InputScheme("abc", "controller", "abc", false, 
+                [mockDeviceConfiguration.Object], false, 2),
+            new InputScheme("abc", "device", "abc", false, 
             [ new InputActionMap("abc", 1, InputPhase.Start), new InputActionMap("def", 2, InputPhase.Start)]));
 
         // Assert

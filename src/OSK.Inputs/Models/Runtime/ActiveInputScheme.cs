@@ -3,7 +3,7 @@ public class ActiveInputScheme(int userId, string inputDefinitionName, string de
 {
     public string InputDefinitionName => inputDefinitionName;
 
-    public string ControllerName => deviceName;
+    public string DeviceName => deviceName;
 
     public string ActiveInputSchemeName => schemeName;
 

@@ -27,21 +27,21 @@ public class ApplicationUserTests
     {
         _deviceConfigurations = [];
 
-        var mockController = new Mock<IInputDeviceConfiguration>();
-        mockController.SetupGet(m => m.ControllerName)
+        var mockDevice = new Mock<IInputDeviceConfiguration>();
+        mockDevice.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
-        mockController.SetupGet(m => m.Inputs)
+        mockDevice.SetupGet(m => m.Inputs)
             .Returns([]);
 
-        _deviceConfigurations.Add(mockController.Object);
+        _deviceConfigurations.Add(mockDevice.Object);
 
-        var mockController2 = new Mock<IInputDeviceConfiguration>();
-        mockController2.SetupGet(m => m.ControllerName)
-            .Returns(new InputDeviceName("NewController"));
-        mockController2.SetupGet(m => m.Inputs)
+        var mockDevice2 = new Mock<IInputDeviceConfiguration>();
+        mockDevice2.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("NewDevice"));
+        mockDevice2.SetupGet(m => m.Inputs)
             .Returns([]);
 
-        _deviceConfigurations.Add(mockController2.Object);
+        _deviceConfigurations.Add(mockDevice2.Object);
 
         _testScheme = new InputScheme("Abc", new InputDeviceName("abc"), "abc", false, []);
         _testDefinition = new InputDefinition("Abc", [new InputAction("abc", _ => ValueTask.CompletedTask, null)], [ _testScheme ]);
@@ -63,33 +63,33 @@ public class ApplicationUserTests
 
     #endregion
 
-    #region ControllerIdentifiers
+    #region DeviceIdentifiers
 
     [Fact]
-    public void ControllerIdentifiers_NoInputControllers_ReturnsEmptyList()
+    public void DeviceIdentifiers_NoInputDevices_ReturnsEmptyList()
     {
         // Arrange/Act/Assert
-        Assert.Empty(_user.ControllerIdentifiers);
+        Assert.Empty(_user.DeviceIdentifiers);
     }
 
     [Fact]
-    public void ControllerIdentifiers_HasInputControllers_ReturnsControllerIdentifiers()
+    public void DeviceIdentifiers_HasInputDevices_ReturnsDeviceIdentifiers()
     {
         // Arrange
-        Inputs.Internal.InputDevice[] controllers = [
+        Inputs.Internal.InputDevice[] devices = [
             new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>()),
             new Inputs.Internal.InputDevice(new InputDeviceIdentifier(234, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>()),
         ];
 
-        _user.AddInputControllers(controllers);
+        _user.AddInputDevices(devices);
 
         // Act
-        var result = _user.ControllerIdentifiers;
+        var result = _user.DeviceIdentifiers;
 
         // Assert
-        foreach (var controller in controllers)
+        foreach (var device in devices)
         {
-            Assert.Contains(result, identifier => identifier == controller.DeviceIdentifier);
+            Assert.Contains(result, identifier => identifier == device.DeviceIdentifier);
         }
     }
 
@@ -109,7 +109,7 @@ public class ApplicationUserTests
     #region GetActiveInputScheme
 
     [Fact]
-    public void GetActiveInputScheme_NoSchemeForControllerName_ReturnsNull()
+    public void GetActiveInputScheme_NoSchemeForDeviceName_ReturnsNull()
     {
         // Arrange/Act/Assert
         Assert.Null(_user.GetActiveInputScheme(new InputDeviceName("nope")));
@@ -119,7 +119,7 @@ public class ApplicationUserTests
     public void GetActiveInputScheme_ValidInputScheme_ReturnsScheme()
     {
         // Arrange/Act
-        var result = _user.GetActiveInputScheme(_testScheme.ControllerName);
+        var result = _user.GetActiveInputScheme(_testScheme.DeviceName);
 
         // Assert
         Assert.Equal(_testScheme, result);
@@ -127,60 +127,60 @@ public class ApplicationUserTests
 
     #endregion
 
-    #region TryGetController
+    #region TryGetDevice
 
     [Fact]
-    public void TryGetController_ControllerNameNotFound_ReturnsFalse()
+    public void TryGetDevice_DeviceNameNotFound_ReturnsFalse()
     {
         // Arrange/Act
-        var result = _user.TryGetController(123, out var controller);
+        var result = _user.TryGetDevice(123, out var device);
 
         // Assert
         Assert.False(result);
-        Assert.Null(controller);
+        Assert.Null(device);
     }
 
     [Fact]
-    public void TryGetController_ValidController_ReturnsTrue()
+    public void TryGetDevice_ValidDevice_ReturnsTrue()
     {
         // Arrange
-        var controller = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
+        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
 
-        _user.AddInputControllers(controller);
+        _user.AddInputDevices(device);
 
         // Act
-        var result = _user.TryGetController(controller.DeviceIdentifier.DeviceId, out var actualController);
+        var result = _user.TryGetDevice(device.DeviceIdentifier.DeviceId, out var actualDevice);
 
         // Assert
         Assert.True(result);
-        Assert.Equal(controller, actualController);
+        Assert.Equal(device, actualDevice);
     }
 
     #endregion
 
-    #region RemoveInputController
+    #region RemoveInputDevice
 
     [Fact]
-    public void RemoveInputController_ControllerIdNotInDataSet_ReturnsSuccessfully()
+    public void RemoveInputDevice_DeviceIdNotInDataSet_ReturnsSuccessfully()
     {
         // Arrange/Act
-        _user.RemoveInputController(new InputDeviceIdentifier());
+        _user.RemoveInputDevice(new InputDeviceIdentifier());
     }
 
     [Fact]
-    public void RemoveInputController_ValidControllerId_ReturnsSuccessfully()
+    public void RemoveInputDevice_ValidDeviceId_ReturnsSuccessfully()
     {
         // Arrange
         var mockInputReader = new Mock<IInputReader>();
-        var controller = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), mockInputReader.Object);
+        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), mockInputReader.Object);
 
-        _user.AddInputControllers(controller);
+        _user.AddInputDevices(device);
 
         // Act
-        _user.RemoveInputController(controller.DeviceIdentifier);
+        _user.RemoveInputDevice(device.DeviceIdentifier);
 
         // Assert
-        Assert.False(_user.TryGetController(controller.DeviceIdentifier.DeviceId, out _));
+        Assert.False(_user.TryGetDevice(device.DeviceIdentifier.DeviceId, out _));
         mockInputReader.Verify(m => m.Dispose(), Times.Once);
     }
 
@@ -192,7 +192,7 @@ public class ApplicationUserTests
     public void SetActiveInputSchemes_OverwritesOriginalData()
     {
         // Arrange
-        var newTestScheme = new InputScheme("whatdayaknow", "NewController", "NewScheme", false, []);
+        var newTestScheme = new InputScheme("whatdayaknow", "NewDevice", "NewScheme", false, []);
         var newTestDefinition = new InputDefinition("whatdayaknow", [], [ newTestScheme ]);
 
         // Act
@@ -200,8 +200,8 @@ public class ApplicationUserTests
 
         // Assert
         Assert.Equal(newTestDefinition, _user.ActiveInputDefinition);
-        Assert.Null(_user.GetActiveInputScheme(_testScheme.ControllerName));
-        Assert.Equal(newTestScheme, _user.GetActiveInputScheme(newTestScheme.ControllerName));
+        Assert.Null(_user.GetActiveInputScheme(_testScheme.DeviceName));
+        Assert.Equal(newTestScheme, _user.GetActiveInputScheme(newTestScheme.DeviceName));
     }
 
     #endregion
@@ -223,15 +223,15 @@ public class ApplicationUserTests
     }
 
     [Fact]
-    public async Task ReadInputsAsync_NoActiveInputController_NoControllersReadInput_ReturnsEmptyList()
+    public async Task ReadInputsAsync_NoActiveInputDevice_NoDevicesReadInput_ReturnsEmptyList()
     {
         // Arrange
         var noInputReader = new Mock<IInputReader>();
-        Inputs.Internal.InputDevice[] controllers = [
+        Inputs.Internal.InputDevice[] devices = [
             new Inputs.Internal.InputDevice(new InputDeviceIdentifier(), Mock.Of<IInputDeviceConfiguration>(), noInputReader.Object)
         ];
 
-        _user.AddInputControllers(controllers);
+        _user.AddInputDevices(devices);
 
         // Act
         var result = await _user.ReadInputsAsync();
@@ -241,13 +241,13 @@ public class ApplicationUserTests
     }
 
     [Fact]
-    public async Task ReadInputsAsync_NoActiveInputController_ControllerReturnsInput_ReturnsExpectedList_TriggersActiveControllerChangedEvent()
+    public async Task ReadInputsAsync_NoActiveInputDevice_DeviceReturnsInput_ReturnsExpectedList_TriggersActiveDeviceChangedEvent()
     {
         // Arrange
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Id).Returns(1);
 
-        var controllerIdentifier = new InputDeviceIdentifier(1, new InputDeviceName("abc"));
+        var deviceIdentifier = new InputDeviceIdentifier(1, new InputDeviceName("abc"));
         var inputReader = new Mock<IInputReader>();
         inputReader.Setup(m => m.ReadInputsAsync(It.IsAny<UserInputReadContext>(), It.IsAny<CancellationToken>()))
             .Callback((UserInputReadContext readContext, CancellationToken _) =>
@@ -256,21 +256,21 @@ public class ApplicationUserTests
                     InputPhase.Start, Vector2.Zero);
             });
 
-        var controller = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader.Object);
-        Inputs.Internal.InputDevice[] controllers = [
-            controller
+        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader.Object);
+        Inputs.Internal.InputDevice[] devices = [
+            device
         ];
 
         var eventCalled = false;
-        _user.OnActiveInputControllerChanged += (userId, inputController) =>
+        _user.OnActiveInputDeviceChanged += (userId, inputDevice) =>
         {
             Assert.Equal(userId, _user.Id);
-            Assert.Equal(controller, inputController);
+            Assert.Equal(device, inputDevice);
 
             eventCalled = true;
         };
 
-        _user.AddInputControllers(controllers);
+        _user.AddInputDevices(devices);
 
         // Act
         var result = await _user.ReadInputsAsync();
@@ -281,13 +281,13 @@ public class ApplicationUserTests
     }
 
     [Fact]
-    public async Task ReadInputsAsync_ActiveInputController_ControllerReturnsInputSkipsOtherControllers_ReturnsExpectedList()
+    public async Task ReadInputsAsync_ActiveInputDevice_DeviceReturnsInputSkipsOtherDevices_ReturnsExpectedList()
     {
         // Arrange
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Id).Returns(1);
 
-        var controllerIdentifier = new InputDeviceIdentifier(1, new InputDeviceName("abc"));
+        var deviceIdentifier = new InputDeviceIdentifier(1, new InputDeviceName("abc"));
         var inputReader1 = new Mock<IInputReader>();
         inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<UserInputReadContext>(), It.IsAny<CancellationToken>()))
             .Callback((UserInputReadContext readContext, CancellationToken _) =>
@@ -296,15 +296,15 @@ public class ApplicationUserTests
                     InputPhase.Start, Vector2.Zero);
             });
 
-        var controller1 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
-        _user.AddInputControllers(controller1);
+        var device1 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
+        _user.AddInputDevices(device1);
         await _user.ReadInputsAsync();
 
-        var controller2 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
-        _user.AddInputControllers(controller2);
+        var device2 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
+        _user.AddInputDevices(device2);
 
         var eventCalled = false;
-        _user.OnActiveInputControllerChanged += (userId, inputController) =>
+        _user.OnActiveInputDeviceChanged += (userId, inputDevice) =>
         {
             throw new InvalidOperationException("Should not be hit");
         };
@@ -318,13 +318,13 @@ public class ApplicationUserTests
     }
 
     [Fact]
-    public async Task ReadInputsAsync_ActiveInputController_ControllerDoesNotReturnInput_OtherControllersReturnInputSwitchesActiveController_ReturnsExpectedList()
+    public async Task ReadInputsAsync_ActiveInputDevice_DeviceDoesNotReturnInput_OtherDevicesReturnInputSwitchesActiveDevice_ReturnsExpectedList()
     {
         // Arrange
         var inputReader1 = new Mock<IInputReader>();
         inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<UserInputReadContext>(), It.IsAny<CancellationToken>()));
-        var controller1 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
-        _user.AddInputControllers(controller1);
+        var device1 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
+        _user.AddInputDevices(device1);
 
         var inputReader2 = new Mock<IInputReader>();
         inputReader2.Setup(m => m.ReadInputsAsync(It.IsAny<UserInputReadContext>(), It.IsAny<CancellationToken>()))
@@ -333,14 +333,14 @@ public class ApplicationUserTests
                 readContext.ActivateInput(new InputActionMapPair(Mock.Of<IInput>(), new InputActionMap("abc", 1, InputPhase.Start)),
                     InputPhase.Start, Vector2.Zero);
             });
-        var controller2 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader2.Object);
-        _user.AddInputControllers(controller2);
+        var device2 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader2.Object);
+        _user.AddInputDevices(device2);
 
         var eventCalled = false;
-        _user.OnActiveInputControllerChanged += (userId, inputController) =>
+        _user.OnActiveInputDeviceChanged += (userId, inputDevice) =>
         {
             Assert.Equal(userId, _user.Id);
-            Assert.Equal(controller2, inputController);
+            Assert.Equal(device2, inputDevice);
 
             eventCalled = true;
         };
@@ -355,25 +355,25 @@ public class ApplicationUserTests
 
     #endregion
 
-    #region OnInputControllerConnected
+    #region OnInputDeviceConnected
 
     [Fact]
-    public void OnInputControllerConnected_InputReaderEventTriggered_TriggersUserEvent()
+    public void OnInputDeviceConnected_InputReaderEventTriggered_TriggersUserEvent()
     {
         // Arrange
         var inputParameters = new InputReaderParameters(new InputDeviceIdentifier(123, new InputDeviceName("abc")), Mock.Of<IEnumerable<IInput>>());
         var testInputReader = new TestInputReader(inputParameters);
-        var controller = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
+        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
 
-        _user.AddInputControllers(controller);
+        _user.AddInputDevices(device);
 
         var eventCalled = false;
 
-        _user.OnInputControllerConnected += (userId, inputController) =>
+        _user.OnInputDeviceConnected += (userId, inputDevice) =>
         {
             eventCalled = true;
 
-            Assert.Equal(controller, inputController);
+            Assert.Equal(device, inputDevice);
             Assert.Equal(_user.Id, userId);
         };
 
@@ -386,25 +386,25 @@ public class ApplicationUserTests
 
     #endregion
 
-    #region OnInputControllerDisconnected
+    #region OnInputDeviceDisconnected
 
     [Fact]
-    public void OnInputControllerDisconnected_InputReaderEventTriggered_TriggersUserEvent()
+    public void OnInputDeviceDisconnected_InputReaderEventTriggered_TriggersUserEvent()
     {
         // Arrange
         var inputParameters = new InputReaderParameters(new InputDeviceIdentifier(123, new InputDeviceName("abc")), Mock.Of<IEnumerable<IInput>>());
         var testInputReader = new TestInputReader(inputParameters);
-        var controller = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
+        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
 
-        _user.AddInputControllers(controller);
+        _user.AddInputDevices(device);
 
         var eventCalled = false;
 
-        _user.OnInputControllerDisconnected += (userId, inputController) =>
+        _user.OnInputDeviceDisconnected += (userId, inputDevice) =>
         {
             eventCalled = true;
 
-            Assert.Equal(controller, inputController);
+            Assert.Equal(device, inputDevice);
             Assert.Equal(_user.Id, userId);
         };
 

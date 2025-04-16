@@ -7,7 +7,7 @@ public interface IInputDeviceConfiguration
 {
     #region Variables
 
-    public InputDeviceName ControllerName { get; }
+    public InputDeviceName DeviceName { get; }
 
     public Type InputReaderType { get; }
 

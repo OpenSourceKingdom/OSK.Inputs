@@ -6,7 +6,7 @@ using OSK.Inputs.Ports;
 namespace OSK.Inputs.UnitTests._Helpers;
 public class TestInputReader(InputReaderParameters parameters) : IInputReader
 {
-    public InputDeviceIdentifier ControllerIdentifier => parameters.ControllerIdentifier;
+    public InputDeviceIdentifier ControllerIdentifier => parameters.DeviceIdentifier;
     public IEnumerable<IInput> Inputs => parameters.Inputs;
 
     public event Action<InputDeviceIdentifier> OnControllerDisconnected = _ => { };

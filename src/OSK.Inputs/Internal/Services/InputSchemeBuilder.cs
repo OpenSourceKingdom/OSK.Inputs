@@ -8,7 +8,7 @@ using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal.Services;
 
-internal class InputSchemeBuilder(string inputDefinitionName, IInputDeviceConfiguration controllerConfiguration, string schemeName) 
+internal class InputSchemeBuilder(string inputDefinitionName, IInputDeviceConfiguration deviceConfiguration, string schemeName) 
     : IInputSchemeBuilder
 {
     #region Variables
@@ -38,16 +38,16 @@ internal class InputSchemeBuilder(string inputDefinitionName, IInputDeviceConfig
                 {
                     if (group.Count() > 1)
                     {
-                        return (Exception) new DuplicateNameException($"The input {group.Key} has already been added to the combination input {combinationInput.Name} for the input controller {controllerConfiguration.ControllerName}");
+                        return (Exception) new DuplicateNameException($"The input {group.Key} has already been added to the combination input {combinationInput.Name} for the input controller {deviceConfiguration.DeviceName}");
                     }
 
-                    return controllerConfiguration.IsValidInput(group.First())
+                    return deviceConfiguration.IsValidInput(group.First())
                         ? null
-                        : new InvalidOperationException($"Unable to add inputs of type {combinationInput.GetType().FullName} to the combonation input {combinationInput.Name} for the input controller {controllerConfiguration.ControllerName} since it is not the expected input type.");
+                        : new InvalidOperationException($"Unable to add inputs of type {combinationInput.GetType().FullName} to the combonation input {combinationInput.Name} for the input controller {deviceConfiguration.DeviceName} since it is not the expected input type.");
                 }).FirstOrDefault(exceptionError => exceptionError is not null),
-            _ => controllerConfiguration.IsValidInput(input)
+            _ => deviceConfiguration.IsValidInput(input)
                 ? null
-                : new InvalidOperationException($"Unable to add inputs of type {input.GetType().FullName} for the input controller {controllerConfiguration.ControllerName} since it is not the expected input type.")
+                : new InvalidOperationException($"Unable to add inputs of type {input.GetType().FullName} for the input controller {deviceConfiguration.DeviceName} since it is not the expected input type.")
         };
 
         if (exception is not null) 
@@ -58,7 +58,7 @@ internal class InputSchemeBuilder(string inputDefinitionName, IInputDeviceConfig
         var actionLookupKey = $"{actionKey}.{inputPhase}";
         if (_inputActionMapLookup.TryGetValue(actionLookupKey, out _))
         {
-            throw new DuplicateNameException($"The input scheme {schemeName} for the controller {controllerConfiguration.ControllerName} using input definition {inputDefinitionName} already has an input associated to the action key {actionKey} and input phase {inputPhase}.");
+            throw new DuplicateNameException($"The input scheme {schemeName} for the controller {deviceConfiguration.DeviceName} using input definition {inputDefinitionName} already has an input associated to the action key {actionKey} and input phase {inputPhase}.");
         }
 
         _inputActionMapLookup.Add(actionLookupKey, new InputActionMap(actionKey, input.Id, inputPhase));
@@ -77,7 +77,7 @@ internal class InputSchemeBuilder(string inputDefinitionName, IInputDeviceConfig
 
     public InputScheme Build()
     {
-        return new BuiltInInputScheme(inputDefinitionName, controllerConfiguration.ControllerName.Name, schemeName, _isDefault, _inputActionMapLookup.Values);
+        return new BuiltInInputScheme(inputDefinitionName, deviceConfiguration.DeviceName.Name, schemeName, _isDefault, _inputActionMapLookup.Values);
     }
 
     #endregion
