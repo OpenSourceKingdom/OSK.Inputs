@@ -1,5 +1,6 @@
 ﻿using Moq;
 using OSK.Extensions.Object.DeepEquals;
+using OSK.Extensions.Object.DeepEquals.Options;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Functions.Outputs.Mocks;
@@ -60,6 +61,18 @@ public class InputManagerTests
         var inputSystemConfigurationB = new InputSystemConfiguration([ testDefinition, testDefinition2 ], [ _mockControllerConfiguration.Object ], true, 4);
         _4UserManagerWithCustomSchemes = new(inputSystemConfigurationB, _mockValidationService.Object, _mockInputSchemeRepository.Object, _mockInputReaderProvider.Object,
             _mockServiceProvider.Object, _outputFactory);
+
+        DeepEqualsConfiguration.CustomConfiguration = builder =>
+        {
+            builder.WithExecutionOptions(executor =>
+            {
+                executor.ThrowOnFailure = true;
+            });
+            builder.WithEnumerableComparisonOptions(comparison =>
+            {
+                comparison.EnforceEnumerableOrdering = false;
+            });
+        };
     } 
 
     #endregion

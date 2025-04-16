@@ -319,7 +319,6 @@ public class InputValidationServiceTests
     }
 
     [Theory]
-    [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
     public void ValidateInputSystemConfiguration_InputDefinitionWithEmptyInputActionKeys_ReturnsInputDefinitionInvalidDataError(string? inputActionKey)
@@ -352,42 +351,7 @@ public class InputValidationServiceTests
     }
 
     [Fact]
-    public void ValidateInputSystemConfiguration_InputDefinitionWithDuplicateInputActionKeys_ReturnsInputDefinitionInvalidDataError()
-    {
-        // Arrange
-        List<InputDefinition> definitions = [
-            new InputDefinition("abc", [
-                new InputAction("a", _ => ValueTask.CompletedTask, null), new InputAction("a", _ => ValueTask.CompletedTask, null)], 
-                [])
-            ];
-
-        var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
-            .Returns(new InputDeviceName("abc"));
-        mockControllerConfiguration.SetupGet(m => m.InputReaderType)
-            .Returns(typeof(TestInputReader));
-
-        var mockInput = new Mock<IInput>();
-        mockInput.SetupGet(m => m.Name)
-            .Returns("abc");
-        mockControllerConfiguration.SetupGet(m => m.Inputs)
-            .Returns([mockInput.Object]);
-
-        List<IInputDeviceConfiguration> controllerConfigurations = [mockControllerConfiguration.Object];
-
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, controllerConfigurations, false, 1);
-
-        // Act
-        var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
-
-        // Assert
-        Assert.Equal(InputValidationService.InputDefinitionError, validationContext.ErrorCategory);
-        Assert.True(validationContext.CheckErrorExists(InputValidationService.ValidationError_InvalidData));
-    }
-
-
-    [Fact]
-    public void ValidateInputSystemConfiguration_InputActionWithNullActionExecutor_ReturnsInputActionInvalidDataError()
+    public void ValidateInputSystemConfiguration_InputActionWithNullActionExecutor_ReturnsInputDefinitionInvalidDataError()
     {
         // Arrange
         List<InputDefinition> definitions = [

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using OSK.Inputs.Internal;
 using OSK.Inputs.Models.Runtime;
 
 namespace OSK.Inputs.Models.Configuration;
@@ -18,7 +19,7 @@ public class InputDefinition(string name, IEnumerable<InputAction> inputActions,
         .ToDictionary(inputControllerSchemeGroup => inputControllerSchemeGroup.Key, 
                       inputControllerSchemeGroup => inputControllerSchemeGroup.OrderBy(scheme => scheme.IsDefault).ThenBy(scheme => scheme.SchemeName).ToArray());
 
-    private Dictionary<string, InputAction> _actionLookup = inputActions.ToDictionary(action => action.ActionKey);
+    private readonly Dictionary<string, InputAction> _actionLookup = inputActions.ToDictionary(action => action.ActionKey);
 
     #endregion
 
@@ -30,7 +31,7 @@ public class InputDefinition(string name, IEnumerable<InputAction> inputActions,
     {
         var inputSchemes = additionalInputSchemes is null 
             ? InputSchemes
-            : InputSchemes.Concat(additionalInputSchemes);
+            : InputSchemes.Concat(additionalInputSchemes).OrderByDescending(scheme => scheme is BuiltInInputScheme);
         return new InputDefinition(Name, InputActions, inputSchemes);
     }
 
