@@ -13,7 +13,7 @@ internal class InputValidationService : IInputValidationService
     public const string InputSystemConfigurationError = "_inputSysConfiguration";
     public const string InputDefinitionError = "_inputDefinition";
     public const string InputSchemeError = "_inputScheme";
-    public const string InputControllerError = "_inputController";
+    public const string InputDeviceError = "_inputController";
     public const string InputActionError = "_inputAction";
     public const string InputActionMapError = "_inputMap";
         
@@ -53,13 +53,13 @@ internal class InputValidationService : IInputValidationService
             throw new ArgumentNullException(nameof(inputSystemConfiguration));
         }
 
-        var inputControllersValidationContext = ValidateInputControllers(inputSystemConfiguration.SupportedInputControllers);
+        var inputControllersValidationContext = ValidateInputDevices(inputSystemConfiguration.SupportedInputDevices);
         if (inputControllersValidationContext.Errors.Any())
         {
             return inputControllersValidationContext;
         }
 
-        var inputDefinitionsValidationContext = ValidateInputDefinitions(inputSystemConfiguration.InputDefinitions, inputSystemConfiguration.SupportedInputControllers);
+        var inputDefinitionsValidationContext = ValidateInputDefinitions(inputSystemConfiguration.InputDefinitions, inputSystemConfiguration.SupportedInputDevices);
         if (inputDefinitionsValidationContext.Errors.Any())
         {
             return inputDefinitionsValidationContext;
@@ -84,7 +84,7 @@ internal class InputValidationService : IInputValidationService
             throw new ArgumentNullException(nameof(inputScheme));
         }
 
-        return ValidateInputScheme(inputScheme, true, inputSystemConfiguration.InputDefinitions, inputSystemConfiguration.SupportedInputControllers);        
+        return ValidateInputScheme(inputScheme, true, inputSystemConfiguration.InputDefinitions, inputSystemConfiguration.SupportedInputDevices);        
     }
 
     #endregion
@@ -92,7 +92,7 @@ internal class InputValidationService : IInputValidationService
     #region Helpers
 
     private InputValidationContext ValidateInputDefinitions(IReadOnlyCollection<InputDefinition> inputDefinitions,
-        IReadOnlyCollection<IInputDeviceConfiguration> supportedInputControllerConfigurations)
+        IReadOnlyCollection<IInputDeviceConfiguration> supportedInputDeviceConfigurations)
     {
         if (inputDefinitions is null || !inputDefinitions.Any())
         {
@@ -113,7 +113,7 @@ internal class InputValidationService : IInputValidationService
 
         foreach (var inputDefinition in inputDefinitions)
         {
-            var context = ValidateInputDefinition(inputDefinition, supportedInputControllerConfigurations);
+            var context = ValidateInputDefinition(inputDefinition, supportedInputDeviceConfigurations);
             if (context.Errors.Any())
             {
                 return context;
@@ -123,7 +123,7 @@ internal class InputValidationService : IInputValidationService
         return InputValidationContext.Success;
     }
 
-    private InputValidationContext ValidateInputDefinition(InputDefinition inputDefinition, IEnumerable<IInputDeviceConfiguration> supportedInputControllerConfigurations)
+    private InputValidationContext ValidateInputDefinition(InputDefinition inputDefinition, IEnumerable<IInputDeviceConfiguration> supportedInputDeviceConfigurations)
     {
         if (!inputDefinition.InputActions.Any())
         {
@@ -163,7 +163,7 @@ internal class InputValidationService : IInputValidationService
         InputDefinition[] inputDefinitions = [inputDefinition];
         foreach (var inputScheme in inputDefinition.InputSchemes)
         {
-            var inputSchemeValidationContext = ValidateInputScheme(inputScheme, false, inputDefinitions, supportedInputControllerConfigurations);
+            var inputSchemeValidationContext = ValidateInputScheme(inputScheme, false, inputDefinitions, supportedInputDeviceConfigurations);
             if (inputSchemeValidationContext.Errors.Any())
             {
                 return inputSchemeValidationContext;
@@ -183,27 +183,27 @@ internal class InputValidationService : IInputValidationService
         return InputValidationContext.Success;
     }
 
-    private InputValidationContext ValidateInputControllers(IReadOnlyCollection<IInputDeviceConfiguration> supportedControllerConfigurations)
+    private InputValidationContext ValidateInputDevices(IReadOnlyCollection<IInputDeviceConfiguration> supportedDeviceConfigurations)
     {
-        if (supportedControllerConfigurations is null || !supportedControllerConfigurations.Any())
+        if (supportedDeviceConfigurations is null || !supportedDeviceConfigurations.Any())
         {
-            return InputValidationContext.Error(InputControllerError, ValidationError_CollectionMissingData, "Input System configuration has no input controller configurations and is unusable.");
+            return InputValidationContext.Error(InputDeviceError, ValidationError_CollectionMissingData, "Input System configuration has no input controller configurations and is unusable.");
         }
-        if (supportedControllerConfigurations.Any(controllerConfiguration => string.IsNullOrWhiteSpace(controllerConfiguration.ControllerName.Name)))
+        if (supportedDeviceConfigurations.Any(deviceConfiguration => string.IsNullOrWhiteSpace(deviceConfiguration.DeviceName.Name)))
         {
-            return InputValidationContext.Error(InputControllerError, ValidationError_MissingIdentifier, "One or more input controllers had an empty name.");
-        }
-
-        var duplicateControllerNames = supportedControllerConfigurations.GroupBy(controller => controller.ControllerName).Where(group => group.Count() > 1);
-        if (duplicateControllerNames.Any())
-        {
-            var error = string.Join(", ", duplicateControllerNames.Select(g => g.Key));
-            return InputValidationContext.Error(InputControllerError, ValidationError_DuplicateIdentifier, $"One or more input controllers share the same name: {error}");
+            return InputValidationContext.Error(InputDeviceError, ValidationError_MissingIdentifier, "One or more input controllers had an empty name.");
         }
 
-        foreach (var controllerConfiguration in supportedControllerConfigurations)
+        var duplicateDeviceNames = supportedDeviceConfigurations.GroupBy(device => device.DeviceName).Where(group => group.Count() > 1);
+        if (duplicateDeviceNames.Any())
         {
-            var validationContext = ValidateInputController(controllerConfiguration);
+            var error = string.Join(", ", duplicateDeviceNames.Select(g => g.Key));
+            return InputValidationContext.Error(InputDeviceError, ValidationError_DuplicateIdentifier, $"One or more input controllers share the same name: {error}");
+        }
+
+        foreach (var deviceConfiguration in supportedDeviceConfigurations)
+        {
+            var validationContext = ValidateInputDevice(deviceConfiguration);
             if (validationContext.Errors.Any())
             {
                 return validationContext;
@@ -213,34 +213,34 @@ internal class InputValidationService : IInputValidationService
         return InputValidationContext.Success;
     }
 
-    private InputValidationContext ValidateInputController(IInputDeviceConfiguration controllerConfiguration)
+    private InputValidationContext ValidateInputDevice(IInputDeviceConfiguration deviceConfiguration)
     {
-        var context = new InputValidationContext(InputControllerError);
+        var context = new InputValidationContext(InputDeviceError);
 
-        if (controllerConfiguration.InputReaderType is null)
+        if (deviceConfiguration.InputReaderType is null)
         {
-            context.AddErrors(ValidationError_InvalidData, $"The {controllerConfiguration.ControllerName} controller had a null input reader type and is unusable.");
+            context.AddErrors(ValidationError_InvalidData, $"The {deviceConfiguration.DeviceName} controller had a null input reader type and is unusable.");
         }
-        else if (!typeof(IInputReader).IsAssignableFrom(controllerConfiguration.InputReaderType))
+        else if (!typeof(IInputReader).IsAssignableFrom(deviceConfiguration.InputReaderType))
         {
             context.AddErrors(ValidationError_InvalidData,
-                $"The input controller {controllerConfiguration.ControllerName}'s input reader type, {controllerConfiguration.InputReaderType.FullName}, does not implement the {nameof(IInputReader)} interface.");
+                $"The input controller {deviceConfiguration.DeviceName}'s input reader type, {deviceConfiguration.InputReaderType.FullName}, does not implement the {nameof(IInputReader)} interface.");
         }
 
-        if (controllerConfiguration.Inputs is null || !controllerConfiguration.Inputs.Any())
+        if (deviceConfiguration.Inputs is null || !deviceConfiguration.Inputs.Any())
         {
-            context.AddErrors(ValidationError_CollectionMissingData, $"The {controllerConfiguration.ControllerName} has no inputs and is unusable.");
+            context.AddErrors(ValidationError_CollectionMissingData, $"The {deviceConfiguration.DeviceName} has no inputs and is unusable.");
         }
-        else if (controllerConfiguration.Inputs.Any(input => string.IsNullOrWhiteSpace(input.Name)))
+        else if (deviceConfiguration.Inputs.Any(input => string.IsNullOrWhiteSpace(input.Name)))
         {
-            context.AddErrors(ValidationError_InvalidData, $"The input controller {controllerConfiguration.ControllerName} bas inputs with empty names.");
+            context.AddErrors(ValidationError_InvalidData, $"The input controller {deviceConfiguration.DeviceName} bas inputs with empty names.");
         }
 
         return context;
     }
 
     private InputValidationContext ValidateInputScheme(InputScheme inputScheme, bool isNewScheme, IEnumerable<InputDefinition> inputDefinitions, 
-        IEnumerable<IInputDeviceConfiguration> supportedControllers)
+        IEnumerable<IInputDeviceConfiguration> supportedDevices)
     {
         if (string.IsNullOrWhiteSpace(inputScheme.InputDefinitionName))
         {
@@ -253,16 +253,16 @@ internal class InputValidationService : IInputValidationService
             return InputValidationContext.Error(InputSchemeError, ValidationError_MismatchedTenant, $"The Input Scheme references a definition {inputScheme.InputDefinitionName} that was not added to the input system.");
         }
 
-        if (string.IsNullOrWhiteSpace(inputScheme.ControllerName.Name))
+        if (string.IsNullOrWhiteSpace(inputScheme.DeviceName.Name))
         {
             return InputValidationContext.Error(InputSchemeError, ValidationError_InvalidData, "Controller name can not be empty.");
         }
 
-        var inputControllerConfiguration = supportedControllers.FirstOrDefaultByString(controller => controller.ControllerName.Name, inputScheme.ControllerName.Name);
+        var inputControllerConfiguration = supportedDevices.FirstOrDefaultByString(device => device.DeviceName.Name, inputScheme.DeviceName.Name);
         if (inputControllerConfiguration is null)
         {
             return InputValidationContext.Error(InputSchemeError, ValidationError_InvalidData,
-                $"Input definition {inputDefinition.Name} does not support the {inputScheme.ControllerName} controller");
+                $"Input definition {inputDefinition.Name} does not support the {inputScheme.DeviceName} controller");
         }
 
         if (string.IsNullOrWhiteSpace(inputScheme.SchemeName))
@@ -270,7 +270,7 @@ internal class InputValidationService : IInputValidationService
             return InputValidationContext.Error(InputSchemeError, ValidationError_MissingIdentifier, "Input scheme name can not be empty.");
         }
 
-        if (isNewScheme && inputDefinition.InputSchemes.AnyByString(scheme => scheme.ControllerName.Name, inputScheme.ControllerName.Name))
+        if (isNewScheme && inputDefinition.InputSchemes.AnyByString(scheme => scheme.DeviceName.Name, inputScheme.DeviceName.Name))
         {
             return InputValidationContext.Error(InputSchemeError, ValidationError_DuplicateIdentifier, $"Input scheme with name {inputScheme.SchemeName} has already been added to the input definition {inputDefinition.Name}.");
         }

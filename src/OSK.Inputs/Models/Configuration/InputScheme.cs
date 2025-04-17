@@ -16,7 +16,7 @@ public class InputScheme
     public InputScheme(string inputDefinitionName, InputDeviceName deviceName, string schemeName, bool isDefault, IEnumerable<InputActionMap> inputActions)
     {
         InputDefinitionName = inputDefinitionName;
-        ControllerName = deviceName;
+        DeviceName = deviceName;
         SchemeName = schemeName;
         IsDefault = isDefault;
         InputActionMaps = inputActions.ToArray();
@@ -24,13 +24,19 @@ public class InputScheme
 
     #endregion
 
+    #region Variables
+
+    public const string DefaultSchemeName = "Default";
+
     public string InputDefinitionName { get; }
 
-    public InputDeviceName ControllerName { get; }
+    public InputDeviceName DeviceName { get; }
 
     public string SchemeName { get; }
 
     public bool IsDefault { get; }
 
     public IReadOnlyCollection<InputActionMap> InputActionMaps { get; }
+
+    #endregion
 }

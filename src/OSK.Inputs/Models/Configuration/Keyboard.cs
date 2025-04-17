@@ -65,7 +65,7 @@ public class Keyboard(Type inputReaderType) : InputDevice(KeyboardName, inputRea
     public static KeyboardCombination LeftParanthesis = new KeyboardCombination(40, "Open Parenthesis", "(", Shift, Nine);
     public static KeyboardCombination RightParanthesis = new KeyboardCombination(41, "Close Parenthesis", ")", Shift, Zero);
     public static KeyboardCombination Underscore = new KeyboardCombination(95, "Underscore", "_", Shift, Minus);
-    public static KeyboardCombination Plus = new KeyboardCombination(42, "Plus", "+", Shift, Equal);
+    public static KeyboardCombination Plus = new KeyboardCombination(43, "Plus", "+", Shift, Equal);
     public static KeyboardCombination LeftCurlyBrace = new KeyboardCombination(123, "Left Curly Brace", "{", Shift, LeftBracket);
     public static KeyboardCombination RightCurlyBrace = new KeyboardCombination(125, "Right Curly Brace", "}", Shift, RightBracket);
     public static KeyboardCombination Colon = new KeyboardCombination(58, "Colon", ":", Shift, SemiColon);
@@ -115,8 +115,9 @@ public class Keyboard(Type inputReaderType) : InputDevice(KeyboardName, inputRea
         Caret, Ampersand, Asterisk, LeftParanthesis, RightParanthesis,
         Underscore, Plus, LeftCurlyBrace, RightCurlyBrace, Colon, DoubleQuote,
         LessThan, GreaterThan, QuestionMark, Pipe,
-        Q, W, E, R, T, Y, U, I, O, P, A, S, D, F, G, H, J, K, L, Z, X, C, V, B,
-        B, N, M,
+        Q, W, E, R, T, Y, U, I, O, P, 
+        A, S, D, F, G, H, J, K, L, 
+        Z, X, C, V, B, N, M,
         UpArrow, LeftArrow, DownArrow, RightArrow
     ];
 

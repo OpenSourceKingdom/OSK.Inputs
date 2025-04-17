@@ -26,7 +26,7 @@ public class InputSchemeBuilderTests
     public InputSchemeBuilderTests()
     {
         _mockControllerConfiguration = new();
-        _mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        _mockControllerConfiguration.SetupGet(m => m.DeviceName)
             .Returns(ControllerName);
 
         _builder = new(DefinitionName, _mockControllerConfiguration.Object, SchemeName);

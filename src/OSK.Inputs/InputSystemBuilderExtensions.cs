@@ -9,16 +9,16 @@ public static class InputSystemBuilderExtensions
 {
     #region Public
 
-    public static IInputSystemBuilder AddXboxController<TInputReader>(this IInputSystemBuilder builder, Action<XboxControllerDevice> configurator)
+    public static IInputSystemBuilder AddXboxController<TInputReader>(this IInputSystemBuilder builder, Action<XboxController> configurator)
         where TInputReader : IInputReader
     {
-        return builder.AddInputDevice<XboxControllerDevice, TInputReader>(configurator);
+        return builder.AddInputDevice<XboxController, TInputReader>(configurator);
     }
 
-    public static IInputSystemBuilder AddPlayStationController<TInputReader>(this IInputSystemBuilder builder, Action<PlayStationControllerDevice> configurator)
+    public static IInputSystemBuilder AddPlayStationController<TInputReader>(this IInputSystemBuilder builder, Action<PlayStationController> configurator)
         where TInputReader : IInputReader
     {
-        return builder.AddInputDevice<PlayStationControllerDevice, TInputReader>(configurator);
+        return builder.AddInputDevice<PlayStationController, TInputReader>(configurator);
     }
 
     public static IInputSystemBuilder AddKeyboard<TInputReader>(this IInputSystemBuilder builder, Action<Keyboard> configurator)
@@ -33,10 +33,10 @@ public static class InputSystemBuilderExtensions
         return builder.AddInputDevice<Mouse, TInputReader>(configurator);
     }
 
-    public static IInputSystemBuilder AddSensorController<TInputReader>(this IInputSystemBuilder builder, Action<SensorControllerDevice> configurator)
+    public static IInputSystemBuilder AddSensorController<TInputReader>(this IInputSystemBuilder builder, Action<SensorController> configurator)
         where TInputReader : IInputReader
     {
-        return builder.AddInputDevice<SensorControllerDevice, TInputReader>(configurator);
+        return builder.AddInputDevice<SensorController, TInputReader>(configurator);
     }
 
     #endregion

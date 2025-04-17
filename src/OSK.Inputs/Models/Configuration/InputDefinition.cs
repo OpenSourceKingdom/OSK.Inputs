@@ -15,7 +15,7 @@ public class InputDefinition(string name, IEnumerable<InputAction> inputActions,
 
     public IEnumerable<InputScheme> InputSchemes => _inputSchemeLookup.Values.SelectMany(schemesByController => schemesByController);
 
-    private readonly Dictionary<string, InputScheme[]> _inputSchemeLookup = inputSchemes.GroupBy(inputScheme => inputScheme.ControllerName.Name)
+    private readonly Dictionary<string, InputScheme[]> _inputSchemeLookup = inputSchemes.GroupBy(inputScheme => inputScheme.DeviceName.Name)
         .ToDictionary(inputControllerSchemeGroup => inputControllerSchemeGroup.Key, 
                       inputControllerSchemeGroup => inputControllerSchemeGroup.OrderBy(scheme => scheme.IsDefault).ThenBy(scheme => scheme.SchemeName).ToArray());
 

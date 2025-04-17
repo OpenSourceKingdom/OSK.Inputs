@@ -12,25 +12,25 @@ internal class DefaultInputDeviceConfiguration(InputDeviceName deviceName, Type 
     private readonly Dictionary<int, IInput> _inputLookup = inputs?.ToDictionary(input => input.Id) ?? [];
 
     /// <summary>
-    /// Strongly typed controller name
+    /// Strongly typed device name
     /// </summary>
-    public InputDeviceName ControllerName => deviceName;
+    public InputDeviceName DeviceName => deviceName;
 
     /// <summary>
-    /// The type of object that is able process input from this controller. See <see cref="IInputReader"/>
+    /// The type of object that is able process input from this device. See <see cref="IInputReader"/>
     /// </summary>
     public Type InputReaderType => readerType;
 
     /// <summary>
-    /// The collection of <see cref="IInput"/>s associated to this controller
+    /// The collection of <see cref="IInput"/>s associated to this device
     /// </summary>
     public IReadOnlyCollection<IInput> Inputs { get; } = inputs?.ToArray() ?? [];
 
     /// <summary>
-    /// Used to validate input schemes that are associated with this controller
+    /// Used to validate input schemes that are associated with this device
     /// </summary>
     /// <param name="input">The input being added to a scheme</param>
-    /// <returns>Whether the input is valid for this controller</returns>
+    /// <returns>Whether the input is valid for this device</returns>
     public bool IsValidInput(IInput input) 
         => validator?.Invoke(input) 
         ?? _inputLookup.TryGetValue(input.Id, out var inputValue) && inputValue.DeviceType.Equals(input.DeviceType, StringComparison.Ordinal);

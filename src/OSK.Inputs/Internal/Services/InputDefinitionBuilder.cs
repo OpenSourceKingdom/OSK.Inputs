@@ -7,12 +7,12 @@ using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal.Services;
 
-internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputDeviceConfiguration> supportedControllers) : IInputDefinitionBuilder
+internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputDeviceConfiguration> supportedDevices) : IInputDefinitionBuilder
 {
     #region Variables
 
     private readonly Dictionary<string, InputAction> _actionLookup = [];
-    private readonly Dictionary<string, Dictionary<string, Action<IInputSchemeBuilder>>> _controllerSchemeBuilderLookup = [];
+    private readonly Dictionary<string, Dictionary<string, Action<IInputSchemeBuilder>>> _deviceSchemeBuilderLookup = [];
 
     #endregion
 
@@ -43,7 +43,7 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputD
         {
             throw new ArgumentException(nameof(deviceName));
         }
-        if (!supportedControllers.AnyByString(configuration => configuration.ControllerName.Name, deviceName.Name))
+        if (!supportedDevices.AnyByString(configuration => configuration.DeviceName.Name, deviceName.Name))
         {
             throw new InvalidOperationException($"Unable to add input scheme {schemeName} because the input system does not support the {deviceName} controller.");
         }
@@ -55,10 +55,10 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputD
         {
             throw new ArgumentNullException(nameof(buildAction));
         }
-        if (!_controllerSchemeBuilderLookup.TryGetValue(deviceName.Name, out var schemeLookup))
+        if (!_deviceSchemeBuilderLookup.TryGetValue(deviceName.Name, out var schemeLookup))
         {
             schemeLookup = [];
-            _controllerSchemeBuilderLookup.Add(deviceName.Name, schemeLookup);
+            _deviceSchemeBuilderLookup.Add(deviceName.Name, schemeLookup);
         }
         if (schemeLookup.TryGetValue(schemeName, out _))
         {
@@ -77,18 +77,18 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputD
     {
         List<InputScheme> schemes = [];
 
-        var schemeActions = _controllerSchemeBuilderLookup.SelectMany(controllerSchemeGroupLookup 
-            => controllerSchemeGroupLookup.Value.Select(controllerSchemeAction 
+        var schemeActions = _deviceSchemeBuilderLookup.SelectMany(deviceSchemeGroupLookup 
+            => deviceSchemeGroupLookup.Value.Select(deviceSchemeAction 
                 => new
                 {
-                    ControllerConfiguration = supportedControllers.FirstByString(controllerConfiguraiton => controllerConfiguraiton.ControllerName.Name, controllerSchemeGroupLookup.Key),
-                    SchemeName = controllerSchemeAction.Key,
-                    Action = controllerSchemeAction.Value
+                    DeviceConfiguration = supportedDevices.FirstByString(deviceConfiguration => deviceConfiguration.DeviceName.Name, deviceSchemeGroupLookup.Key),
+                    SchemeName = deviceSchemeAction.Key,
+                    Action = deviceSchemeAction.Value
                 }));
 
         foreach (var schemeActionData in schemeActions)
         {
-            var schemeBuilder = new InputSchemeBuilder(definitionName, schemeActionData.ControllerConfiguration, schemeActionData.SchemeName);
+            var schemeBuilder = new InputSchemeBuilder(definitionName, schemeActionData.DeviceConfiguration, schemeActionData.SchemeName);
             schemeActionData.Action(schemeBuilder);
 
             schemes.Add(schemeBuilder.Build());

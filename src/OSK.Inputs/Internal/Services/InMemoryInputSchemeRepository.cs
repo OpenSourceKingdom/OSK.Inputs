@@ -22,8 +22,8 @@ internal class InMemoryInputSchemeRepository(IOutputFactory outputFactory) : IIn
 
     public Task<IOutput<IEnumerable<InputScheme>>> GetCustomInputSchemesAsync(string inputDefinitionName, CancellationToken cancellationToken = default)
     {
-        var customSchemes = _customInputSchemes.TryGetValue(inputDefinitionName, out var customControllerSchemeLookup)
-            ? customControllerSchemeLookup.Values.SelectMany(controllerSchemeGroupLookup => controllerSchemeGroupLookup.Values)
+        var customSchemes = _customInputSchemes.TryGetValue(inputDefinitionName, out var customDeviceSchemeLookup)
+            ? customDeviceSchemeLookup.Values.SelectMany(deviceSchemeGroupLookup => deviceSchemeGroupLookup.Values)
             : [];
         return Task.FromResult(outputFactory.Succeed(customSchemes));
     }
@@ -31,11 +31,11 @@ internal class InMemoryInputSchemeRepository(IOutputFactory outputFactory) : IIn
     public Task<IOutput<InputScheme>> GetCustomInputSchemeAsync(string inputDefinitionName, InputDeviceName deviceName,
         string inputSchemeName, CancellationToken cancellationToken = default)
     {
-        if (!_customInputSchemes.TryGetValue(inputDefinitionName, out var customControllerSchemeLookup))
+        if (!_customInputSchemes.TryGetValue(inputDefinitionName, out var customDeviceSchemeLookup))
         {
             return Task.FromResult(outputFactory.NotFound<InputScheme>($"No custom schemes were found for input definition {inputDefinitionName}"));
         }
-        if (!customControllerSchemeLookup.TryGetValue(deviceName.Name, out var customSchemeLookup))
+        if (!customDeviceSchemeLookup.TryGetValue(deviceName.Name, out var customSchemeLookup))
         {
             return Task.FromResult(outputFactory.NotFound<InputScheme>($"No custom schemes were found for the {deviceName} controller using the {inputDefinitionName} input defintiion"));
         }
@@ -52,15 +52,15 @@ internal class InMemoryInputSchemeRepository(IOutputFactory outputFactory) : IIn
             throw new ArgumentNullException(nameof(inputScheme));
         }
 
-        if (!_customInputSchemes.TryGetValue(inputDefinitionName, out var customControllerSchemeLookup))
+        if (!_customInputSchemes.TryGetValue(inputDefinitionName, out var customDeviceSchemeLookup))
         {
-            customControllerSchemeLookup = [];
-            _customInputSchemes[inputDefinitionName] = customControllerSchemeLookup;
+            customDeviceSchemeLookup = [];
+            _customInputSchemes[inputDefinitionName] = customDeviceSchemeLookup;
         }
-        if (!customControllerSchemeLookup.TryGetValue(inputScheme.ControllerName.Name, out var customSchemeLookup))
+        if (!customDeviceSchemeLookup.TryGetValue(inputScheme.DeviceName.Name, out var customSchemeLookup))
         {
             customSchemeLookup = [];
-            customControllerSchemeLookup[inputScheme.ControllerName.Name] = customSchemeLookup;
+            customDeviceSchemeLookup[inputScheme.DeviceName.Name] = customSchemeLookup;
         }
 
         customSchemeLookup[inputScheme.SchemeName] = inputScheme;
@@ -70,11 +70,11 @@ internal class InMemoryInputSchemeRepository(IOutputFactory outputFactory) : IIn
     public Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputDeviceName deviceName,
         string inputSchemeName, CancellationToken cancellationToken = default)
     {
-        if (!_customInputSchemes.TryGetValue(inputDefinitionName, out var customControllerSchemeLookup))
+        if (!_customInputSchemes.TryGetValue(inputDefinitionName, out var customDeviceSchemeLookup))
         {
             return Task.FromResult(outputFactory.Succeed());
         }
-        if (!customControllerSchemeLookup.TryGetValue(deviceName.Name, out var customSchemeLookup))
+        if (!customDeviceSchemeLookup.TryGetValue(deviceName.Name, out var customSchemeLookup))
         {
             return Task.FromResult(outputFactory.Succeed());
         }
@@ -87,9 +87,9 @@ internal class InMemoryInputSchemeRepository(IOutputFactory outputFactory) : IIn
     {
         var activeSchemes = Enumerable.Empty<ActiveInputScheme>();
         if (_activeSchemes.TryGetValue(userId, out var activeUserSchemes)
-             && activeUserSchemes.TryGetValue(inputDefinitionName, out var activeControllerSchemes))
+             && activeUserSchemes.TryGetValue(inputDefinitionName, out var activeDeviceSchemes))
         {
-            activeSchemes = activeControllerSchemes.Values;
+            activeSchemes = activeDeviceSchemes.Values;
         }
 
         return Task.FromResult(outputFactory.Succeed(activeSchemes));
@@ -113,7 +113,7 @@ internal class InMemoryInputSchemeRepository(IOutputFactory outputFactory) : IIn
             activeUserSchemes.Add(inputScheme.InputDefinitionName, activeSchemes);
         }
 
-        activeSchemes[inputScheme.ControllerName] = inputScheme;
+        activeSchemes[inputScheme.DeviceName] = inputScheme;
         return Task.FromResult(outputFactory.Succeed(inputScheme));
     }
 

@@ -49,8 +49,8 @@ public class InMemoryInputSchemeRepositoryTests
         Assert.True(result.IsSuccessful);
 
         Assert.Single(_repository._customInputSchemes);
-        Assert.True(_repository._customInputSchemes.TryGetValue(inputScheme.InputDefinitionName, out var controllerSchemeLookup));
-        Assert.True(controllerSchemeLookup.TryGetValue(inputScheme.ControllerName.Name, out var schemeLookup));
+        Assert.True(_repository._customInputSchemes.TryGetValue(inputScheme.InputDefinitionName, out var deviceSchemeLookup));
+        Assert.True(deviceSchemeLookup.TryGetValue(inputScheme.DeviceName.Name, out var schemeLookup));
         Assert.True(schemeLookup.TryGetValue(inputScheme.SchemeName, out var scheme));
         Assert.Equal(inputScheme, scheme);
     }
@@ -71,8 +71,8 @@ public class InMemoryInputSchemeRepositoryTests
         Assert.True(result.IsSuccessful);
 
         Assert.Single(_repository._customInputSchemes);
-        Assert.True(_repository._customInputSchemes.TryGetValue(inputScheme.InputDefinitionName, out var controllerSchemeLookup));
-        Assert.True(controllerSchemeLookup.TryGetValue(inputScheme.ControllerName.Name, out var schemeLookup));
+        Assert.True(_repository._customInputSchemes.TryGetValue(inputScheme.InputDefinitionName, out var deviceSchemeLookup));
+        Assert.True(deviceSchemeLookup.TryGetValue(inputScheme.DeviceName.Name, out var schemeLookup));
         Assert.True(schemeLookup.TryGetValue(inputScheme.SchemeName, out var scheme));
         Assert.Equal(inputScheme2, scheme);
     }
@@ -181,7 +181,7 @@ public class InMemoryInputSchemeRepositoryTests
         await _repository.SaveCustomInputSchemeAsync(inputScheme.InputDefinitionName, inputScheme);
 
         // Act
-        var result = await _repository.GetCustomInputSchemeAsync(inputScheme.InputDefinitionName, inputScheme.ControllerName, inputScheme.SchemeName);
+        var result = await _repository.GetCustomInputSchemeAsync(inputScheme.InputDefinitionName, inputScheme.DeviceName, inputScheme.SchemeName);
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -237,7 +237,7 @@ public class InMemoryInputSchemeRepositoryTests
         await _repository.SaveCustomInputSchemeAsync(inputScheme.InputDefinitionName, inputScheme);
 
         // Act
-        var result = await _repository.DeleteCustomInputSchemeAsync(inputScheme.InputDefinitionName, inputScheme.ControllerName, inputScheme.SchemeName);
+        var result = await _repository.DeleteCustomInputSchemeAsync(inputScheme.InputDefinitionName, inputScheme.DeviceName, inputScheme.SchemeName);
 
         // Assert
         Assert.True(result.IsSuccessful);
@@ -269,8 +269,8 @@ public class InMemoryInputSchemeRepositoryTests
 
         Assert.Single(_repository._activeSchemes);
         Assert.True(_repository._activeSchemes.TryGetValue(activeScheme.UserId, out var userInputDefinitionSchemeLookup));
-        Assert.True(userInputDefinitionSchemeLookup.TryGetValue(activeScheme.InputDefinitionName, out var controllerSchemeLookup));
-        Assert.True(controllerSchemeLookup.TryGetValue(activeScheme.ActiveInputSchemeName, out var userActiveScheme));
+        Assert.True(userInputDefinitionSchemeLookup.TryGetValue(activeScheme.InputDefinitionName, out var deviceSchemeLookup));
+        Assert.True(deviceSchemeLookup.TryGetValue(activeScheme.ActiveInputSchemeName, out var userActiveScheme));
 
         Assert.Equal(activeScheme, userActiveScheme);
     }
@@ -292,8 +292,8 @@ public class InMemoryInputSchemeRepositoryTests
 
         Assert.Single(_repository._activeSchemes);
         Assert.True(_repository._activeSchemes.TryGetValue(activeScheme.UserId, out var userInputDefinitionSchemeLookup));
-        Assert.True(userInputDefinitionSchemeLookup.TryGetValue(activeScheme.InputDefinitionName, out var controllerSchemeLookup));
-        Assert.True(controllerSchemeLookup.TryGetValue(activeScheme.ActiveInputSchemeName, out var userActiveScheme));
+        Assert.True(userInputDefinitionSchemeLookup.TryGetValue(activeScheme.InputDefinitionName, out var deviceSchemeLookup));
+        Assert.True(deviceSchemeLookup.TryGetValue(activeScheme.ActiveInputSchemeName, out var userActiveScheme));
 
         Assert.Equal(activeScheme2, userActiveScheme);
     }

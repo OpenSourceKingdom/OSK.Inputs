@@ -5,7 +5,7 @@ using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Options;
 
 namespace OSK.Inputs.Models.Configuration;
-public class XboxControllerDevice(Type inputReaderType) : GamePadDevice(XboxControllerName, inputReaderType)
+public class XboxController(Type inputReaderType) : GamePadDevice(XboxControllerName, inputReaderType)
 {
     #region Static
 

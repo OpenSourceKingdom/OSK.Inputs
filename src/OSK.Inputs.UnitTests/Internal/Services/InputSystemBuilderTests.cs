@@ -92,7 +92,7 @@ public class InputSystemBuilderTests
     {
         // Arrange
         var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m =>  m.ControllerName)
+        mockControllerConfiguration.SetupGet(m =>  m.DeviceName)
             .Returns(new InputDeviceName(deviceName));
         
         // Act/Assert
@@ -104,7 +104,7 @@ public class InputSystemBuilderTests
     {
         // Arrange
         var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        mockControllerConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
 
         _builder.AddInputController(mockControllerConfiguration.Object);
@@ -118,7 +118,7 @@ public class InputSystemBuilderTests
     {
         // Arrange
         var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
-        mockControllerConfiguration.SetupGet(m => m.ControllerName)
+        mockControllerConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
 
         //Act/Assert
@@ -208,7 +208,7 @@ public class InputSystemBuilderTests
             .Returns(InputValidationContext.Success);
 
         var mockInputController = new Mock<IInputDeviceConfiguration>();
-        mockInputController.SetupGet(m => m.ControllerName)
+        mockInputController.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
 
         _builder
@@ -228,8 +228,8 @@ public class InputSystemBuilderTests
         Assert.Single(inputSystemConfiguration.InputDefinitions);
         Assert.Equal(definition, inputSystemConfiguration.InputDefinitions.ElementAt(0));
 
-        Assert.Single(inputSystemConfiguration.SupportedInputControllers);
-        Assert.Equal(mockInputController.Object, inputSystemConfiguration.SupportedInputControllers.ElementAt(0));
+        Assert.Single(inputSystemConfiguration.SupportedInputDevices);
+        Assert.Equal(mockInputController.Object, inputSystemConfiguration.SupportedInputDevices.ElementAt(0));
 
         Assert.Equal(12, inputSystemConfiguration.MaxLocalUsers);
         Assert.True(inputSystemConfiguration.AllowCustomInputSchemes);

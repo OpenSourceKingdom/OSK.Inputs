@@ -17,7 +17,7 @@ internal class InputSystemBuilder(IServiceCollection services,
     private int _maxLocalUsers = 1;
     private bool _allowCustomSchemes;
     private readonly Dictionary<string, Action<IInputDefinitionBuilder>> _builderActionLookup = new Dictionary<string, Action<IInputDefinitionBuilder>>(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, IInputDeviceConfiguration> _controllerConfigurationLookup = new Dictionary<string, IInputDeviceConfiguration>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, IInputDeviceConfiguration> _deviceConfigurationLookup = new Dictionary<string, IInputDeviceConfiguration>(StringComparer.OrdinalIgnoreCase);
 
     #endregion
 
@@ -42,22 +42,22 @@ internal class InputSystemBuilder(IServiceCollection services,
         return this;
     }
 
-    public IInputSystemBuilder AddInputController(IInputDeviceConfiguration controllerConfiguration)
+    public IInputSystemBuilder AddInputController(IInputDeviceConfiguration deviceConfiguration)
     {
-        if (controllerConfiguration is null)
+        if (deviceConfiguration is null)
         {
-            throw new ArgumentNullException(nameof(controllerConfiguration));
+            throw new ArgumentNullException(nameof(deviceConfiguration));
         }
-        if (string.IsNullOrWhiteSpace(controllerConfiguration.ControllerName.Name))
+        if (string.IsNullOrWhiteSpace(deviceConfiguration.DeviceName.Name))
         {
-            throw new ArgumentNullException(nameof(controllerConfiguration.ControllerName));
+            throw new ArgumentNullException(nameof(deviceConfiguration.DeviceName));
         }
-        if (_controllerConfigurationLookup.TryGetValue(controllerConfiguration.ControllerName.Name, out var action))
+        if (_deviceConfigurationLookup.TryGetValue(deviceConfiguration.DeviceName.Name, out var action))
         {
-            throw new DuplicateNameException($"An input controller with the name {controllerConfiguration.ControllerName} has already been added.");
+            throw new DuplicateNameException($"An input controller with the name {deviceConfiguration.DeviceName} has already been added.");
         }
 
-        _controllerConfigurationLookup.Add(controllerConfiguration.ControllerName.Name, controllerConfiguration);
+        _deviceConfigurationLookup.Add(deviceConfiguration.DeviceName.Name, deviceConfiguration);
         return this;
     }
 
@@ -90,19 +90,19 @@ internal class InputSystemBuilder(IServiceCollection services,
 
     internal void ApplyInputSystemConfiguration()
     {
-        definitionBuilderFactory ??= (name, controllerConfigurations) => new InputDefinitionBuilder(name, controllerConfigurations);
+        definitionBuilderFactory ??= (name, deviceConfigurations) => new InputDefinitionBuilder(name, deviceConfigurations);
 
         List<InputDefinition> inputDefinitions = [];
         foreach (var action in _builderActionLookup)
         {
-            var inputDefinitionBuilder = definitionBuilderFactory(action.Key, _controllerConfigurationLookup.Values);
+            var inputDefinitionBuilder = definitionBuilderFactory(action.Key, _deviceConfigurationLookup.Values);
             action.Value(inputDefinitionBuilder);
             
             var definition = inputDefinitionBuilder.Build();
             inputDefinitions.Add(definition);
         }
 
-        var inputSystemConfiguration = new InputSystemConfiguration(inputDefinitions, _controllerConfigurationLookup.Values, _allowCustomSchemes, _maxLocalUsers);
+        var inputSystemConfiguration = new InputSystemConfiguration(inputDefinitions, _deviceConfigurationLookup.Values, _allowCustomSchemes, _maxLocalUsers);
         var validationService = validationServiceFactory?.Invoke() ?? new InputValidationService();
 
         var validationContext = validationService.ValidateInputSystemConfiguration(inputSystemConfiguration);

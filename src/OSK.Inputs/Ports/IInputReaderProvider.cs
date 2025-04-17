@@ -7,5 +7,5 @@ namespace OSK.Inputs.Ports;
 [HexagonalIntegration(HexagonalIntegrationType.LibraryProvided, HexagonalIntegrationType.IntegrationOptional)]
 public interface IInputReaderProvider
 {
-    IInputReader GetInputReader(IInputDeviceConfiguration controllerConfiguration, InputDeviceIdentifier controllerIdentifier);
+    IInputReader GetInputReader(IInputDeviceConfiguration deviceConfiguration, InputDeviceIdentifier deviceIdentifier);
 }
