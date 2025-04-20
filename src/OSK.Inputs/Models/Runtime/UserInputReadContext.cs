@@ -2,25 +2,74 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
 
 namespace OSK.Inputs.Models.Runtime;
-public class UserInputReadContext(int userId, IEnumerable<InputActionMapPair> actionMapPairs)
+public class UserInputReadContext(int userId, InputDeviceName deviceName)
 {
     #region Variables
 
     private const float DegreeThresholdForVector = 5;
-    private readonly Dictionary<int, InputActionMapPair> _actionMapPairLookup = actionMapPairs.ToDictionary(pair => pair.InputId);
-
     private static readonly InputPhase[] AllFlags = Enum.GetValues(typeof(InputPhase))
         .Cast<InputPhase>()
         .OrderByDescending(phase => (int)phase)
         .ToArray();
 
-    public IEnumerable<InputActionMapPair> InputActionPairs => _actionMapPairLookup.Values;
-
+    private readonly Dictionary<int, InputActionMapPair> _actionMapPairLookup = [];
     private readonly Dictionary<int, ActivatedInput> _previousActivatedInputs = [];
     private readonly Dictionary<int, ActivatedInput> _currentActivatedInputs = [];
+
+    #endregion
+
+    #region Api
+
+    public IEnumerable<InputActionMapPair> InputActionPairs 
+    { 
+        get => _actionMapPairLookup.Values; 
+        internal set
+        {
+            _actionMapPairLookup.Clear();
+            foreach (var pair in value)
+            {
+                _actionMapPairLookup[pair.InputId] = pair;
+            }
+        } 
+    }
+
+    public void ActivateInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
+        Vector2 pointerLocation)
+        => ActivatePointerInput(inputActionMapPair, triggeredPhase, 
+            new PointerInformation(PointerInformation.DefaultPointerId, [pointerLocation]), 
+            InputPower.FullPower(1));
+
+    public void ActivateInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
+        Vector2 pointerLocation, params float[] inputAxisPowers)
+        => ActivatePointerInput(inputActionMapPair, triggeredPhase,
+            new PointerInformation(PointerInformation.DefaultPointerId, [pointerLocation]), 
+            InputPower.FromPowerLevels(inputAxisPowers));
+
+    public void ActivatePointerInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
+        PointerInformation pointerInformation, params float[] inputAxisPowers)
+        => ActivatePointerInput(inputActionMapPair, triggeredPhase, pointerInformation,
+            InputPower.FromPowerLevels(inputAxisPowers));
+
+    public void ActivatePointerInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
+        PointerInformation pointerInformation, InputPower inputPower)
+    {
+        if (_currentActivatedInputs.TryGetValue(inputActionMapPair.InputId, out _))
+        {
+            return;
+        }
+        if (_previousActivatedInputs.TryGetValue(inputActionMapPair.InputId, out var previousActivatedInput))
+        {
+            pointerInformation = MergePointerInformation(pointerInformation, triggeredPhase, previousActivatedInput,
+                DegreeThresholdForVector);
+        }
+
+        _currentActivatedInputs.Add(inputActionMapPair.InputId,
+            new ActivatedInput(userId, deviceName, inputActionMapPair, triggeredPhase, inputPower, pointerInformation));
+    }
 
     #endregion
 
@@ -30,7 +79,7 @@ public class UserInputReadContext(int userId, IEnumerable<InputActionMapPair> ac
 
     internal bool ReceivedInput => _currentActivatedInputs.Any();
 
-    public void PrepareForNextRead()
+    internal void PrepareForNextRead()
     {
         _previousActivatedInputs.Clear();
         foreach (var activatedInput in _currentActivatedInputs.Values
@@ -49,38 +98,6 @@ public class UserInputReadContext(int userId, IEnumerable<InputActionMapPair> ac
 
         _currentActivatedInputs.Clear();
     }
-
-    public void ActivateInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
-        Vector2 pointerLocation)
-        => ActivatePointerInput(inputActionMapPair, triggeredPhase, 
-            new PointerInformation(PointerInformation.DefaultPointerId, [pointerLocation]), 
-            InputPower.FullPower(1));
-
-    public void ActivateInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
-        Vector2 pointerLocation, params float[] inputAxisPowers)
-        => ActivatePointerInput(inputActionMapPair, triggeredPhase,
-            new PointerInformation(PointerInformation.DefaultPointerId, [pointerLocation]), new InputPower(inputAxisPowers));
-
-    public void ActivatePointerInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
-        PointerInformation pointerInformation, InputPower inputPower)
-    {
-        if (_currentActivatedInputs.TryGetValue(inputActionMapPair.InputId, out _))
-        {
-            return;
-        }
-        if (_previousActivatedInputs.TryGetValue(inputActionMapPair.InputId, out var previousActivatedInput))
-        {
-            pointerInformation = MergePointerInformation(pointerInformation, triggeredPhase, previousActivatedInput,
-                DegreeThresholdForVector);
-        }
-
-        _currentActivatedInputs.Add(inputActionMapPair.InputId,
-            new ActivatedInput(userId, inputActionMapPair, triggeredPhase, inputPower, pointerInformation));
-    }
-
-    #endregion
-
-    #region Helpers
 
     private PointerInformation MergePointerInformation(PointerInformation pointerInformation, InputPhase triggeredPhase,
         ActivatedInput previousInput, float angleThresholdForNewVector)

@@ -2,12 +2,14 @@
 using System.Linq;
 
 namespace OSK.Inputs.Models.Configuration;
-public class InputSystemConfiguration(IEnumerable<InputDefinition> inputDefinitions, IEnumerable<IInputDeviceConfiguration> deviceConfigurations, 
-    bool allowCustomInputSchemes, int maxLocalUsers)
+public class InputSystemConfiguration(IEnumerable<InputDefinition> inputDefinitions, IEnumerable<InputControllerConfiguration> controllerConfigurations,
+    IEnumerable<IInputDeviceConfiguration> deviceConfigurations, bool allowCustomInputSchemes, int maxLocalUsers)
 {
     public bool AllowCustomInputSchemes => allowCustomInputSchemes;
 
     public int MaxLocalUsers => maxLocalUsers;
+
+    public IReadOnlyCollection<InputControllerConfiguration> InputControllers { get; } = controllerConfigurations.ToArray();
 
     public IReadOnlyCollection<IInputDeviceConfiguration> SupportedInputDevices { get; } = deviceConfigurations?.ToArray() ?? [];
 

@@ -6,7 +6,7 @@
 		<LangVersion>12</LangVersion>
 
 		<Description>Core logic for handling input from a variety of devices that can include keyboard, mouse, game pads, and more. Helps to facilitate responses from game input.</Description>
-		<PackageTags>OpenSourceKingdom, OpenSource, input, device, control, controller, game, pad, throttle, joy, stick, map, action, key, scheme, definition</PackageTags>
+		<PackageTags>OpenSourceKingdom, OpenSource, input, device, control, controller, device, game, pad, throttle, joy, stick, map, action, key, scheme, definition</PackageTags>
 		<Title>OSK.Inputs</Title>
 
 		<RepositoryUrl>https://github.com/OpenSourceKingdom/OSK.Inputs</RepositoryUrl>

@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Moq;
 using OSK.Inputs.Internal;
+using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Models.Runtime;
@@ -15,6 +16,7 @@ public class ApplicationUserTests
 
     private readonly InputDefinition _testDefinition;
     private readonly List<IInputDeviceConfiguration> _deviceConfigurations;
+    private readonly List<InputControllerConfiguration> _controllerConfigurations;
     private readonly InputScheme _testScheme;
 
     private ApplicationInputUser _user;
@@ -40,13 +42,17 @@ public class ApplicationUserTests
             .Returns(new InputDeviceName("NewDevice"));
         mockDevice2.SetupGet(m => m.Inputs)
             .Returns([]);
-
+        
         _deviceConfigurations.Add(mockDevice2.Object);
 
-        _testScheme = new InputScheme("Abc", new InputDeviceName("abc"), "abc", false, []);
+        _controllerConfigurations = [];
+        _controllerConfigurations.Add(new InputControllerConfiguration("test", [new InputDeviceName("test")]));
+        _controllerConfigurations.Add(new InputControllerConfiguration("abc", [new InputDeviceName("abc")]));
+
+        _testScheme = new InputScheme("Abc", "abc", false, []);
         _testDefinition = new InputDefinition("Abc", [new InputAction("abc", _ => ValueTask.CompletedTask, null)], [ _testScheme ]);
 
-        _user = new ApplicationInputUser(1, new InputSystemConfiguration([_testDefinition], _deviceConfigurations, false, 1));
+        _user = new ApplicationInputUser(1, new InputSystemConfiguration([_testDefinition], [], _deviceConfigurations, false, 1));
         _user.SetActiveInputDefinition(_testDefinition, [ _testScheme ]);
     }
 
@@ -76,9 +82,9 @@ public class ApplicationUserTests
     public void DeviceIdentifiers_HasInputDevices_ReturnsDeviceIdentifiers()
     {
         // Arrange
-        Inputs.Internal.InputDevice[] devices = [
-            new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>()),
-            new Inputs.Internal.InputDevice(new InputDeviceIdentifier(234, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>()),
+        RuntimeInputDevice[] devices = [
+            new RuntimeInputDevice(1, new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>()),
+            new RuntimeInputDevice(1, new InputDeviceIdentifier(234, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>()),
         ];
 
         _user.AddInputDevices(devices);
@@ -112,14 +118,14 @@ public class ApplicationUserTests
     public void GetActiveInputScheme_NoSchemeForDeviceName_ReturnsNull()
     {
         // Arrange/Act/Assert
-        Assert.Null(_user.GetActiveInputScheme(new InputDeviceName("nope")));
+        Assert.Null(_user.GetActiveInputScheme("nope"));
     }
 
     [Fact]
     public void GetActiveInputScheme_ValidInputScheme_ReturnsScheme()
     {
         // Arrange/Act
-        var result = _user.GetActiveInputScheme(_testScheme.DeviceName);
+        var result = _user.GetActiveInputScheme(_testScheme.ControllerId);
 
         // Assert
         Assert.Equal(_testScheme, result);
@@ -144,7 +150,7 @@ public class ApplicationUserTests
     public void TryGetDevice_ValidDevice_ReturnsTrue()
     {
         // Arrange
-        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
+        var device = new RuntimeInputDevice(1, new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
 
         _user.AddInputDevices(device);
 
@@ -158,29 +164,32 @@ public class ApplicationUserTests
 
     #endregion
 
-    #region RemoveInputDevice
+    #region RemoveInputController
 
     [Fact]
-    public void RemoveInputDevice_DeviceIdNotInDataSet_ReturnsSuccessfully()
+    public void RemoveInputController_DeviceIdNotInDataSet_ReturnsSuccessfully()
     {
-        // Arrange/Act
-        _user.RemoveInputDevice(new InputDeviceIdentifier());
+        // Arrange
+        var controller = new RuntimeInputController(new InputControllerConfiguration("test", []),
+            new InputScheme(string.Empty, string.Empty, false, []), []);
+
+        // Act
+        _user.RemoveInputController(controller);
     }
 
     [Fact]
-    public void RemoveInputDevice_ValidDeviceId_ReturnsSuccessfully()
+    public void RemoveInputController_ValidControllerId_ReturnsSuccessfully()
     {
         // Arrange
         var mockInputReader = new Mock<IInputReader>();
-        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), mockInputReader.Object);
-
-        _user.AddInputDevices(device);
+        
+        _user.SetActiveInputDefinition(_testDefinition, [_testScheme]);
 
         // Act
-        _user.RemoveInputDevice(device.DeviceIdentifier);
+        _user.RemoveInputController(new RuntimeInputController(_controllerConfigurations.First(), _testScheme, []));
 
         // Assert
-        Assert.False(_user.TryGetDevice(device.DeviceIdentifier.DeviceId, out _));
+        Assert.False(_user.TryGetDevice(1, out _));
         mockInputReader.Verify(m => m.Dispose(), Times.Once);
     }
 
@@ -192,7 +201,7 @@ public class ApplicationUserTests
     public void SetActiveInputSchemes_OverwritesOriginalData()
     {
         // Arrange
-        var newTestScheme = new InputScheme("whatdayaknow", "NewDevice", "NewScheme", false, []);
+        var newTestScheme = new InputScheme("whatdayaknow", "NewScheme", false, []);
         var newTestDefinition = new InputDefinition("whatdayaknow", [], [ newTestScheme ]);
 
         // Act
@@ -200,8 +209,8 @@ public class ApplicationUserTests
 
         // Assert
         Assert.Equal(newTestDefinition, _user.ActiveInputDefinition);
-        Assert.Null(_user.GetActiveInputScheme(_testScheme.DeviceName));
-        Assert.Equal(newTestScheme, _user.GetActiveInputScheme(newTestScheme.DeviceName));
+        Assert.Null(_user.GetActiveInputScheme(_testScheme.ControllerId));
+        Assert.Equal(newTestScheme, _user.GetActiveInputScheme(newTestScheme.ControllerId));
     }
 
     #endregion
@@ -227,8 +236,8 @@ public class ApplicationUserTests
     {
         // Arrange
         var noInputReader = new Mock<IInputReader>();
-        Inputs.Internal.InputDevice[] devices = [
-            new Inputs.Internal.InputDevice(new InputDeviceIdentifier(), Mock.Of<IInputDeviceConfiguration>(), noInputReader.Object)
+        RuntimeInputDevice[] devices = [
+            new RuntimeInputDevice(1, new InputDeviceIdentifier(), Mock.Of<IInputDeviceConfiguration>(), noInputReader.Object)
         ];
 
         _user.AddInputDevices(devices);
@@ -256,16 +265,16 @@ public class ApplicationUserTests
                     InputPhase.Start, Vector2.Zero);
             });
 
-        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader.Object);
-        Inputs.Internal.InputDevice[] devices = [
+        var device = new RuntimeInputDevice(1, new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader.Object);
+        RuntimeInputDevice[] devices = [
             device
         ];
 
         var eventCalled = false;
-        _user.OnActiveInputDeviceChanged += (userId, inputDevice) =>
+        _user.OnActiveInputControllerChanged += (userId, controllerConfiguration) =>
         {
             Assert.Equal(userId, _user.Id);
-            Assert.Equal(device, inputDevice);
+            Assert.Equal(_controllerConfigurations.First(), controllerConfiguration);
 
             eventCalled = true;
         };
@@ -296,15 +305,15 @@ public class ApplicationUserTests
                     InputPhase.Start, Vector2.Zero);
             });
 
-        var device1 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
+        var device1 = new RuntimeInputDevice(1, new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
         _user.AddInputDevices(device1);
         await _user.ReadInputsAsync();
 
-        var device2 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
+        var device2 = new RuntimeInputDevice(1, new InputDeviceIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
         _user.AddInputDevices(device2);
 
         var eventCalled = false;
-        _user.OnActiveInputDeviceChanged += (userId, inputDevice) =>
+        _user.OnActiveInputControllerChanged += (userId, inputDevice) =>
         {
             throw new InvalidOperationException("Should not be hit");
         };
@@ -323,7 +332,7 @@ public class ApplicationUserTests
         // Arrange
         var inputReader1 = new Mock<IInputReader>();
         inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<UserInputReadContext>(), It.IsAny<CancellationToken>()));
-        var device1 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
+        var device1 = new RuntimeInputDevice(1, new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
         _user.AddInputDevices(device1);
 
         var inputReader2 = new Mock<IInputReader>();
@@ -333,14 +342,14 @@ public class ApplicationUserTests
                 readContext.ActivateInput(new InputActionMapPair(Mock.Of<IInput>(), new InputActionMap("abc", 1, InputPhase.Start)),
                     InputPhase.Start, Vector2.Zero);
             });
-        var device2 = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader2.Object);
+        var device2 = new RuntimeInputDevice(1, new InputDeviceIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader2.Object);
         _user.AddInputDevices(device2);
 
         var eventCalled = false;
-        _user.OnActiveInputDeviceChanged += (userId, inputDevice) =>
+        _user.OnActiveInputControllerChanged += (userId, controllerConfiguration) =>
         {
             Assert.Equal(userId, _user.Id);
-            Assert.Equal(device2, inputDevice);
+            Assert.Equal(_controllerConfigurations.Last(), controllerConfiguration);
 
             eventCalled = true;
         };
@@ -363,13 +372,13 @@ public class ApplicationUserTests
         // Arrange
         var inputParameters = new InputReaderParameters(new InputDeviceIdentifier(123, new InputDeviceName("abc")), Mock.Of<IEnumerable<IInput>>());
         var testInputReader = new TestInputReader(inputParameters);
-        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
+        var device = new RuntimeInputDevice(1, new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
 
         _user.AddInputDevices(device);
 
         var eventCalled = false;
 
-        _user.OnInputDeviceConnected += (userId, inputDevice) =>
+        _user.OnInputDeviceReconnected += (userId, inputDevice) =>
         {
             eventCalled = true;
 
@@ -394,7 +403,7 @@ public class ApplicationUserTests
         // Arrange
         var inputParameters = new InputReaderParameters(new InputDeviceIdentifier(123, new InputDeviceName("abc")), Mock.Of<IEnumerable<IInput>>());
         var testInputReader = new TestInputReader(inputParameters);
-        var device = new Inputs.Internal.InputDevice(new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
+        var device = new RuntimeInputDevice(1, new InputDeviceIdentifier(123, new InputDeviceName("test")), Mock.Of<IInputDeviceConfiguration>(), testInputReader);
 
         _user.AddInputDevices(device);
 

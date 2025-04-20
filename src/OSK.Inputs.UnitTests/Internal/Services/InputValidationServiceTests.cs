@@ -42,7 +42,7 @@ public class InputValidationServiceTests
         List<InputDefinition> definitions = [];
         List<IInputDeviceConfiguration>? deviceConfigurations = useNull ? null : [];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations!, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, [], deviceConfigurations!, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -67,7 +67,7 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration>? deviceConfigurations = [ mockDeviceConfiguration1.Object ];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, [], deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -93,7 +93,7 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration>? deviceConfigurations = [mockDeviceConfiguration1.Object, mockDeviceConfiguration2.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, [], deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -119,7 +119,7 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration>? deviceConfigurations = [mockDeviceConfiguration1.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, [], deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -149,7 +149,7 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration>? deviceConfigurations = [mockDeviceConfiguration1.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, [], deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -183,7 +183,9 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration>? deviceConfigurations = [mockDeviceConfiguration1.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, 
+            [ new InputControllerConfiguration("abc", [ mockDeviceConfiguration1.Object.DeviceName ]) ],
+            deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -215,7 +217,9 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions!, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions!,
+            [ new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName]) ],
+            deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -248,7 +252,9 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions, 
+            [ new InputControllerConfiguration("abc", [ mockDeviceConfiguration.Object.DeviceName ]) ],
+            deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -278,7 +284,9 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions,
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            deviceConfigurations, false, 1);
 
         // Act  
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -308,7 +316,9 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions,
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -340,7 +350,9 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions,
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -374,7 +386,9 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions,
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -393,7 +407,12 @@ public class InputValidationServiceTests
         List<InputDefinition> definitions = [
             new InputDefinition("abc", 
                 [ new InputAction("a", _ => ValueTask.CompletedTask, null) ], 
-                [ new InputScheme("abc", "abc", "abc", false, [ new InputActionMap("a", 1, InputPhase.Start) ]) ])
+                [ 
+                    new InputScheme("abc", "abc", false, 
+                    [ 
+                        new InputDeviceActionMap(new InputDeviceName("abc"), [new InputActionMap("a", 1, InputPhase.Start)]) 
+                    ]) 
+                ])
          ];
 
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
@@ -410,7 +429,9 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, maxLocalusers);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions,
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            deviceConfigurations, false, maxLocalusers);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -424,17 +445,21 @@ public class InputValidationServiceTests
     public void ValidateInputSystemConfiguration_Valid_ReturnsSuccessfully()
     {
         // Arrange
-        List<InputDefinition> definitions = [
-            new InputDefinition("abc",
-                [ new InputAction("a", _ => ValueTask.CompletedTask, null) ],
-                [ new InputScheme("abc", "abc", "abc", false, [ new InputActionMap("a", 1, InputPhase.Start) ]) ])
-         ];
-
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
         mockDeviceConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
         mockDeviceConfiguration.SetupGet(m => m.InputReaderType)
             .Returns(typeof(TestInputReader));
+
+        List<InputDefinition> definitions = [
+            new InputDefinition("abc",
+                [ new InputAction("a", _ => ValueTask.CompletedTask, null) ],
+                [ new InputScheme("abc", "abc", false,
+                    [
+                        new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName, [new InputActionMap("a", 1, InputPhase.Start)])
+                    ])
+                ])
+         ];
 
         var mockInput = new Mock<IInput>();
         mockInput.SetupGet(m => m.Name)
@@ -444,7 +469,9 @@ public class InputValidationServiceTests
 
         List<IInputDeviceConfiguration> deviceConfigurations = [mockDeviceConfiguration.Object];
 
-        var inputSystemConfiguration = new InputSystemConfiguration(definitions, deviceConfigurations, false, 1);
+        var inputSystemConfiguration = new InputSystemConfiguration(definitions,
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            deviceConfigurations, false, 1);
 
         // Act
         var validationContext = _service.ValidateInputSystemConfiguration(inputSystemConfiguration);
@@ -461,14 +488,14 @@ public class InputValidationServiceTests
     public void ValidateCustomInputScheme_NullInputSystemConfiguration_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _service.ValidateCustomInputScheme(null!, new InputScheme("abc", "abc", "abc", false, [])));
+        Assert.Throws<ArgumentNullException>(() => _service.ValidateCustomInputScheme(null!, new InputScheme("abc", "abc", false, [])));
     }
 
     [Fact]
     public void ValidateCustomInputScheme_NullInputScheme_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _service.ValidateCustomInputScheme(new InputSystemConfiguration([], [], false, 2), null!));
+        Assert.Throws<ArgumentNullException>(() => _service.ValidateCustomInputScheme(new InputSystemConfiguration([], [], [], false, 2), null!));
     }
 
     [Theory]
@@ -478,8 +505,8 @@ public class InputValidationServiceTests
     public void ValidateCustomInputScheme_InvalidInputSchemeDefinitionName_AddsInvalidDataErrorToContext(string? definitionName)
     {
         // Arrange/Act
-        var validationContext = _service.ValidateCustomInputScheme(new InputSystemConfiguration([], [], false, 2), 
-            new InputScheme(definitionName!, "abc", "abc", false, []));
+        var validationContext = _service.ValidateCustomInputScheme(new InputSystemConfiguration([], [], [], false, 2), 
+            new InputScheme(definitionName!, "abc", false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -490,7 +517,7 @@ public class InputValidationServiceTests
     public void ValidateCustomInputScheme_InputSchemeDefinitionNameDoesNotMatchInputDefinition_AddsMismatchedTenantErrorToContext()
     {
         // Arrange/Act
-        var validationContext = _service.ValidateCustomInputScheme(new InputSystemConfiguration([], [], false, 2), new InputScheme("def", "abc", "abc", false, []));
+        var validationContext = _service.ValidateCustomInputScheme(new InputSystemConfiguration([], [], [], false, 2), new InputScheme("def", "abc", false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -501,11 +528,11 @@ public class InputValidationServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void ValidateCustomInputScheme_InputSchemeMissingControllerName_AddsInvalidDataErrorToContext(string? deviceName)
+    public void ValidateCustomInputScheme_InputSchemeMissingControllerName_AddsInvalidDataErrorToContext(string? controllereName)
     {
         // Arrange/Act
-        var validationContext = _service.ValidateCustomInputScheme(new InputSystemConfiguration([ new InputDefinition("abc", [], [])], [], false, 2), 
-            new InputScheme("abc", deviceName!, "abc", false, []));
+        var validationContext = _service.ValidateCustomInputScheme(new InputSystemConfiguration([ new InputDefinition("abc", [], [])], [], [], false, 2), 
+            new InputScheme("abc", controllereName!, false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -517,8 +544,8 @@ public class InputValidationServiceTests
     {
         // Arrange/Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [], false, 2),
-            new InputScheme("abc", "device", "abc", false, []));
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [], [], false, 2),
+            new InputScheme("abc", "device", false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -538,8 +565,10 @@ public class InputValidationServiceTests
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [ mockDeviceConfiguration.Object ], false, 2),
-            new InputScheme("abc", mockDeviceConfiguration.Object.DeviceName.Name, schemeName!, false, []));
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])],
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            [ mockDeviceConfiguration.Object ], false, 2),
+            new InputScheme("abc", schemeName!, false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -559,8 +588,10 @@ public class InputValidationServiceTests
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [ new InputScheme("abc", "device", schemeName1, false, []) ])], [ mockDeviceConfiguration.Object ], false, 2),
-            new InputScheme("abc", "device", schemeName2, false, []));
+            new InputSystemConfiguration([new InputDefinition("abc", [], [ new InputScheme("abc", schemeName1, false, []) ])],
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            [ mockDeviceConfiguration.Object ], false, 2),
+            new InputScheme("abc", schemeName2, false, []));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -568,7 +599,7 @@ public class InputValidationServiceTests
     }
 
     [Fact]
-    public void ValidateCustomInputScheme_DuplicateInputDeviceConfigurationActionMapInputKey_AddsInvalidDataErrorToContext()
+    public void ValidateCustomInputScheme_DuplicateInputIdOnSchemeDeviceActionMap_AddsInvalidDataErrorToContext()
     {
         // Arrange
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
@@ -577,10 +608,17 @@ public class InputValidationServiceTests
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockDeviceConfiguration.Object], false, 2),
-            new InputScheme("abc", "device", "abc", false, [
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])], 
+                [ new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName]) ], 
+                [mockDeviceConfiguration.Object], 
+                false, 2),
+            new InputScheme("abc", "abc", false,
+            [
+                new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
+                [
                     new InputActionMap("actionKey", 1, InputPhase.Start),
                     new InputActionMap("actionKey2", 1, InputPhase.Start)
+                ])
              ]));
 
         // Assert
@@ -601,8 +639,16 @@ public class InputValidationServiceTests
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockDeviceConfiguration.Object], false, 2),
-            new InputScheme("abc", "device", "abc", false, [new InputActionMap(actionKey!, 1, InputPhase.Start)]));
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])],
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            [mockDeviceConfiguration.Object], false, 2),
+            new InputScheme("abc", "abc", false,
+                    [
+                        new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
+                        [
+                            new InputActionMap(actionKey!, 1, InputPhase.Start)
+                        ])
+                    ]));
 
         // Assert
         Assert.Equal(InputValidationService.InputActionMapError, validationContext.ErrorCategory);
@@ -622,11 +668,17 @@ public class InputValidationServiceTests
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", [], [])], [mockDeviceConfiguration.Object], false, 2),
-            new InputScheme("abc", "device", "abc", false, [
-                    new InputActionMap(actionKey1, 1, InputPhase.Start),
-                    new InputActionMap(actionKey2, 2, InputPhase.Start)
-             ]));
+            new InputSystemConfiguration([new InputDefinition("abc", [], [])],
+            [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
+            [mockDeviceConfiguration.Object], false, 2),
+            new InputScheme("abc", "abc", false,
+                    [
+                        new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
+                        [
+                            new InputActionMap(actionKey1, 1, InputPhase.Start),
+                            new InputActionMap(actionKey2, 2, InputPhase.Start)
+                        ])
+                    ]));
 
         // Assert
         Assert.Equal(InputValidationService.InputActionMapError, validationContext.ErrorCategory);
@@ -648,9 +700,16 @@ public class InputValidationServiceTests
                 [
                     new InputAction("abc", _ => ValueTask.CompletedTask, null), 
                     new InputAction("def", _ => ValueTask.CompletedTask, null)
-                ], [])], 
+                ], [])],
+                [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
                 [mockDeviceConfiguration.Object], false, 2),
-            new InputScheme("abc", "device", "abc", false, [new InputActionMap("abc", 1, InputPhase.Start)]));
+            new InputScheme("abc", "abc", false,
+                    [
+                        new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
+                        [
+                            new InputActionMap("abc", 1, InputPhase.Start)
+                        ])
+                    ]));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -667,14 +726,21 @@ public class InputValidationServiceTests
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
-            new InputSystemConfiguration([new InputDefinition("abc", 
+            new InputSystemConfiguration([new InputDefinition("abc",
             [
-                new InputAction("abc", _ => ValueTask.CompletedTask, null), 
-                new InputAction("def", _ => ValueTask.CompletedTask, null)], 
+                new InputAction("abc", _ => ValueTask.CompletedTask, null),
+                new InputAction("def", _ => ValueTask.CompletedTask, null)],
                 [])],
+                [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
                 [mockDeviceConfiguration.Object], false, 2),
-            new InputScheme("abc", "device", "abc", false, 
-            [ new InputActionMap("abc", 1, InputPhase.Start), new InputActionMap("def", 2, InputPhase.Start)]));
+            new InputScheme("abc", "abc", false,
+                    [
+                        new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
+                        [
+                            new InputActionMap("abc", 1, InputPhase.Start),
+                            new InputActionMap("def", 2, InputPhase.Start)
+                        ])
+                    ]));
 
         // Assert
         Assert.Empty(validationContext.Errors);

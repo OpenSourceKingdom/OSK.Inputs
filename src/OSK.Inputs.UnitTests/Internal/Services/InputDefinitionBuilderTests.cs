@@ -74,25 +74,11 @@ public class InputDefinitionBuilderTests
 
     #region AddInputScheme
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("  ")]
-    public void AddInputScheme_InvalidControllerName_ThrowsArgumentException(string? deviceName)
+    [Fact]
+    public void AddInputScheme_ControllerConfigurationActionNull_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(new InputDeviceName(deviceName), "abc", _ => { }));
-    }
-
-    [Fact]
-    public void AddInputScheme_ControllerNameIsNotASupportController_ThrowsInvalidOperationException()
-    {
-        // Arrange
-        _mockControllerConfiguration1.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("abc"));
-
-        // Act/Assert
-        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(new InputDeviceName("def"), "abc", _ => { }));
+        Assert.Throws<ArgumentNullException>(() => _builder.AddInputScheme("abc", null!));
     }
 
     [Theory]
@@ -101,43 +87,26 @@ public class InputDefinitionBuilderTests
     [InlineData("  ")]
     public void AddInputScheme_InvalidSchemeName_ThrowsArgumentException(string? schemeName)
     {
-        // Arrange
-        _mockControllerConfiguration1.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("abc"));
-
-        // Act/Assert
-        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(new InputDeviceName("abc"), schemeName!, _ => { }));
-    }
-
-    [Fact]
-    public void AddInputScheme_NullAction_ThrowsInvalidOperationException()
-    {
         // Arrange/Act/Assert
-        Assert.Throws<InvalidOperationException>(() => _builder.AddInputScheme(new InputDeviceName("abc"), "abc", null!));
+        Assert.Throws<ArgumentException>(() => _builder.AddInputScheme(schemeName!, _ => { }));
     }
 
     [Fact]
     public void AddInputScheme_SchemeNameAlreadyAdded_ThrowsDuplicateNameException()
     {
         // Arrange
-        _mockControllerConfiguration1.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("abc"));
 
-        _builder.AddInputScheme(_mockControllerConfiguration1.Object.DeviceName, "abc", _ => { });
+        _builder.AddInputScheme("abc", _ => { });
 
         // Act/Assert
-        Assert.Throws<DuplicateNameException>(() => _builder.AddInputScheme(_mockControllerConfiguration1.Object.DeviceName, "abc", _ => { }));
+        Assert.Throws<DuplicateNameException>(() => _builder.AddInputScheme("abc", _ => { }));
     }
 
     [Fact]
     public void AddInputScheme_Valid_ReturnsSuccessfully()
     {
-        // Arrange
-        _mockControllerConfiguration1.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("abc"));
-
-        // Act/Assert
-        _builder.AddInputScheme(_mockControllerConfiguration1.Object.DeviceName, "abc", _ => { });
+        // Arrange/Act/Assert
+        _builder.AddInputScheme("abc", _ => { });
     }
 
     #endregion
@@ -153,15 +122,10 @@ public class InputDefinitionBuilderTests
         _builder.AddAction(action1);
         _builder.AddAction(action2);
 
-        _mockControllerConfiguration1.Setup(m => m.DeviceName)
-            .Returns(new InputDeviceName("abc"));
-        _mockControllerConfiguration2.Setup(m => m.DeviceName)
-            .Returns(new InputDeviceName("def"));
+        _builder.AddInputScheme("Scheme1", _ => { });
+        _builder.AddInputScheme("Scheme2", _ => { });
 
-        _builder.AddInputScheme(_mockControllerConfiguration1.Object.DeviceName, "Scheme1", _ => { });
-        _builder.AddInputScheme(_mockControllerConfiguration1.Object.DeviceName, "Scheme2", _ => { });
-
-        _builder.AddInputScheme(_mockControllerConfiguration2.Object.DeviceName, "Scheme1", _ => { });
+        _builder.AddInputScheme("Scheme1", _ => { });
 
         // Act
         var definition = _builder.Build();
@@ -175,9 +139,6 @@ public class InputDefinitionBuilderTests
         Assert.Contains(action2, definition.InputActions);
 
         Assert.Equal(3, definition.InputSchemes.Count());
-        Assert.Contains(definition.InputSchemes, scheme => scheme.DeviceName == _mockControllerConfiguration1.Object.DeviceName && scheme.SchemeName == "Scheme1");
-        Assert.Contains(definition.InputSchemes, scheme => scheme.DeviceName == _mockControllerConfiguration1.Object.DeviceName && scheme.SchemeName == "Scheme2");
-        Assert.Contains(definition.InputSchemes, scheme => scheme.DeviceName == _mockControllerConfiguration2.Object.DeviceName && scheme.SchemeName == "Scheme1");
     }
 
     #endregion

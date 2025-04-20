@@ -12,7 +12,7 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputD
     #region Variables
 
     private readonly Dictionary<string, InputAction> _actionLookup = [];
-    private readonly Dictionary<string, Dictionary<string, Action<IInputSchemeBuilder>>> _deviceSchemeBuilderLookup = [];
+    private readonly Dictionary<string, Dictionary<string, InputScheme>> _controllerInputSchemeLookup = [];
 
     #endregion
 
@@ -37,16 +37,8 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputD
         return this;
     }
 
-    public IInputDefinitionBuilder AddInputScheme(InputDeviceName deviceName, string schemeName, Action<IInputSchemeBuilder> buildAction)
+    public IInputDefinitionBuilder AddInputScheme(string schemeName, Action<IInputSchemeBuilder> buildAction)
     {
-        if (string.IsNullOrWhiteSpace(deviceName.Name))
-        {
-            throw new ArgumentException(nameof(deviceName));
-        }
-        if (!supportedDevices.AnyByString(configuration => configuration.DeviceName.Name, deviceName.Name))
-        {
-            throw new InvalidOperationException($"Unable to add input scheme {schemeName} because the input system does not support the {deviceName} controller.");
-        }
         if (string.IsNullOrWhiteSpace(schemeName))
         {
             throw new ArgumentException(nameof(schemeName));
@@ -55,17 +47,22 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputD
         {
             throw new ArgumentNullException(nameof(buildAction));
         }
-        if (!_deviceSchemeBuilderLookup.TryGetValue(deviceName.Name, out var schemeLookup))
+
+        var schemeBuilder = new InputSchemeBuilder(definitionName, supportedDevices, schemeName);
+        buildAction(schemeBuilder);
+        var scheme = schemeBuilder.Build();
+
+        if (!_controllerInputSchemeLookup.TryGetValue(scheme.ControllerId, out var schemeLookup))
         {
             schemeLookup = [];
-            _deviceSchemeBuilderLookup.Add(deviceName.Name, schemeLookup);
+            _controllerInputSchemeLookup.Add(scheme.ControllerId, schemeLookup);
         }
         if (schemeLookup.TryGetValue(schemeName, out _))
         {
-            throw new DuplicateNameException($"An input scheme has already been added to the input definition with the name {schemeName} for the {deviceName} controller.");
+            throw new DuplicateNameException($"An input scheme has already been added to the input definition with the name {schemeName} for the {scheme.ControllerId} controller.");
         }
 
-        schemeLookup.Add(schemeName, buildAction);
+        schemeLookup.Add(schemeName, scheme);
         return this;
     }
 
@@ -75,26 +72,8 @@ internal class InputDefinitionBuilder(string definitionName, IEnumerable<IInputD
 
     public InputDefinition Build()
     {
-        List<InputScheme> schemes = [];
-
-        var schemeActions = _deviceSchemeBuilderLookup.SelectMany(deviceSchemeGroupLookup 
-            => deviceSchemeGroupLookup.Value.Select(deviceSchemeAction 
-                => new
-                {
-                    DeviceConfiguration = supportedDevices.FirstByString(deviceConfiguration => deviceConfiguration.DeviceName.Name, deviceSchemeGroupLookup.Key),
-                    SchemeName = deviceSchemeAction.Key,
-                    Action = deviceSchemeAction.Value
-                }));
-
-        foreach (var schemeActionData in schemeActions)
-        {
-            var schemeBuilder = new InputSchemeBuilder(definitionName, schemeActionData.DeviceConfiguration, schemeActionData.SchemeName);
-            schemeActionData.Action(schemeBuilder);
-
-            schemes.Add(schemeBuilder.Build());
-        }
-
-        return new InputDefinition(definitionName, _actionLookup.Values, schemes);
+        return new InputDefinition(definitionName, _actionLookup.Values, 
+            _controllerInputSchemeLookup.Values.SelectMany(schemeGroup => schemeGroup.Values));
     }
 
     #endregion
