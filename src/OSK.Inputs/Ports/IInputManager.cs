@@ -41,7 +41,7 @@ public interface IInputManager
     /// <param name="userId">The application's user id that is associated to the user that is being managed</param>
     /// <param name="options">The <see cref="JoinUserOptions"/> allows for extra configuration on a joining user</param>
     /// <param name="cancellationToken">The token to cancel the request</param>
-    /// <returns><The <see cref="IApplicationInputUser"/> that is managed by the input manager/returns>
+    /// <returns>The <see cref="IApplicationInputUser"/> that is managed by the input manager</returns>
     Task<IOutput<IApplicationInputUser>> JoinUserAsync(int userId, JoinUserOptions options, CancellationToken cancellationToken = default);
     
     /// <summary>

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using OSK.Inputs.Models.Inputs;
-using OSK.Inputs.Options;
 
 namespace OSK.Inputs.Models.Configuration;
 public class PlayStationController(Type inputReaderType) : GamePadDevice(PlayStationControllerName, inputReaderType)

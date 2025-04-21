@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
@@ -27,9 +22,12 @@ public class InputSystemConfigurationTests
             builder.AddInputDefinition("Test", definition =>
             {
                 definition.AddAction("Trigger", _ => ValueTask.CompletedTask);
-                definition.AddInputScheme(Keyboard.KeyboardName, "abc", scheme =>
+                definition.AddInputScheme("abc", scheme =>
                 {
-                    scheme.AssignStartAction(Keyboard.W, "Trigger");
+                    scheme.AddKeyboardMaps(keyboard =>
+                    {
+                        keyboard.AssignStartAction(Keyboard.W, "Trigger");
+                    });
                 });
             });
         });

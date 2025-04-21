@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using OSK.Inputs.Models.Inputs;
 
 namespace OSK.Inputs.Models.Configuration;

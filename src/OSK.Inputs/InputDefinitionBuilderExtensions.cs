@@ -3,8 +3,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Events;
-using OSK.Inputs.Models.Runtime;
-using OSK.Inputs.Options;
 using OSK.Inputs.Ports;
 
 namespace OSK.Inputs;

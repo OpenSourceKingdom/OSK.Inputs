@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using OSK.Inputs.Models.Inputs;
+﻿using OSK.Inputs.Models.Inputs;
 
 namespace OSK.Inputs.Ports;
-public interface IInputDeviceActionBuilder
+public interface IInputDeviceActionBuilder<TInput>
+    where TInput: IInput
 {
-    IInputDeviceActionBuilder AssignInput(IInput input, InputPhase inputPhase, string actionKey);
+    IInputDeviceActionBuilder<TInput> AssignInput(TInput input, InputPhase inputPhase, string actionKey);
 }

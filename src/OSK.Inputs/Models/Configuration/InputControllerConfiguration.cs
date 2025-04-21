@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace OSK.Inputs.Models.Configuration;
 public class InputControllerConfiguration(string controllerName, IEnumerable<InputDeviceName> deviceNames)

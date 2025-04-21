@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -22,7 +21,8 @@ internal class InputSchemeBuilder(string inputDefinitionName, IEnumerable<IInput
 
     #region IInputSchemeBuilder
 
-    public IInputSchemeBuilder AddDevice(InputDeviceName deviceName, Action<IInputDeviceActionBuilder> builder)
+    public IInputSchemeBuilder AddDevice<TInput>(InputDeviceName deviceName, Action<IInputDeviceActionBuilder<TInput>> builder)
+        where TInput: IInput
     {
         var deviceConfiguration = supportedDevices.FirstOrDefault(device => device.DeviceName == deviceName);
         if (deviceConfiguration is null)
@@ -40,7 +40,7 @@ internal class InputSchemeBuilder(string inputDefinitionName, IEnumerable<IInput
             throw new DuplicateNameException($"A device action map for device {deviceConfiguration.DeviceName} has already been added on input scheme {schemeName} on input definition {inputDefinitionName}.");
         }
 
-        var deviceActionMapBuilder = new InputDeviceActionBuilder(inputDefinitionName, schemeName, deviceConfiguration);
+        var deviceActionMapBuilder = new InputDeviceActionBuilder<TInput>(inputDefinitionName, schemeName, deviceConfiguration);
         builder(deviceActionMapBuilder);
 
         _deviceActionMaps[deviceConfiguration.DeviceName] = deviceActionMapBuilder.Build();

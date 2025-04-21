@@ -1,5 +1,4 @@
-﻿using OSK.Inputs.Models.Configuration;
-using OSK.Inputs.Models.Inputs;
+﻿using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Models.Runtime;
 using OSK.Inputs.Ports;
 

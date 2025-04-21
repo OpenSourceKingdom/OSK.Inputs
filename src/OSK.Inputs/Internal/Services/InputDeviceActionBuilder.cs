@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal.Services;
-internal class InputDeviceActionBuilder(string inputDefinitionName,
-    string schemeName, IInputDeviceConfiguration deviceConfiguration) : IInputDeviceActionBuilder
+internal class InputDeviceActionBuilder<TInput>(string inputDefinitionName,
+    string schemeName, IInputDeviceConfiguration deviceConfiguration) : IInputDeviceActionBuilder<TInput>
+    where TInput: IInput
 {
     #region Variables
 
@@ -19,7 +19,7 @@ internal class InputDeviceActionBuilder(string inputDefinitionName,
 
     #region IInputDeviceActionBuilder
 
-    public IInputDeviceActionBuilder AssignInput(IInput input, InputPhase inputPhase, string actionKey)
+    public IInputDeviceActionBuilder<TInput> AssignInput(TInput input, InputPhase inputPhase, string actionKey)
     {
         if (string.IsNullOrWhiteSpace(actionKey))
         {

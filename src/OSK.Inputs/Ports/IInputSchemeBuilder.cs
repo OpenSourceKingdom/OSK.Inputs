@@ -8,7 +8,8 @@ namespace OSK.Inputs.Ports;
 [HexagonalIntegration(HexagonalIntegrationType.LibraryProvided)]
 public interface IInputSchemeBuilder
 {
-    IInputSchemeBuilder AddDevice(InputDeviceName deviceName, Action<IInputDeviceActionBuilder> builder);
+    IInputSchemeBuilder AddDevice<TInput>(InputDeviceName deviceName, Action<IInputDeviceActionBuilder<TInput>> builder)
+        where TInput: IInput;
 
     IInputSchemeBuilder MakeDefault();
 }

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Data;
 using Moq;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
@@ -21,7 +16,7 @@ public class InputDeviceActionBuilderTests
 
     private readonly Mock<IInputDeviceConfiguration> _mockDeviceConfiguration;
 
-    private readonly InputDeviceActionBuilder _builder;
+    private readonly InputDeviceActionBuilder<IInput> _builder;
 
     #endregion
 

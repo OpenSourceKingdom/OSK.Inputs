@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace OSK.Inputs.Models.Runtime;
 public class PointerInformation(int pointerId, Vector2[] pointerPositions)

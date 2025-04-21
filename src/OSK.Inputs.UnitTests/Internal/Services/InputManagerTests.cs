@@ -1,6 +1,5 @@
 ﻿using Moq;
 using OSK.Extensions.Object.DeepEquals;
-using OSK.Extensions.Object.DeepEquals.Options;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Functions.Outputs.Mocks;
@@ -728,7 +727,7 @@ public class InputManagerTests
     public async Task DeleteCustomInputSchemeAsync_EmptyInputControllerName_ThrowsArgumentNullException(string? controllerName)
     {
         // Arrange/Act/Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _2UserManagerWithNoCustomSchemes.DeleteCustomInputSchemeAsync("abc", controllerName, "def"));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _2UserManagerWithNoCustomSchemes.DeleteCustomInputSchemeAsync("abc", controllerName!, "def"));
     }
 
     [Theory]
