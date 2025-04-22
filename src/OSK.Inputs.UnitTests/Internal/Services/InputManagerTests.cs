@@ -50,7 +50,7 @@ public class InputManagerTests
         _mockServiceProvider = new();
         _outputFactory = new MockOutputFactory<InputManager>();
 
-        var testDefinition = new InputDefinition("Test", [], [ new BuiltInInputScheme("Test", "TestScheme", false, []) ]);
+        var testDefinition = new InputDefinition("Test", [], [ new BuiltInInputScheme("Test", "TestScheme", false, [new(_mockDeviceConfiguration.Object.DeviceName, [])]) ]);
         var testDefinition2 = new InputDefinition("Test2", [], [new BuiltInInputScheme("Test", "TestScheme", false, [])]);
 
         var inputSystemConfigurationA = new InputSystemConfiguration([ testDefinition, testDefinition2 ],
@@ -105,7 +105,7 @@ public class InputManagerTests
         // Arrange
         var testDefinition = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First();
         var testDefinition2 = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.Last();
-
+         
         var customScheme = new InputScheme(testDefinition.Name,
             "custom", false, [new InputDeviceActionMap(_4UserManagerWithCustomSchemes.Configuration.SupportedInputDevices.First().DeviceName, [])]);
 
@@ -124,8 +124,9 @@ public class InputManagerTests
         Assert.True(getDefinitionsOutput.IsSuccessful);
         Assert.Equal(_4UserManagerWithCustomSchemes.Configuration.InputDefinitions.Count, getDefinitionsOutput.Value.Count());
 
-        var actualDefinition = getDefinitionsOutput.Value.First();
-        Assert.True(testDefinition.Clone([customScheme]).DeepEquals(getDefinitionsOutput.Value.First()));
+        var expectedCustomDefinition = testDefinition.Clone([customScheme]);
+        Assert.True(expectedCustomDefinition.DeepEquals(getDefinitionsOutput.Value.First()));
+        Assert.True(testDefinition2.DeepEquals(getDefinitionsOutput.Value.Last()));
     }
 
     #endregion
@@ -553,7 +554,9 @@ public class InputManagerTests
         var inputDefinition = _2UserManagerWithNoCustomSchemes.Configuration.InputDefinitions.First();
 
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
-
+        var user = (ApplicationInputUser)_2UserManagerWithNoCustomSchemes.GetApplicationInputUser(1);
+        user._inputControllers[controller.ControllerName] = new RuntimeInputController(null!, new InputScheme("", "", false, []), []);
+        
         _mockInputSchemeRepository.Setup(m => m.GetActiveInputSchemesAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Fail<IEnumerable<ActiveInputScheme>>("a bad day", OutputSpecificityCode.DataTooLarge));
 
@@ -745,11 +748,10 @@ public class InputManagerTests
     {
         // Arrange
         var definitionName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().Name;
-        var controller = _4UserManagerWithCustomSchemes.Configuration.InputControllers.First();
-        var schemeName = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().InputSchemes.First().Name;
+        var scheme = _4UserManagerWithCustomSchemes.Configuration.InputDefinitions.First().InputSchemes.First();
 
         // Act
-        var deleteOutput = await _4UserManagerWithCustomSchemes.DeleteCustomInputSchemeAsync(definitionName, controller.ControllerName, schemeName);
+        var deleteOutput = await _4UserManagerWithCustomSchemes.DeleteCustomInputSchemeAsync(definitionName, scheme.ControllerId, scheme.Name);
 
         // Assert
         Assert.False(deleteOutput.IsSuccessful);

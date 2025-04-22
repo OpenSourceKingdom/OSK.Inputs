@@ -13,7 +13,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
     #region Variables
 
     private readonly Dictionary<int, RuntimeInputDevice> _userInputDeviceLookup = [];
-    private readonly Dictionary<string, RuntimeInputController> _inputControllers = [];
+    internal readonly Dictionary<string, RuntimeInputController> _inputControllers = [];
     private RuntimeInputController? _activeInputController;
 
     #endregion
@@ -24,8 +24,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 
     public InputDefinition ActiveInputDefinition { get; private set; } = inputSystemConfiguration.InputDefinitions.First();
 
-    public IEnumerable<InputDeviceIdentifier> DeviceIdentifiers => _inputControllers.Values.SelectMany(
-        controller => controller.InputDevices.Select(device => device.DeviceIdentifier));
+    public IEnumerable<InputDeviceIdentifier> DeviceIdentifiers => _userInputDeviceLookup.Values.Select(device => device.DeviceIdentifier);
 
     public InputScheme? GetActiveInputScheme(string controllerId)
     {
@@ -61,10 +60,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 
     public bool TryGetDevice(int deviceId, out RuntimeInputDevice device)
     {
-        device = _inputControllers.SelectMany(controller => controller.Value.InputDevices)
-            .FirstOrDefault(controllerInputDevice => controllerInputDevice.DeviceIdentifier.DeviceId == deviceId);
-
-        return device is not null;
+        return _userInputDeviceLookup.TryGetValue(deviceId, out device);
     }
 
     public void AddInputDevices(params RuntimeInputDevice[] inputDevices)
@@ -169,6 +165,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
         foreach (var device in inputController.InputDevices)
         {
             device.Dispose();
+            _userInputDeviceLookup.Remove(device.DeviceIdentifier.DeviceId);
         }
         _inputControllers.Remove(inputController.ControllerId);
     }

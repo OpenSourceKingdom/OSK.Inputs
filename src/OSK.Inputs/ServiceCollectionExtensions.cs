@@ -25,5 +25,5 @@ public static class ServiceCollectionExtensions
         builder.ApplyInputSystemConfiguration();
 
         return services;
-    }
+     }
 }

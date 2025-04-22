@@ -443,7 +443,7 @@ public class InputValidationServiceTests
 
     [Fact]
     public void ValidateInputSystemConfiguration_Valid_ReturnsSuccessfully()
-    {
+    {        
         // Arrange
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
         mockDeviceConfiguration.SetupGet(m => m.DeviceName)
@@ -561,14 +561,14 @@ public class InputValidationServiceTests
         // Arrange
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
         mockDeviceConfiguration.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("device"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
             new InputSystemConfiguration([new InputDefinition("abc", [], [])],
             [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
-            [ mockDeviceConfiguration.Object ], false, 2),
-            new InputScheme("abc", schemeName!, false, []));
+            [mockDeviceConfiguration.Object], false, 2),
+            new InputScheme("abc", schemeName!, false, [new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName, [])]));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -584,14 +584,14 @@ public class InputValidationServiceTests
         // Arrange
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
         mockDeviceConfiguration.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("device"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
             new InputSystemConfiguration([new InputDefinition("abc", [], [ new InputScheme("abc", schemeName1, false, []) ])],
             [new InputControllerConfiguration("abc", [mockDeviceConfiguration.Object.DeviceName])],
             [ mockDeviceConfiguration.Object ], false, 2),
-            new InputScheme("abc", schemeName2, false, []));
+            new InputScheme("abc", schemeName2, false, [ new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName, []) ]));
 
         // Assert
         Assert.Equal(InputValidationService.InputSchemeError, validationContext.ErrorCategory);
@@ -604,7 +604,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
         mockDeviceConfiguration.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("device"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -635,7 +635,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
         mockDeviceConfiguration.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("device"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -664,7 +664,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
         mockDeviceConfiguration.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("device"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -691,7 +691,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
         mockDeviceConfiguration.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("device"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(
@@ -722,7 +722,7 @@ public class InputValidationServiceTests
         // Arrange
         var mockDeviceConfiguration = new Mock<IInputDeviceConfiguration>();
         mockDeviceConfiguration.SetupGet(m => m.DeviceName)
-            .Returns(new InputDeviceName("device"));
+            .Returns(new InputDeviceName("abc"));
 
         // Act
         var validationContext = _service.ValidateCustomInputScheme(

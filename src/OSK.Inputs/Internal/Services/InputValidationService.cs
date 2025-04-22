@@ -222,12 +222,13 @@ internal class InputValidationService : IInputValidationService
             return InputValidationContext.Error(InputControllerError, ValidationError_DuplicateIdentifier, $"The following input controllers were invalid because the names were already added to the input system.{Environment.NewLine}{error}");
         }
 
-        var invalidDeviceConfigurations = controllerConfigurations.Select(controllerConfiguration => new
+        var configurations = controllerConfigurations.Select(controllerConfiguration => new
         {
             ConfigurationName = controllerConfiguration.ControllerName,
             InvalidDevices = controllerConfiguration.DeviceNames.Where(deviceName => !inputDevices.Any(device => device.DeviceName == deviceName))
         });
 
+        var invalidDeviceConfigurations = configurations.Where(configuration => configuration.InvalidDevices.Any());
         if (invalidDeviceConfigurations.Any())
         {
             var error = string.Join(Environment.NewLine, invalidDeviceConfigurations.Select(config => $"Input controller {config.ConfigurationName} had one or more unsupported device names: {string.Join(", ", config.InvalidDevices)}"));
@@ -346,7 +347,7 @@ internal class InputValidationService : IInputValidationService
         {
             return InputValidationContext.Error(InputSchemeError, ValidationError_MissingIdentifier, "Input scheme name can not be empty.");
         }
-        if (isNewScheme && inputDefinition.InputSchemes.AnyByString(scheme => scheme.Name, inputScheme.Name))
+        if (isNewScheme && inputDefinition.InputSchemes.AnyByString(scheme => scheme.Name, inputScheme.Name, StringComparison.OrdinalIgnoreCase))
         {
             return InputValidationContext.Error(InputSchemeError, ValidationError_DuplicateIdentifier, $"Input scheme with name {inputScheme.Name} has already been added to the input definition {inputDefinition.Name}.");
         }

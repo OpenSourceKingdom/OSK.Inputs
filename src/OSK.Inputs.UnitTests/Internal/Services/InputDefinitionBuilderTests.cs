@@ -2,6 +2,7 @@
 using Moq;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
+using OSK.Inputs.Models.Inputs;
 using Xunit;
 
 namespace OSK.Inputs.UnitTests.Internal.Services;
@@ -12,8 +13,8 @@ public class InputDefinitionBuilderTests
 
     private const string TestDefinitionName = "test123";
 
-    private readonly Mock<IInputDeviceConfiguration> _mockControllerConfiguration1;
-    private readonly Mock<IInputDeviceConfiguration> _mockControllerConfiguration2;
+    private readonly Mock<IInputDeviceConfiguration> _mockDeviceConfiguration;
+    private readonly Mock<IInputDeviceConfiguration> _mockDeviceConfiguration2;
 
     private readonly InputDefinitionBuilder _builder;
 
@@ -23,10 +24,15 @@ public class InputDefinitionBuilderTests
 
     public InputDefinitionBuilderTests()
     {
-        _mockControllerConfiguration1 = new();
-        _mockControllerConfiguration2 = new();
+        _mockDeviceConfiguration = new();
+        _mockDeviceConfiguration.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("abc"));
 
-        _builder = new(TestDefinitionName, [ _mockControllerConfiguration1.Object, _mockControllerConfiguration2.Object ]);
+        _mockDeviceConfiguration2 = new();
+        _mockDeviceConfiguration2.SetupGet(m => m.DeviceName)
+            .Returns(new InputDeviceName("def"));
+
+        _builder = new(TestDefinitionName, [ _mockDeviceConfiguration.Object, _mockDeviceConfiguration2.Object ]);
     }
 
     #endregion
@@ -122,10 +128,19 @@ public class InputDefinitionBuilderTests
         _builder.AddAction(action1);
         _builder.AddAction(action2);
 
-        _builder.AddInputScheme("Scheme1", _ => { });
-        _builder.AddInputScheme("Scheme2", _ => { });
+        _builder.AddInputScheme("Scheme1", builder => 
+        {
+            builder.AddDevice<IInput>(_mockDeviceConfiguration.Object.DeviceName, _ => { });
+        });
+        _builder.AddInputScheme("Scheme2", builder => 
+        {
+            builder.AddDevice<IInput>(_mockDeviceConfiguration.Object.DeviceName, _ => { });
+        });
 
-        _builder.AddInputScheme("Scheme1", _ => { });
+        _builder.AddInputScheme("Scheme1", builder => 
+        { 
+            builder.AddDevice<IInput>(_mockDeviceConfiguration2.Object.DeviceName, _ => { }); 
+        });
 
         // Act
         var definition = _builder.Build();
