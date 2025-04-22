@@ -24,7 +24,7 @@ public class InputSystemConfigurationTests
                 definition.AddAction("Trigger", _ => ValueTask.CompletedTask);
                 definition.AddInputScheme("abc", scheme =>
                 {
-                    scheme.AddKeyboardMaps(keyboard =>
+                    scheme.UseKeyboard(keyboard =>
                     {
                         keyboard.AssignStartAction(Keyboard.W, "Trigger");
                     });
