@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Ports;
@@ -54,7 +55,7 @@ internal class InputSystemBuilder(IServiceCollection services,
         }
         if (_deviceConfigurationLookup.TryGetValue(deviceConfiguration.DeviceName.Name, out var action))
         {
-            throw new DuplicateNameException($"An input controller with the name {deviceConfiguration.DeviceName} has already been added.");
+            throw new DuplicateNameException($"An input device with the name {deviceConfiguration.DeviceName} has already been added.");
         }
 
         _deviceConfigurationLookup.Add(deviceConfiguration.DeviceName.Name, deviceConfiguration);
@@ -102,7 +103,16 @@ internal class InputSystemBuilder(IServiceCollection services,
             inputDefinitions.Add(definition);
         }
 
-        var inputSystemConfiguration = new InputSystemConfiguration(inputDefinitions, _deviceConfigurationLookup.Values, _allowCustomSchemes, _maxLocalUsers);
+        var inputControllers = inputDefinitions.SelectMany(definition => definition.InputSchemes)
+            .GroupBy(schemeGroup => schemeGroup.ControllerId)
+            .Select(schemeGroup =>
+            {
+                var scheme = schemeGroup.First();
+                return new InputControllerConfiguration(scheme.ControllerId, scheme.DeviceActionMaps.Select(deviceMap => deviceMap.DeviceName));
+            });
+
+        var inputSystemConfiguration = new InputSystemConfiguration(inputDefinitions, inputControllers, _deviceConfigurationLookup.Values,
+            _allowCustomSchemes, _maxLocalUsers);
         var validationService = validationServiceFactory?.Invoke() ?? new InputValidationService();
 
         var validationContext = validationService.ValidateInputSystemConfiguration(inputSystemConfiguration);

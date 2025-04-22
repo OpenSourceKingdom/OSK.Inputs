@@ -14,7 +14,7 @@ public abstract class InputDevice(InputDeviceName deviceName, Type inputReaderTy
 
     internal IInputDeviceConfiguration BuildDeviceConfiguration()
     {
-                var duplicateIdentifiers = AllInputs.GroupBy(input => input.Id).Where(group => group.Count() > 1);
+        var duplicateIdentifiers = AllInputs.GroupBy(input => input.Id).Where(group => group.Count() > 1);
         if (duplicateIdentifiers.Any())
         {
             var error = string.Join(",", duplicateIdentifiers.SelectMany(group => group.Select(input => input.Name)));

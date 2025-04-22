@@ -10,5 +10,5 @@ public interface IApplicationInputUser
 
     InputDefinition ActiveInputDefinition { get; }
 
-    InputScheme? GetActiveInputScheme(InputDeviceName deviceName);
+    InputScheme? GetActiveInputScheme(string controllerId);
 }

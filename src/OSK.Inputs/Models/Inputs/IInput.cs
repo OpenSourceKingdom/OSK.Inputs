@@ -1,6 +1,4 @@
-﻿using OSK.Inputs.Models.Configuration;
-
-namespace OSK.Inputs.Models.Inputs;
+﻿namespace OSK.Inputs.Models.Inputs;
 
 /// <summary>
 /// Represents some form of input. i.e. physical buttons, software enabled input, or anything else

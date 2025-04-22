@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OSK.Inputs.Models.Inputs;
-public abstract class SensorInput(int id, string name): IInput
+﻿namespace OSK.Inputs.Models.Inputs;
+public abstract class SensorInput(int id, string name): ISensorInput
 {
     private const string SensorInputTypeName = "Sensor";
 

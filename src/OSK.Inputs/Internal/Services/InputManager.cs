@@ -27,7 +27,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
     public InputSystemConfiguration Configuration => inputSystemConfiguration;
 
     public event Action<ApplicationUserInputDeviceEvent> OnInputDeviceDisconnected = _ => { };
-    public event Action<ApplicationUserInputDeviceEvent> OnInputDeviceConnected = _ => { };
+    public event Action<ApplicationUserInputDeviceEvent> OnInputDeviceReconnected = _ => { };
     public event Action<ApplicationUserInputDeviceEvent> OnInputDeviceAdded = _ => { };
 
     public ValueTask<IOutput<IEnumerable<InputDefinition>>> GetInputDefinitionsAsync(CancellationToken cancellationToken = default)
@@ -67,7 +67,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return outputFactory.Succeed();
     }
 
-    public async Task<IOutput<ActiveInputScheme>> SetActiveInputSchemeAsync(int userId, string inputDefinitionId, InputDeviceName deviceName,
+    public async Task<IOutput<ActiveInputScheme>> SetActiveInputSchemeAsync(int userId, string inputDefinitionId, string controllerId,
         string schemeId, CancellationToken cancellationToken = default)
     {
         if (!_userLookup.TryGetValue(userId, out var user))
@@ -80,16 +80,16 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         {
             return getInputDefinitionOutput.AsOutput<ActiveInputScheme>();
         }
-        if (inputSystemConfiguration.SupportedInputDevices.FirstOrDefaultByString(deviceConfiguration => deviceConfiguration.DeviceName.Name, deviceName.Name) is null)
+        if (inputSystemConfiguration.InputControllers.FirstOrDefaultByString(controller => controller.ControllerName, controllerId) is null)
         {
-            return outputFactory.NotFound<ActiveInputScheme>($"The input controller with the name {deviceName} is not supported with the input system.");
+            return outputFactory.NotFound<ActiveInputScheme>($"The input controller with the name {controllerId} is not supported with the input system.");
         }
-        if (getInputDefinitionOutput.Value.InputSchemes.FirstOrDefaultByString(scheme => scheme.SchemeName, schemeId) is null)
+        if (getInputDefinitionOutput.Value.InputSchemes.FirstOrDefaultByString(scheme => scheme.Name, schemeId) is null)
         {
-            return outputFactory.NotFound<ActiveInputScheme>($"The input scheme with the name {schemeId} was not found for the {deviceName} controller");
+            return outputFactory.NotFound<ActiveInputScheme>($"The input scheme with the name {schemeId} was not found for the {controllerId} controller");
         }
 
-        var saveActiveSchemeOutput = await inputSchemeRepository.SaveActiveInputSchemeAsync(new ActiveInputScheme(userId, inputDefinitionId, deviceName.Name, schemeId), cancellationToken);
+        var saveActiveSchemeOutput = await inputSchemeRepository.SaveActiveInputSchemeAsync(new ActiveInputScheme(userId, inputDefinitionId, controllerId, schemeId), cancellationToken);
         if (!saveActiveSchemeOutput.IsSuccessful)
         {
             return saveActiveSchemeOutput;
@@ -108,16 +108,16 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return saveActiveSchemeOutput;
     }
 
-    public async Task<IOutput> ResetUserActiveInputSchemeAsync(int userId, string inputDefinitionId, InputDeviceName deviceName, CancellationToken cancellationToken = default)
+    public async Task<IOutput> ResetUserActiveInputSchemeAsync(int userId, string inputDefinitionId, string controllerId, CancellationToken cancellationToken = default)
     {
         if (!_userLookup.TryGetValue(userId, out var user))
         {
             return outputFactory.NotFound<ActiveInputScheme>($"User id {userId} was not found.");
         }
 
-        var deleteActiveSchemeResult = await inputSchemeRepository.DeleteActiveInputSchemeAsync(userId, inputDefinitionId, deviceName, cancellationToken);
+        var deleteActiveSchemeResult = await inputSchemeRepository.DeleteActiveInputSchemeAsync(userId, inputDefinitionId, controllerId, cancellationToken);
         if (deleteActiveSchemeResult.IsSuccessful && user.ActiveInputDefinition.Name.Equals(inputDefinitionId, StringComparison.Ordinal) 
-                && user.GetActiveInputScheme(deviceName) != null)
+                && user.GetActiveInputScheme(controllerId) != null)
         {
             var getActiveInputSchemesOutput = await GetActiveInputSchemesForUserAsync(userId, user.ActiveInputDefinition, cancellationToken);
             if (!getActiveInputSchemesOutput.IsSuccessful)
@@ -164,16 +164,16 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return inputSchemeRepository.SaveCustomInputSchemeAsync(inputDefinition.Name, inputScheme, cancellationToken);
     }
 
-    public async Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, InputDeviceName deviceName, string schemeName,
+    public async Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, string controllerId, string schemeName,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(inputDefinitionName))
         {
             throw new ArgumentNullException(nameof(inputDefinitionName));
         }
-        if (string.IsNullOrWhiteSpace(deviceName.Name))
+        if (string.IsNullOrWhiteSpace(controllerId))
         {
-            throw new ArgumentNullException(nameof(deviceName));
+            throw new ArgumentNullException(nameof(controllerId));
         }
         if (string.IsNullOrWhiteSpace(schemeName))
         {
@@ -186,17 +186,16 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             return outputFactory.Succeed();
         }
 
-        var device = inputSystemConfiguration.SupportedInputDevices.FirstOrDefaultByString(x => x.DeviceName.Name,
-            deviceName.Name);
-        if (device is null)
+        var inputScheme = inputDefinition.InputSchemes.Where(scheme => scheme.ControllerId.Equals(controllerId, StringComparison.Ordinal))
+            .FirstOrDefaultByString(scheme => scheme.Name, schemeName);
+        if (inputScheme is null)
         {
             return outputFactory.Succeed();
         }
-
-        var inputScheme = inputDefinition.InputSchemes.FirstOrDefaultByString(scheme => scheme.SchemeName, schemeName);
+        
         if (inputScheme is BuiltInInputScheme)
         {
-            return outputFactory.Fail($"Input controller {deviceName} input scheme {inputScheme} for input definition {inputDefinitionName} can not be deleted because it is built in.");
+            return outputFactory.Fail($"Input controller {controllerId} input scheme {inputScheme} for input definition {inputDefinitionName} can not be deleted because it is built in.");
         }
 
         if (!inputSystemConfiguration.AllowCustomInputSchemes)
@@ -204,7 +203,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             return outputFactory.Succeed();
         }
 
-        var deleteResult = await inputSchemeRepository.DeleteCustomInputSchemeAsync(inputDefinitionName, deviceName, schemeName, cancellationToken);
+        var deleteResult = await inputSchemeRepository.DeleteCustomInputSchemeAsync(inputDefinitionName, controllerId, schemeName, cancellationToken);
         return deleteResult.IsSuccessful || deleteResult.StatusCode.SpecificityCode == OutputSpecificityCode.DataNotFound
             ? outputFactory.Succeed()
             : deleteResult;
@@ -239,14 +238,15 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         }
 
         var definition = inputSystemConfiguration.InputDefinitions.FirstByString(definition => definition.Name, activeDefinitionName);
-        var inputDevices = options.DeviceIdentifiers.Select(GetInputDevice);
         user = new ApplicationInputUser(userId, inputSystemConfiguration);
+
+        var inputDevices = options.DeviceIdentifiers.Select(deviceIdentifier => GetInputDevice(userId, deviceIdentifier));
+        user.AddInputDevices(inputDevices.ToArray());
         user.SetActiveInputDefinition(getInputDefinitionOutput.Value, getActiveInputSchemesOutput.Value);
 
-        user.OnInputDeviceConnected += NotifiyUserInputDeviceConnected;
+        user.OnInputDeviceReconnected += NotifiyUserInputDeviceConnected;
         user.OnInputDeviceDisconnected += NotifiyUserInputDeviceDisconnected;
 
-        user.AddInputDevices(inputDevices.ToArray());
 
         _userLookup.Add(userId, user);
         return outputFactory.Succeed((IApplicationInputUser)user);
@@ -261,7 +261,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         }
     }
 
-    public void PairController(int userId, InputDeviceIdentifier deviceIdentifier)
+    public void PairDevice(int userId, InputDeviceIdentifier deviceIdentifier)
     {
         var pairedUser = _userLookup.Values.FirstOrDefault(user => user.TryGetDevice(deviceIdentifier.DeviceId, out _));
         if (pairedUser is not null)
@@ -271,7 +271,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
                 return;
             };
 
-            throw new InvalidOperationException($"Unable to pair a controller to user {userId} since it is already paired to user {pairedUser.Id}");
+            throw new InvalidOperationException($"Unable to pair a device to user {userId} since it is already paired to user {pairedUser.Id}");
         }
 
         if (!_userLookup.TryGetValue(userId, out var user))
@@ -279,7 +279,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             throw new InvalidOperationException($"User with id {userId} has not been added to the input system");
         }
 
-        var inputDevice = GetInputDevice(deviceIdentifier);
+        var inputDevice = GetInputDevice(userId, deviceIdentifier);
         user.AddInputDevices(inputDevice);
         OnInputDeviceAdded(new ApplicationUserInputDeviceEvent(user, deviceIdentifier));
     }
@@ -315,15 +315,15 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
 
     #region Helpers
 
-    private void NotifiyUserInputDeviceConnected(int userId, InputDevice device)
+    private void NotifiyUserInputDeviceConnected(int userId, RuntimeInputDevice device)
     {
         if (_userLookup.TryGetValue(userId, out var applicationInputUser))
         {
-            OnInputDeviceConnected(new ApplicationUserInputDeviceEvent(applicationInputUser, device.DeviceIdentifier));
+            OnInputDeviceReconnected(new ApplicationUserInputDeviceEvent(applicationInputUser, device.DeviceIdentifier));
         }
     }
 
-    private void NotifiyUserInputDeviceDisconnected(int userId, InputDevice device)
+    private void NotifiyUserInputDeviceDisconnected(int userId, RuntimeInputDevice device)
     {
         if (_userLookup.TryGetValue(userId, out var applicationInputUser))
         {
@@ -331,17 +331,17 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         }
     }
 
-    private InputDevice GetInputDevice(InputDeviceIdentifier deviceIdentifier)
+    private RuntimeInputDevice GetInputDevice(int userId, InputDeviceIdentifier deviceIdentifier)
     {
         var deviceConfiguration = inputSystemConfiguration.SupportedInputDevices.FirstOrDefaultByString(configuration
             => configuration.DeviceName.Name, deviceIdentifier.DeviceName.Name);
         if (deviceConfiguration is null)
         {
-            throw new InvalidOperationException($"No controller with the name of {deviceIdentifier.DeviceName} was configured for support with the input system.");
+            throw new InvalidOperationException($"No device with the name of {deviceIdentifier.DeviceName} was configured for support with the input system.");
         }
 
         var inputReader = inputReaderProvider.GetInputReader(deviceConfiguration, deviceIdentifier);
-        return new InputDevice(deviceIdentifier, deviceConfiguration, inputReader);
+        return new RuntimeInputDevice(userId, deviceIdentifier, deviceConfiguration, inputReader);
     }
 
     private async Task<IOutput<IEnumerable<InputScheme>>> GetActiveInputSchemesForUserAsync(int userId, InputDefinition inputDefinition, CancellationToken cancellationToken)
@@ -352,14 +352,14 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
             return getActiveInputSchemesOutput.AsOutput<IEnumerable<InputScheme>>();
         }
 
-        var userActiveInputSchemeLookup = getActiveInputSchemesOutput.Value.ToDictionary(scheme => scheme.DeviceName);
-        var activeInputSchemes = inputDefinition.InputSchemes.GroupBy(scheme => scheme.DeviceName.Name).Select(deviceSchemeGroup =>
+        var userActiveInputSchemeLookup = getActiveInputSchemesOutput.Value.ToDictionary(scheme => scheme.ControllerName);
+        var activeInputSchemes = inputDefinition.InputSchemes.GroupBy(scheme => scheme.ControllerId).Select(controllerSchemeGroup =>
         {
-            var activeScheme = userActiveInputSchemeLookup.TryGetValue(deviceSchemeGroup.Key, out var activeInputScheme)
-                ? deviceSchemeGroup.FirstOrDefaultByString(scheme => scheme.SchemeName, activeInputScheme.ActiveInputSchemeName)
+            var activeScheme = userActiveInputSchemeLookup.TryGetValue(controllerSchemeGroup.Key, out var activeInputScheme)
+                ? controllerSchemeGroup.FirstOrDefaultByString(scheme => scheme.Name, activeInputScheme.ActiveInputSchemeName)
                 : null;
 
-            return activeScheme ?? deviceSchemeGroup.FirstOrDefault(scheme => scheme.IsDefault) ?? deviceSchemeGroup.First();
+            return activeScheme ?? controllerSchemeGroup.FirstOrDefault(scheme => scheme.IsDefault) ?? controllerSchemeGroup.First();
         }).ToArray();
 
         return outputFactory.Succeed((IEnumerable<InputScheme>)activeInputSchemes);

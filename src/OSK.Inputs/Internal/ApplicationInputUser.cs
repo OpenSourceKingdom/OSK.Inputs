@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Runtime;
 
@@ -11,18 +12,9 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 {
     #region Variables
 
-    public event Action<int, InputDevice> OnInputDeviceConnected = (_, _) => { };
-    public event Action<int, InputDevice> OnInputDeviceDisconnected = (_, _) => { };
-    public event Action<int, InputDevice> OnActiveInputDeviceChanged = (_, _) => { };
-
-    private readonly Dictionary<int, InputDevice> _inputDevices = [];
-
-    private readonly Dictionary<string, InputScheme> _activeInputSchemeLookup = inputSystemConfiguration.InputDefinitions.First()
-        .InputSchemes.GroupBy(scheme => scheme.DeviceName).ToDictionary(schemeGroup => schemeGroup.Key.Name,
-        schemeGroup => schemeGroup.FirstOrDefault(scheme => scheme.IsDefault) ?? schemeGroup.First());
-    private readonly Dictionary<string, UserInputReadContext> _inputReadContextLookup = [];
-
-    private InputDevice? _activeInputDevice;
+    private readonly Dictionary<int, RuntimeInputDevice> _userInputDeviceLookup = [];
+    internal readonly Dictionary<string, RuntimeInputController> _inputControllers = [];
+    private RuntimeInputController? _activeInputController;
 
     #endregion
 
@@ -32,13 +24,13 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 
     public InputDefinition ActiveInputDefinition { get; private set; } = inputSystemConfiguration.InputDefinitions.First();
 
-    public IEnumerable<InputDeviceIdentifier> DeviceIdentifiers => _inputDevices.Values.Select(device => device.DeviceIdentifier);
+    public IEnumerable<InputDeviceIdentifier> DeviceIdentifiers => _userInputDeviceLookup.Values.Select(device => device.DeviceIdentifier);
 
-    public InputScheme? GetActiveInputScheme(InputDeviceName deviceName)
+    public InputScheme? GetActiveInputScheme(string controllerId)
     {
-        if (_activeInputSchemeLookup.TryGetValue(deviceName.Name, out InputScheme inputScheme))
+        if (_inputControllers.TryGetValue(controllerId, out var inputController))
         {
-            return inputScheme;
+            return inputController.InputScheme;
         }
 
         return null;
@@ -46,47 +38,46 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 
     #endregion
 
-    #region IDisposable
+    #region Public
+
+    public event Action<int, RuntimeInputDevice> OnInputDeviceReconnected = (_, _) => { };
+    public event Action<int, RuntimeInputDevice> OnInputDeviceDisconnected = (_, _) => { };
+    public event Action<int, InputControllerConfiguration> OnActiveInputControllerChanged = (_, _) => { };
 
     public void Dispose()
     {
-        foreach (var device in _inputDevices.Values)
+        foreach (var controller in _inputControllers.Values)
         {
-            RemoveInputDevice(device.DeviceIdentifier);
+            RemoveInputController(controller);
         }
 
-        _inputDevices.Clear();
+        _inputControllers.Clear();
     }
 
     #endregion
     
     #region Publc
 
-    public bool TryGetDevice(int deviceId, out InputDevice device)
-        => _inputDevices.TryGetValue(deviceId, out device);
-
-    public void RemoveInputDevice(InputDeviceIdentifier deviceIdentifier)
+    public bool TryGetDevice(int deviceId, out RuntimeInputDevice device)
     {
-        if (!_inputDevices.TryGetValue(deviceIdentifier.DeviceId, out var device))
-        {
-            return;
-        }
-
-        device.Dispose();
-        _inputDevices.Remove(deviceIdentifier.DeviceId);
+        return _userInputDeviceLookup.TryGetValue(deviceId, out device);
     }
 
-    public void AddInputDevices(params InputDevice[] inputDevices)
+    public void AddInputDevices(params RuntimeInputDevice[] inputDevices)
     {
         foreach (var inputDevice in inputDevices)
         {
-            if (!_inputDevices.TryGetValue(inputDevice.DeviceIdentifier.DeviceId, out _))
+            if (!_userInputDeviceLookup.TryGetValue(inputDevice.DeviceIdentifier.DeviceId, out _))
             {
-                _inputDevices[inputDevice.DeviceIdentifier.DeviceId] = inputDevice;
-
+                _userInputDeviceLookup.Add(inputDevice.DeviceIdentifier.DeviceId, inputDevice);
                 inputDevice.InputReader.OnControllerDisconnected += NotifyDeviceDisconnected;
                 inputDevice.InputReader.OnControllerReconnected += NotifyDeviceReconnected;
             }
+        }
+
+        if (ActiveInputDefinition is not null)
+        {
+            SetActiveInputDefinition(ActiveInputDefinition, _inputControllers.Values.Select(controller => controller.InputScheme));
         }
     }
 
@@ -94,40 +85,43 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
     {
         ActiveInputDefinition = inputDefinition;
 
-        _activeInputSchemeLookup.Clear();
-        foreach (var activeScheme in activeInputSchemes)
+        _inputControllers.Clear();
+        _activeInputController = null;
+        foreach (var scheme in activeInputSchemes)
         {
-            var inputScheme = inputDefinition.InputSchemes.FirstOrDefaultByString(scheme => scheme.SchemeName,
-                activeScheme.SchemeName);
-
-            if (inputScheme != null)
+            var controllerConfiguration = inputSystemConfiguration.InputControllers.FirstOrDefaultByString(
+                controller => scheme.ControllerId, scheme.ControllerId);
+            if (controllerConfiguration is null)
             {
-                _activeInputSchemeLookup[inputScheme.DeviceName.Name] = inputScheme;
+                continue;
             }
-        }
 
-        _inputReadContextLookup.Clear();
-        foreach (var inputSchemeActionCommand in GetReadContexts(inputSystemConfiguration, inputDefinition,
-            userId, activeInputSchemes))
-        {
-            _inputReadContextLookup[inputSchemeActionCommand.Key.SchemeName] = inputSchemeActionCommand.Value;
+            var schemeInputDevices = scheme.DeviceActionMaps.Select(deviceMap
+                    => _userInputDeviceLookup.Values.FirstOrDefault(device => device.DeviceIdentifier.DeviceName == deviceMap.DeviceName))
+                .Where(device => device is not null);
+            
+            // if any of the devices is available for this input scheme, we shouldn't prevent a user from providing input
+            // i.e. keyboard + mouse without a mouse shouldn't stop keyboard input
+            if (!schemeInputDevices.Any())
+            {
+                continue;
+            }
+
+            var inputController = new RuntimeInputController(controllerConfiguration, scheme, schemeInputDevices);
+            _inputControllers[scheme.ControllerId] = inputController;
         }
     }
 
     public async Task<IEnumerable<UserActionCommand>> ReadInputsAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var context in _inputReadContextLookup.Values)
+        if (_activeInputController is not null)
         {
-            context.PrepareForNextRead();
-        }
-
-        if (_activeInputDevice is not null)
-        {
-            var readContext = _inputReadContextLookup[GetInputSchemeLookupKey(_activeInputDevice.DeviceIdentifier)];
-            await _activeInputDevice.InputReader.ReadInputsAsync(readContext, cancellationToken);
-            if (readContext.ReceivedInput)
+            var activatedInputs = await _activeInputController.InputDevices.ExecuteConcurrentResultAsync(
+                device => device.ReadInputsAsync(cancellationToken), 1, cancellationToken);
+            var allInputs = activatedInputs.SelectMany(inputs => inputs);
+            if (allInputs.Any())
             {
-                return GetActionCommands(readContext);
+                return GetActionCommands(ActiveInputDefinition, allInputs);
             }
         }
 
@@ -136,21 +130,21 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
             return [];
         }
 
-        foreach (var device in _inputDevices.Values)
+        foreach (var inputController in _inputControllers.Values)
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 break;
             }
-            if (_inputReadContextLookup.TryGetValue(GetInputSchemeLookupKey(device.DeviceIdentifier), out var readContext))
-            {
-                await device.InputReader.ReadInputsAsync(readContext, cancellationToken);
-                if (readContext.ReceivedInput)
-                {
-                    _activeInputDevice = device;
-                    OnActiveInputDeviceChanged(userId, device);
-                    return GetActionCommands(readContext);
-                }
+
+            var activatedInputs = await inputController.InputDevices.ExecuteConcurrentResultAsync(
+                device => device.ReadInputsAsync(cancellationToken), 1, cancellationToken);
+            var allInputs = activatedInputs.SelectMany(inputs => inputs);
+            if (allInputs.Any())
+            { 
+                _activeInputController = inputController;
+                OnActiveInputControllerChanged(userId, inputController.Configuration);
+                return GetActionCommands(ActiveInputDefinition, allInputs);
             }
         }
 
@@ -161,58 +155,57 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 
     #region Helpers
 
-    private static IEnumerable<KeyValuePair<InputScheme, UserInputReadContext>> GetReadContexts(InputSystemConfiguration configuration, 
-        InputDefinition inputDefinition, int userId, IEnumerable<InputScheme> activeSchemes)
+    internal void RemoveInputController(RuntimeInputController inputController)
     {
-        var inputControllerInputLookup = configuration.SupportedInputDevices.ToDictionary(device => device.DeviceName,
-            device => device.Inputs.ToDictionary(input => input.Id));
-        var actionConfigurationLookup = inputDefinition.InputActions.ToDictionary(action => action.ActionKey);
-        var activeInputSchemeLookup = activeSchemes.ToDictionary(scheme => scheme.DeviceName);
-
-        return inputDefinition.InputSchemes.Select(inputScheme =>
+        if (!_inputControllers.TryGetValue(inputController.ControllerId, out var _))
         {
-            var deviceInputLookup = inputControllerInputLookup[inputScheme.DeviceName];
-            var activeScheme = activeInputSchemeLookup.TryGetValue(inputScheme.DeviceName, out var activeDeviceScheme)
-                ? activeDeviceScheme
-                : inputScheme;
+            return;
+        }
 
-            return new KeyValuePair<InputScheme, UserInputReadContext>(activeScheme, new UserInputReadContext(userId, 
-                activeScheme.InputActionMaps.Select(actionMap => new InputActionMapPair(deviceInputLookup[actionMap.InputId], actionMap))));
-        });
+        foreach (var device in inputController.InputDevices)
+        {
+            device.Dispose();
+            _userInputDeviceLookup.Remove(device.DeviceIdentifier.DeviceId);
+        }
+        _inputControllers.Remove(inputController.ControllerId);
     }
 
     private void NotifyDeviceDisconnected(InputDeviceIdentifier deviceIdentifier)
     {
-        if (_inputDevices.TryGetValue(deviceIdentifier.DeviceId, out var device))
-        {
-            if (_activeInputDevice is not null && _activeInputDevice == device)
+        var changedInputController = _inputControllers.Values.Where(inputController
+            => inputController.InputDevices.Any(device => device.DeviceIdentifier == deviceIdentifier))
+            .Select(controller => new
             {
-                _activeInputDevice = null;
+                Controller = controller,
+                InputDevice = controller.InputDevices.First(device => device.DeviceIdentifier == deviceIdentifier)
+            })
+            .FirstOrDefault();
+            
+        if (changedInputController is not null)
+        {
+            if (_activeInputController is not null && changedInputController.Controller == _activeInputController)
+            {
+                _activeInputController = null;
             }
-            OnInputDeviceDisconnected(userId, device);
+            OnInputDeviceDisconnected(userId, changedInputController.InputDevice);
         }
     }
 
     private void NotifyDeviceReconnected(InputDeviceIdentifier deviceIdentifier)
     {
-        if (_inputDevices.TryGetValue(deviceIdentifier.DeviceId, out var device))
+        var inputDevice = _inputControllers.Values.SelectMany(controller => controller.InputDevices)
+            .FirstOrDefault(device => device.DeviceIdentifier == deviceIdentifier);
+        if (inputDevice is not null)
         {
-            OnInputDeviceConnected(userId, device);
+            OnInputDeviceReconnected(userId, inputDevice);
         }
     }
 
-    private IEnumerable<UserActionCommand> GetActionCommands(UserInputReadContext context)
+    private IEnumerable<UserActionCommand> GetActionCommands(InputDefinition inputDefinition, IEnumerable<ActivatedInput> activatedInputs)
     {
-        var actionCommands = new List<UserActionCommand>();
-        foreach (var activatedInput in context.GetActivatedInputs())
-        {
-            actionCommands.Add(new UserActionCommand(userId, activatedInput, ActiveInputDefinition[activatedInput.ActionKey]));
-        }
-
-        return actionCommands;
+        return activatedInputs.Select(activatedInput
+            => new UserActionCommand(userId, activatedInput, inputDefinition[activatedInput.ActionKey]));
     }
-
-    private string GetInputSchemeLookupKey(InputDeviceIdentifier identifier) => $"{identifier.DeviceName}";
 
     #endregion
 }

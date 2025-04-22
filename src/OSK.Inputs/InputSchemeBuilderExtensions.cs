@@ -1,23 +1,43 @@
-﻿using OSK.Inputs.Models.Inputs;
+﻿using System;
+using OSK.Inputs.Models.Configuration;
+using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Ports;
 
 namespace OSK.Inputs;
-
 public static class InputSchemeBuilderExtensions
 {
-    #region Assign Input
+    public static IInputSchemeBuilder UseKeyboard(this IInputSchemeBuilder builder, 
+        Action<IInputDeviceActionBuilder<IKeyboardInput>> actionConfigurator)
+    {
+        builder.AddDevice(Keyboard.KeyboardName, actionConfigurator);
+        return builder;
+    }
 
-    public static IInputSchemeBuilder AssignStartAction(this IInputSchemeBuilder builder, IInput input, string actionKey)
-        => builder.AssignInput(input, InputPhase.Start, actionKey);
+    public static IInputSchemeBuilder UseMouse(this IInputSchemeBuilder builder,
+        Action<IInputDeviceActionBuilder<IMouseInput>> actionConfigurator)
+    {
+        builder.AddDevice(Mouse.MouseName, actionConfigurator);
+        return builder;
+    }
 
-    public static IInputSchemeBuilder AssignHoldAction(this IInputSchemeBuilder builder, IInput input, string actionKey)
-        => builder.AssignInput(input, InputPhase.Active, actionKey);
+    public static IInputSchemeBuilder UsePlayStationGamePad(this IInputSchemeBuilder builder,
+        Action<IInputDeviceActionBuilder<IGamePadInput>> actionConfigurator)
+    {
+        builder.AddDevice(PlayStationController.PlayStationControllerName, actionConfigurator);
+        return builder;
+    }
 
-    public static IInputSchemeBuilder AssignTranslationAction(this IInputSchemeBuilder builder, IInput input, string actionKey)
-        => builder.AssignInput(input, InputPhase.Translation, actionKey);
+    public static IInputSchemeBuilder UseXboxGamePad(this IInputSchemeBuilder builder,
+        Action<IInputDeviceActionBuilder<IGamePadInput>> actionConfigurator)
+    {
+        builder.AddDevice(XboxController.XboxControllerName, actionConfigurator);
+        return builder;
+    }
 
-    public static IInputSchemeBuilder AssignEndAction(this IInputSchemeBuilder builder, IInput input, string actionKey)
-        => builder.AssignInput(input, InputPhase.End, actionKey);
-
-    #endregion
+    public static IInputSchemeBuilder UseSensors(this IInputSchemeBuilder builder,
+        Action<IInputDeviceActionBuilder<ISensorInput>> actionConfigurator)
+    {
+        builder.AddDevice(SensorController.SensorControllerName, actionConfigurator);
+        return builder;
+    }
 }
