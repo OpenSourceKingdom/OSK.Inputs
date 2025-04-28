@@ -32,7 +32,7 @@ internal class RuntimeInputDevice(int userId, InputDeviceIdentifier deviceIdenti
         return _readContext.GetActivatedInputs();
     }
 
-    public void SetInputScheme(IEnumerable<InputActionMapPair> actionMapPairs)
+    public void SetInputScheme(IEnumerable<InputActionMapPair> actionMapPairs) 
     {
         _readContext.InputActionPairs = actionMapPairs;
     }

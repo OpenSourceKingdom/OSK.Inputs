@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
+using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Models.Runtime;
 
 namespace OSK.Inputs.Internal;
@@ -17,7 +19,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
     private RuntimeInputController? _activeInputController;
 
     #endregion
-
+     
     #region IApplicationInputUser
 
     public int Id => userId;
@@ -96,18 +98,39 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
                 continue;
             }
 
-            var schemeInputDevices = scheme.DeviceActionMaps.Select(deviceMap
-                    => _userInputDeviceLookup.Values.FirstOrDefault(device => device.DeviceIdentifier.DeviceName == deviceMap.DeviceName))
+            var schemeInputDevices = scheme.DeviceActionMaps.Select(deviceMap =>
+            {
+                var runtimeInputDevice = _userInputDeviceLookup.Values.FirstOrDefault(device => device.DeviceIdentifier.DeviceName == deviceMap.DeviceName);
+                if (runtimeInputDevice is null)
+                {
+                    return null;
+                }
+
+                var inputLookup = runtimeInputDevice.Configuration.Inputs.ToDictionary(input => input.Id);
+                var actionMapPairs = deviceMap.InputActionMaps.SelectMany(actionMap => 
+                {
+                    var input = inputLookup[actionMap.InputId];
+                    return input switch
+                    {
+                        CombinationInput combinationInput => combinationInput.Inputs.Select(comboInput => new InputActionMapPair(new MaskedInput(comboInput, combinationInput), actionMap)),
+                        _ => [ new InputActionMapPair(input, actionMap) ]
+                    };
+                });
+                runtimeInputDevice.SetInputScheme(actionMapPairs);
+                return runtimeInputDevice;
+            })
                 .Where(device => device is not null);
             
             // if any of the devices is available for this input scheme, we shouldn't prevent a user from providing input
             // i.e. keyboard + mouse without a mouse shouldn't stop keyboard input
-            if (!schemeInputDevices.Any())
+            if (schemeInputDevices is null || !schemeInputDevices.Any())
             {
                 continue;
             }
 
-            var inputController = new RuntimeInputController(controllerConfiguration, scheme, schemeInputDevices);
+#pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
+            var inputController = new RuntimeInputController(controllerConfiguration, scheme, schemeInputDevices.ToArray());
+#pragma warning restore CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
             _inputControllers[scheme.ControllerId] = inputController;
         }
     }
@@ -203,8 +226,71 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 
     private IEnumerable<UserActionCommand> GetActionCommands(InputDefinition inputDefinition, IEnumerable<ActivatedInput> activatedInputs)
     {
-        return activatedInputs.Select(activatedInput
-            => new UserActionCommand(userId, activatedInput, inputDefinition[activatedInput.ActionKey]));
+        var actionCommandLookup = new Dictionary<int, UserActionCommand>();
+        var virtualInputLookup = new Dictionary<int, List<ActivatedInput>>();
+
+        foreach (var activatedInput in activatedInputs) 
+        {
+            if (activatedInput.Input is MaskedInput maskedInput && maskedInput.ParentInput is not null)
+            {
+                if (!virtualInputLookup.TryGetValue(maskedInput.ParentInput.Id, out var combinationInputs))
+                {
+                    combinationInputs = [];
+                    virtualInputLookup[maskedInput.ParentInput.Id] = combinationInputs;
+                }
+
+                combinationInputs.Add(activatedInput);
+            }
+            else
+            {
+                actionCommandLookup[activatedInput.Input.Id] = new UserActionCommand(userId, activatedInput, inputDefinition[activatedInput.ActionKey]);
+            }
+        }
+
+        foreach (var virtualInputActivations in virtualInputLookup.Values)
+        {
+            var maskedInput = (MaskedInput)virtualInputActivations.First().Input;
+            var virtualInputActionMapPair = virtualInputActivations.First().InputActionMapPair;
+            InputPhase? virtualActivationPhase = null;
+
+            switch (maskedInput.ParentInput)
+            {
+                case CombinationInput combinationInput:
+                    foreach (var activatedInput in virtualInputActivations)
+                    {
+                        if (virtualInputActionMapPair.TriggerPhase.HasFlag(activatedInput.TriggeredPhase))
+                        {
+                            if (virtualActivationPhase is null || (int)activatedInput.TriggeredPhase < (int)virtualActivationPhase)
+                            {
+                                virtualActivationPhase = activatedInput.TriggeredPhase;
+                            }
+                            else
+                            {
+                                virtualActivationPhase = null;
+                                break;
+                            }
+                        }
+                    }
+
+                    break;
+            }
+
+            if (virtualActivationPhase is not null)
+            {
+                foreach (var input in virtualInputActivations)
+                {
+                    actionCommandLookup.Remove(input.Input.Id);
+                }
+
+                var firstActivatedInput = virtualInputActivations.First();
+                actionCommandLookup[maskedInput.ParentInput!.Id] = new UserActionCommand(userId,
+                    new ActivatedInput(userId, firstActivatedInput.DeviceName, firstActivatedInput.InputActionMapPair,
+                       virtualActivationPhase.Value, firstActivatedInput.InputPower, firstActivatedInput.PointerInformation),
+                    inputDefinition[virtualInputActionMapPair.ActionKey]);
+            }
+        }
+
+        return actionCommandLookup.Values;
     }
 
     #endregion

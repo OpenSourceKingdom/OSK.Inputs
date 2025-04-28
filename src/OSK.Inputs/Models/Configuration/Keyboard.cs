@@ -10,7 +10,7 @@ public class Keyboard(Type inputReaderType) : InputDevice(KeyboardName, inputRea
 
     public readonly static InputDeviceName KeyboardName = new InputDeviceName("Keyboard");
 
-    // Non Asci 2
+    // Non Ascii
     public static KeyBoardInput UpArrow = new KeyBoardInput(300, "Up", "˄");
     public static KeyBoardInput RightArrow = new KeyBoardInput(301, "Right", "˃");
     public static KeyBoardInput LeftArrow = new KeyBoardInput(302, "Left", "˂");
@@ -25,10 +25,9 @@ public class Keyboard(Type inputReaderType) : InputDevice(KeyboardName, inputRea
     public static KeyBoardInput F12 = new KeyBoardInput(309, "F12");
 
     public static KeyBoardInput End = new KeyBoardInput(310, "End");
-    public static KeyBoardInput Home = new KeyBoardInput(309, "Home");
+    public static KeyBoardInput Home = new KeyBoardInput(311, "Home");
 
     // Ascii
-
     public static KeyBoardInput Zero = new KeyBoardInput(48, "Zero", "0");
     public static KeyBoardInput One = new KeyBoardInput(49, "One", "1");
     public static KeyBoardInput Two = new KeyBoardInput(50, "Two", "2");
@@ -67,7 +66,7 @@ public class Keyboard(Type inputReaderType) : InputDevice(KeyboardName, inputRea
     public static KeyBoardInput F8 = new KeyBoardInput(248, "F8");
     public static KeyBoardInput F9 = new KeyBoardInput(249, "F9");
 
-    public static KeyBoardInput Escape = new KeyBoardInput(33, "Escape", "ESC");
+    public static KeyBoardInput Escape = new KeyBoardInput(27, "Escape", "ESC");
     public static KeyBoardInput Delete = new KeyBoardInput(127, "Delete", "DEL");
 
     public static KeyboardCombination Tilde = new(126, "Tilde", "~", Shift, BackTick);
