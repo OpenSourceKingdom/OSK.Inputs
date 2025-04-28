@@ -56,9 +56,9 @@ public class ApplicationUserTests
         _user = new ApplicationInputUser(1, new InputSystemConfiguration([_testDefinition], _controllerConfigurations, _deviceConfigurations, false, 1));
 
         _testDevice = new RuntimeInputDevice(1, new InputDeviceIdentifier(1, mockDevice.Object.DeviceName),
-            Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
+            mockDevice.Object, Mock.Of<IInputReader>());
         var runtimeInputDevice2 = new RuntimeInputDevice(1, new InputDeviceIdentifier(2, mockDevice2.Object.DeviceName),
-            Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputReader>());
+            mockDevice2.Object, Mock.Of<IInputReader>());
         _user.AddInputDevices(_testDevice, runtimeInputDevice2);
         _user.SetActiveInputDefinition(_testDefinition, [ _testScheme ]);
     }

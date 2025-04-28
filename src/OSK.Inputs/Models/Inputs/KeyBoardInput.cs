@@ -1,7 +1,26 @@
 ﻿using OSK.Inputs.Models.Configuration;
 
 namespace OSK.Inputs.Models.Inputs;
-public class KeyBoardInput(int id, string name, string symbol) : DigitalInput(id, name, Keyboard.KeyboardName.Name), IKeyboardInput
+public class KeyBoardInput : DigitalInput, IKeyboardInput
 {
-    public string Symbol => symbol;
+    #region Variables
+
+    public string Symbol { get; }
+
+    #endregion
+
+    #region Constructors
+
+    public KeyBoardInput(int id, string name)
+    : this(id, name, name)
+    {
+    }
+
+    public KeyBoardInput(int id, string name, string symbol)
+        : base(id, name, Keyboard.KeyboardName.Name)
+    {
+        Symbol = symbol;
+    }
+
+    #endregion
 }

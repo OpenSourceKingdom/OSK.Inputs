@@ -10,7 +10,7 @@ public class Keyboard(Type inputReaderType) : InputDevice(KeyboardName, inputRea
 
     public readonly static InputDeviceName KeyboardName = new InputDeviceName("Keyboard");
 
-    // Non Asci 2
+    // Non Ascii
     public static KeyBoardInput UpArrow = new KeyBoardInput(300, "Up", "˄");
     public static KeyBoardInput RightArrow = new KeyBoardInput(301, "Right", "˃");
     public static KeyBoardInput LeftArrow = new KeyBoardInput(302, "Left", "˂");
@@ -18,10 +18,16 @@ public class Keyboard(Type inputReaderType) : InputDevice(KeyboardName, inputRea
 
     public static KeyBoardInput Caps = new KeyBoardInput(304, "Caps Lock", "Caps");
     public static KeyBoardInput Ctrl = new KeyBoardInput(305, "Control", "Ctrl");
-    public static KeyBoardInput Alt = new KeyBoardInput(306, "Alt", "Alt");
+    public static KeyBoardInput Alt = new KeyBoardInput(306, "Alt");
+
+    public static KeyBoardInput F10 = new KeyBoardInput(307, "F10");
+    public static KeyBoardInput F11 = new KeyBoardInput(308, "F11");
+    public static KeyBoardInput F12 = new KeyBoardInput(309, "F12");
+
+    public static KeyBoardInput End = new KeyBoardInput(310, "End");
+    public static KeyBoardInput Home = new KeyBoardInput(311, "Home");
 
     // Ascii
-
     public static KeyBoardInput Zero = new KeyBoardInput(48, "Zero", "0");
     public static KeyBoardInput One = new KeyBoardInput(49, "One", "1");
     public static KeyBoardInput Two = new KeyBoardInput(50, "Two", "2");
@@ -46,9 +52,22 @@ public class Keyboard(Type inputReaderType) : InputDevice(KeyboardName, inputRea
     public static KeyBoardInput RightBracket = new KeyBoardInput(93, "Right Bracket", "]");
     public static KeyBoardInput SemiColon = new KeyBoardInput(59, "Semi colon", ";");
     public static KeyBoardInput SingleQuote = new KeyBoardInput(39, "Single Quote", "'");
-    public static KeyBoardInput Comma = new KeyBoardInput(44, "Comma","");
+    public static KeyBoardInput Comma = new KeyBoardInput(44, "Comma",",");
     public static KeyBoardInput Period = new KeyBoardInput(46, "Period", ".");
     public static KeyBoardInput ForwardSlash = new KeyBoardInput(47, "Forward Slash", "/");
+
+    public static KeyBoardInput F1 = new KeyBoardInput(241, "F1");
+    public static KeyBoardInput F2 = new KeyBoardInput(242, "F2");
+    public static KeyBoardInput F3 = new KeyBoardInput(243, "F3");
+    public static KeyBoardInput F4 = new KeyBoardInput(244, "F4");
+    public static KeyBoardInput F5 = new KeyBoardInput(245, "F5");
+    public static KeyBoardInput F6 = new KeyBoardInput(246, "F6");
+    public static KeyBoardInput F7 = new KeyBoardInput(247, "F7");
+    public static KeyBoardInput F8 = new KeyBoardInput(248, "F8");
+    public static KeyBoardInput F9 = new KeyBoardInput(249, "F9");
+
+    public static KeyBoardInput Escape = new KeyBoardInput(27, "Escape", "ESC");
+    public static KeyBoardInput Delete = new KeyBoardInput(127, "Delete", "DEL");
 
     public static KeyboardCombination Tilde = new(126, "Tilde", "~", Shift, BackTick);
     public static KeyboardCombination ExclamationPoint = new KeyboardCombination(33, "Exclamation Mark", "!", Shift, One);
@@ -115,7 +134,9 @@ public class Keyboard(Type inputReaderType) : InputDevice(KeyboardName, inputRea
         Q, W, E, R, T, Y, U, I, O, P, 
         A, S, D, F, G, H, J, K, L, 
         Z, X, C, V, B, N, M,
-        UpArrow, LeftArrow, DownArrow, RightArrow
+        F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+        UpArrow, LeftArrow, DownArrow, RightArrow,
+        Home, Delete, Escape
     ];
 
     #endregion

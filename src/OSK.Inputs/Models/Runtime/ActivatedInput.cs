@@ -22,5 +22,7 @@ public class ActivatedInput(int userId, InputDeviceName deviceName, InputActionM
 
     public PointerInformation PointerInformation => pointerInformation;
 
+    internal InputActionMapPair InputActionMapPair => inputActionMapPair;
+
     #endregion
 }
