@@ -7,9 +7,9 @@ using OSK.Inputs.Models.Runtime;
 namespace OSK.Inputs.Ports;
 
 [HexagonalIntegration(HexagonalIntegrationType.IntegrationRequired)]
-public interface IInputReader: IDisposable
+public interface IInputDeviceReader: IDisposable
 {
-    event Action<InputDeviceIdentifier> OnControllerDisconnected;
+    event Action<InputDeviceIdentifier> OnDeviceDisconnected;
     event Action<InputDeviceIdentifier> OnControllerReconnected;
 
     Task ReadInputsAsync(UserInputReadContext context, CancellationToken cancellationToken = default);

@@ -56,10 +56,6 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
         _inputControllers.Clear();
     }
 
-    #endregion
-    
-    #region Publc
-
     public bool TryGetDevice(int deviceId, out RuntimeInputDevice device)
     {
         return _userInputDeviceLookup.TryGetValue(deviceId, out device);
@@ -72,7 +68,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
             if (!_userInputDeviceLookup.TryGetValue(inputDevice.DeviceIdentifier.DeviceId, out _))
             {
                 _userInputDeviceLookup.Add(inputDevice.DeviceIdentifier.DeviceId, inputDevice);
-                inputDevice.InputReader.OnControllerDisconnected += NotifyDeviceDisconnected;
+                inputDevice.InputReader.OnDeviceDisconnected += NotifyDeviceDisconnected;
                 inputDevice.InputReader.OnControllerReconnected += NotifyDeviceReconnected;
             }
         }
@@ -135,12 +131,12 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
         }
     }
 
-    public async Task<IEnumerable<UserActionCommand>> ReadInputsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<UserActionCommand>> ReadInputsAsync(int maxConcurrentDevices, CancellationToken cancellationToken = default)
     {
         if (_activeInputController is not null)
         {
             var activatedInputs = await _activeInputController.InputDevices.ExecuteConcurrentResultAsync(
-                device => device.ReadInputsAsync(cancellationToken), 1, cancellationToken);
+                device => device.ReadInputsAsync(cancellationToken), maxConcurrentDevices, cancellationToken);
             var allInputs = activatedInputs.SelectMany(inputs => inputs);
             if (allInputs.Any())
             {

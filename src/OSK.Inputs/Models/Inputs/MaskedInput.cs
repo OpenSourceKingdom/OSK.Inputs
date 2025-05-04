@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using OSK.Inputs.Models.Inputs;
 
-namespace OSK.Inputs.Internal;
+namespace OSK.Inputs.Models.Inputs;
 
 /// <summary>
 /// The purpose of this object is simply to 'mask' an input in the case of virtual inputs. A prominent example would be combination inputs in which
@@ -12,7 +11,7 @@ namespace OSK.Inputs.Internal;
 /// to deal with the combination logic in similar ways. Allowing a masked input will help in tracking teh input triggers for these virtual use cases by allow us to change
 /// values sent to input readers as needed to accomodate shared logic.
 /// </summary>
-internal class MaskedInput: IInput
+public class MaskedInput: IInput
 {
     #region Variables
 
@@ -45,6 +44,8 @@ internal class MaskedInput: IInput
 
     #region Public
 
+    public int RawInputId => _input.Id;
+
     public IInput RawInput => _input;
 
     public IInput? ParentInput => _parentInput;
@@ -57,7 +58,7 @@ internal class MaskedInput: IInput
     {
         return parentId is null
             ? id
-            : (parentId.Value << 16) | (id & 0xFFFF);
+            : parentId.Value << 16 | id & 0xFFFF;
     }
 
     #endregion

@@ -8,7 +8,7 @@ using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal;
 internal class RuntimeInputDevice(int userId, InputDeviceIdentifier deviceIdentifier, IInputDeviceConfiguration configuration,
-    IInputReader inputReader) : IDisposable
+    IInputDeviceReader inputReader) : IDisposable
 {
     #region Variables
 
@@ -16,7 +16,7 @@ internal class RuntimeInputDevice(int userId, InputDeviceIdentifier deviceIdenti
 
     public IInputDeviceConfiguration Configuration => configuration;
 
-    public IInputReader InputReader => inputReader;
+    public IInputDeviceReader InputReader => inputReader;
 
     private readonly UserInputReadContext _readContext = new UserInputReadContext(userId, deviceIdentifier.DeviceName);
 
@@ -26,8 +26,12 @@ internal class RuntimeInputDevice(int userId, InputDeviceIdentifier deviceIdenti
 
     public async Task<IEnumerable<ActivatedInput>> ReadInputsAsync(CancellationToken cancellationToken)
     {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return [];
+        }
         _readContext.PrepareForNextRead();
-        await InputReader.ReadInputsAsync(_readContext, cancellationToken).ConfigureAwait(false);
+        await InputReader.ReadInputsAsync(_readContext, cancellationToken);
 
         return _readContext.GetActivatedInputs();
     }

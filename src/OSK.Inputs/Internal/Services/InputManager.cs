@@ -303,8 +303,8 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationTokens);
 
         var userInputs = await _userLookup.Values.ExecuteConcurrentResultAsync(
-            user => user.ReadInputsAsync(cancellationTokenSource.Token),
-            maxDegreesOfConcrruency: readOptions.MaxConcurrentDevices,
+            user => user.ReadInputsAsync(readOptions.MaxConcurrentDevices, cancellationTokenSource.Token),
+            maxDegreesOfConcrruency: readOptions.MaxConcurrenUsers,
             isParallel: readOptions.RunInputUsersInParallel,
             cancellationToken: cancellationTokenSource.Token);
 

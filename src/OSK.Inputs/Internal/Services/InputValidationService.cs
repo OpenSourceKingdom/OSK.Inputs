@@ -284,10 +284,10 @@ internal class InputValidationService : IInputValidationService
         {
             context.AddErrors(ValidationError_InvalidData, $"The {deviceConfiguration.DeviceName} device had a null input reader type and is unusable.");
         }
-        else if (!typeof(IInputReader).IsAssignableFrom(deviceConfiguration.InputReaderType))
+        else if (!typeof(IInputDeviceReader).IsAssignableFrom(deviceConfiguration.InputReaderType))
         {
             context.AddErrors(ValidationError_InvalidData,
-                $"The input device {deviceConfiguration.DeviceName}'s input reader type, {deviceConfiguration.InputReaderType.FullName}, does not implement the {nameof(IInputReader)} interface.");
+                $"The input device {deviceConfiguration.DeviceName}'s input reader type, {deviceConfiguration.InputReaderType.FullName}, does not implement the {nameof(IInputDeviceReader)} interface.");
         }
 
         if (deviceConfiguration.Inputs is null || !deviceConfiguration.Inputs.Any())

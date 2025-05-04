@@ -13,6 +13,11 @@ namespace OSK.Inputs.Models.Inputs;
 public enum InputPhase
 {
     /// <summary>
+    /// The input is not active
+    /// </summary>
+    Idle = 0,
+
+    /// <summary>
     /// The input has just been activated
     /// </summary>
     Start = 1,
@@ -21,11 +26,6 @@ public enum InputPhase
     /// The input has been continously held since being activated
     /// </summary>
     Active = 2,
-
-    /// <summary>
-    /// The input has been moved (i.e. touch/cursor) while it was activated
-    /// </summary>
-    Translation = 4,
 
     /// <summary>
     /// The input has been released

@@ -17,7 +17,7 @@ internal class DefaultInputDeviceConfiguration(InputDeviceName deviceName, Type 
     public InputDeviceName DeviceName => deviceName;
 
     /// <summary>
-    /// The type of object that is able process input from this device. See <see cref="IInputReader"/>
+    /// The type of object that is able process input from this device. See <see cref="IInputDeviceReader"/>
     /// </summary>
     public Type InputReaderType => readerType;
 
