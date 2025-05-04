@@ -69,7 +69,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
             {
                 _userInputDeviceLookup.Add(inputDevice.DeviceIdentifier.DeviceId, inputDevice);
                 inputDevice.InputReader.OnDeviceDisconnected += NotifyDeviceDisconnected;
-                inputDevice.InputReader.OnControllerReconnected += NotifyDeviceReconnected;
+                inputDevice.InputReader.OnDeviceConnected += NotifyDeviceReconnected;
             }
         }
 

@@ -10,7 +10,7 @@ namespace OSK.Inputs.Ports;
 public interface IInputDeviceReader: IDisposable
 {
     event Action<InputDeviceIdentifier> OnDeviceDisconnected;
-    event Action<InputDeviceIdentifier> OnControllerReconnected;
+    event Action<InputDeviceIdentifier> OnDeviceConnected;
 
     Task ReadInputsAsync(UserInputReadContext context, CancellationToken cancellationToken = default);
 }

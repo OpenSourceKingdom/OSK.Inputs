@@ -8,8 +8,8 @@ public class TestInputReader(InputReaderParameters parameters) : IInputDeviceRea
     public InputDeviceIdentifier ControllerIdentifier => parameters.DeviceIdentifier;
     public IEnumerable<IInput> Inputs => parameters.Inputs;
 
-    public event Action<InputDeviceIdentifier> OnControllerDisconnected = _ => { };
-    public event Action<InputDeviceIdentifier> OnControllerReconnected = _ => { };
+    public event Action<InputDeviceIdentifier> OnDeviceConnected = _ => { };
+    public event Action<InputDeviceIdentifier> OnDeviceDisconnected = _ => { };
 
     public void Dispose()
     {
@@ -22,11 +22,11 @@ public class TestInputReader(InputReaderParameters parameters) : IInputDeviceRea
 
     public void TriggerConnectionEvent()
     {
-        OnControllerReconnected.Invoke(ControllerIdentifier);
+        OnDeviceDisconnected.Invoke(ControllerIdentifier);
     }
 
     public void TriggerDisconnectedEvent()
     {
-        OnControllerDisconnected.Invoke(ControllerIdentifier);
+        OnDeviceConnected.Invoke(ControllerIdentifier);
     }
 }

@@ -239,7 +239,7 @@ public class ApplicationUserTests
         cancellationTokenSource.Cancel();
 
         // Act
-        var result = await _user.ReadInputsAsync(cancellationTokenSource.Token);
+        var result = await _user.ReadInputsAsync(1, cancellationTokenSource.Token);
 
         // Assert
         Assert.Empty(result);
@@ -257,7 +257,7 @@ public class ApplicationUserTests
         _user.AddInputDevices(devices);
 
         // Act
-        var result = await _user.ReadInputsAsync();
+        var result = await _user.ReadInputsAsync(1);
 
         // Assert
         Assert.Empty(result);
@@ -298,7 +298,7 @@ public class ApplicationUserTests
             new InputScheme("abc", "abc", false, []), devices);
 
         // Act
-        var result = await _user.ReadInputsAsync();
+        var result = await _user.ReadInputsAsync(1);
 
         // Assert
         Assert.Contains(result, input => input.ActivatedInput.Input.Id == 1);
@@ -332,7 +332,7 @@ public class ApplicationUserTests
         _user._inputControllers["def"] = new RuntimeInputController(_controllerConfigurations.First(),
             new InputScheme("abc", "abc", false, []), [device2]);
 
-        await _user.ReadInputsAsync();
+        await _user.ReadInputsAsync(1);
 
         var eventCalled = false;
         _user.OnActiveInputControllerChanged += (userId, inputDevice) =>
@@ -341,7 +341,7 @@ public class ApplicationUserTests
         };
 
         // Act
-        var result = await _user.ReadInputsAsync();
+        var result = await _user.ReadInputsAsync(1);
 
         // Assert
         Assert.Contains(result, input => input.ActivatedInput.Input.Id == 1);
@@ -377,7 +377,7 @@ public class ApplicationUserTests
         _user._inputControllers["def"] = new RuntimeInputController(_controllerConfigurations.Last(),
             new InputScheme("abc", "abc", false, []), [device2]);
 
-        await _user.ReadInputsAsync();
+        await _user.ReadInputsAsync(1);
 
         inputReader1.Setup(m => m.ReadInputsAsync(It.IsAny<UserInputReadContext>(), It.IsAny<CancellationToken>()));
 
@@ -391,7 +391,7 @@ public class ApplicationUserTests
         };
 
         // Act
-        var result = await _user.ReadInputsAsync();
+        var result = await _user.ReadInputsAsync(1);
 
         // Assert
         Assert.True(result.Select(r => r.ActivatedInput).All(input => result.Any(r => r.ActivatedInput.Input.Name == input.Input.Name)));
