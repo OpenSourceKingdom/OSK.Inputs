@@ -9,7 +9,6 @@ namespace OSK.Inputs.Models.Inputs;
 /// <para>- Translation: An input has been moved (i.e. touch/cursor) while it was activated</para>
 /// <para>- End: An input has been released</para>
 /// </summary>
-[Flags]
 public enum InputPhase
 {
     /// <summary>

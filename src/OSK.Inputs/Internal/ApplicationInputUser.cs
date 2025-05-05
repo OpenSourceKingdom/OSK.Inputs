@@ -53,6 +53,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
             RemoveInputController(controller);
         }
 
+
         _inputControllers.Clear();
     }
 
@@ -254,7 +255,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
                 case CombinationInput combinationInput:
                     foreach (var activatedInput in virtualInputActivations)
                     {
-                        if (virtualInputActionMapPair.TriggerPhase.HasFlag(activatedInput.TriggeredPhase))
+                        if (virtualInputActionMapPair.TriggerPhases.Contains(activatedInput.TriggeredPhase))
                         {
                             if (virtualActivationPhase is null || (int)activatedInput.TriggeredPhase < (int)virtualActivationPhase)
                             {

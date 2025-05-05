@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using System.Net.Http.Headers;
+using Moq;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
@@ -410,7 +411,7 @@ public class InputValidationServiceTests
                 [ 
                     new InputScheme("abc", "abc", false, 
                     [ 
-                        new InputDeviceActionMap(new InputDeviceName("abc"), [new InputActionMap("a", 1, InputPhase.Start)]) 
+                        new InputDeviceActionMap(new InputDeviceName("abc"), [new InputActionMap("a", 1, new HashSet<InputPhase>() { InputPhase.Start })]) 
                     ]) 
                 ])
          ];
@@ -456,7 +457,7 @@ public class InputValidationServiceTests
                 [ new InputAction("a", _ => ValueTask.CompletedTask, null) ],
                 [ new InputScheme("abc", "abc", false,
                     [
-                        new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName, [new InputActionMap("a", 1, InputPhase.Start)])
+                        new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName, [new InputActionMap("a", 1, new HashSet<InputPhase>() { InputPhase.Start })])
                     ])
                 ])
          ];
@@ -616,8 +617,8 @@ public class InputValidationServiceTests
             [
                 new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
                 [
-                    new InputActionMap("actionKey", 1, InputPhase.Start),
-                    new InputActionMap("actionKey2", 1, InputPhase.Start)
+                    new InputActionMap("actionKey", 1, new HashSet<InputPhase>() { InputPhase.Start }),
+                    new InputActionMap("actionKey2", 1, new HashSet < InputPhase >() { InputPhase.Start })
                 ])
              ]));
 
@@ -646,7 +647,7 @@ public class InputValidationServiceTests
                     [
                         new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
                         [
-                            new InputActionMap(actionKey!, 1, InputPhase.Start)
+                            new InputActionMap(actionKey!, 1, new HashSet < InputPhase >() { InputPhase.Start })
                         ])
                     ]));
 
@@ -675,8 +676,8 @@ public class InputValidationServiceTests
                     [
                         new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
                         [
-                            new InputActionMap(actionKey1, 1, InputPhase.Start),
-                            new InputActionMap(actionKey2, 2, InputPhase.Start)
+                            new InputActionMap(actionKey1, 1, new HashSet < InputPhase >() { InputPhase.Start }),
+                            new InputActionMap(actionKey2, 2, new HashSet < InputPhase >() { InputPhase.Start })
                         ])
                     ]));
 
@@ -707,7 +708,7 @@ public class InputValidationServiceTests
                     [
                         new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
                         [
-                            new InputActionMap("abc", 1, InputPhase.Start)
+                            new InputActionMap("abc", 1, new HashSet<InputPhase>() { InputPhase.Start })
                         ])
                     ]));
 
@@ -737,8 +738,8 @@ public class InputValidationServiceTests
                     [
                         new InputDeviceActionMap(mockDeviceConfiguration.Object.DeviceName,
                         [
-                            new InputActionMap("abc", 1, InputPhase.Start),
-                            new InputActionMap("def", 2, InputPhase.Start)
+                            new InputActionMap("abc", 1, new HashSet<InputPhase>() {InputPhase.Start}),
+                            new InputActionMap("def", 2, new HashSet<InputPhase>() {InputPhase.Start})
                         ])
                     ]));
 

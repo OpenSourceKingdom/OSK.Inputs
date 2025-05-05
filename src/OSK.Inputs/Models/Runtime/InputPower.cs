@@ -12,6 +12,8 @@ public class InputPower(IEnumerable<float> inputPower)
 {
     #region Static
 
+    public static InputPower None => new InputPower([]);
+
     public static InputPower FullPower(int axisCount) => new InputPower(Enumerable.Repeat(1f, axisCount));
 
     public static InputPower FromPowerLevels(params float[] powerLevels) => new InputPower(powerLevels);

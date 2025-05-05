@@ -19,7 +19,7 @@ internal class InputDeviceActionBuilder<TInput>(string inputDefinitionName,
 
     #region IInputDeviceActionBuilder
 
-    public IInputDeviceActionBuilder<TInput> AssignInput(TInput input, InputPhase inputPhase, string actionKey)
+    public IInputDeviceActionBuilder<TInput> AssignInput(TInput input, IEnumerable<InputPhase> triggerPhases, string actionKey)
     {
         if (string.IsNullOrWhiteSpace(actionKey))
         {
@@ -28,6 +28,14 @@ internal class InputDeviceActionBuilder<TInput>(string inputDefinitionName,
         if (input is null)
         {
             throw new ArgumentNullException(nameof(input));
+        }
+        if (triggerPhases is null)
+        {
+            throw new ArgumentNullException(nameof(triggerPhases));
+        }
+        if (triggerPhases.Any(phase => phase is InputPhase.Idle))
+        {
+            throw new InvalidOperationException($"Unable to add inputs with an input phase of idle. Input Definition: {inputDefinitionName} device name: {deviceConfiguration.DeviceName}");
         }
 
         Exception? exception = input switch
@@ -54,13 +62,13 @@ internal class InputDeviceActionBuilder<TInput>(string inputDefinitionName,
             throw exception;
         }
 
-        var actionLookupKey = $"{actionKey}.{inputPhase}";
+        var actionLookupKey = $"{actionKey}.{triggerPhases}";
         if (_inputActionMapLookup.TryGetValue(actionLookupKey, out _))
         {
-            throw new DuplicateNameException($"The input scheme {schemeName} for the device {deviceConfiguration.DeviceName} on input definition {inputDefinitionName} already has an input associated to the action key {actionKey} and input phase {inputPhase}.");
+            throw new DuplicateNameException($"The input scheme {schemeName} for the device {deviceConfiguration.DeviceName} on input definition {inputDefinitionName} already has an input associated to the action key {actionKey} and input phase {triggerPhases}.");
         }
 
-        _inputActionMapLookup.Add(actionLookupKey, new InputActionMap(actionKey, input.Id, inputPhase));
+        _inputActionMapLookup.Add(actionLookupKey, new InputActionMap(actionKey, input.Id, triggerPhases.Distinct().ToHashSet()));
         return this;
     }
 

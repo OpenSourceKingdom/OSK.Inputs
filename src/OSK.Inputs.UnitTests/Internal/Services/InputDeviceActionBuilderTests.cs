@@ -42,14 +42,29 @@ public class InputDeviceActionBuilderTests
     public void AssignInput_InvalidActionKey_ThrowsArgumentNullException(string? actionKey)
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _builder.AssignInput(Mock.Of<IInput>(), InputPhase.Start, actionKey!));
+        Assert.Throws<ArgumentNullException>(() => _builder.AssignInput(Mock.Of<IInput>(), [InputPhase.Start], actionKey!));
     }
 
     [Fact]
     public void AssignInput_NullInput_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _builder.AssignInput(null!, InputPhase.Start, "abc"));
+        Assert.Throws<ArgumentNullException>(() => _builder.AssignInput(null!,[InputPhase.Start], "abc"));
+    }
+
+    [Fact]
+    public void AssignInput_NullInputPhases_ThrowsArgumentNullException()
+    {
+        // Arrange/Act/Assert
+        Assert.Throws<ArgumentNullException>(() => _builder.AssignInput(Mock.Of<IInput>(), null!, "abc"));
+    }
+
+    [Theory]
+    [InlineData(InputPhase.Idle)]
+    public void AssignInput_InvalidInputPhases_ThrowsInvalidOperationException(InputPhase phase)
+    {
+        // Arrange/Act/Assert
+        Assert.Throws<InvalidOperationException>(() => _builder.AssignInput(Mock.Of<IInput>(), [phase], "abc"));
     }
 
     [Fact]
@@ -64,7 +79,7 @@ public class InputDeviceActionBuilderTests
             .Returns("a");
 
         // Act/Assert
-        Assert.Throws<InvalidOperationException>(() => _builder.AssignInput(mockInput.Object, InputPhase.Start, "abc"));
+        Assert.Throws<InvalidOperationException>(() => _builder.AssignInput(mockInput.Object, [InputPhase.Start], "abc"));
     }
 
     [Fact]
@@ -83,7 +98,7 @@ public class InputDeviceActionBuilderTests
         var combinationInput = new CombinationInput(1, "Abc", "Abc", [mockInputA.Object, mockInputB.Object]);
 
         // Act/Assert
-        Assert.Throws<InvalidOperationException>(() => _builder.AssignInput(combinationInput, InputPhase.Start, "abc"));
+        Assert.Throws<InvalidOperationException>(() => _builder.AssignInput(combinationInput, [InputPhase.Start], "abc"));
     }
 
     [Fact]
@@ -94,7 +109,7 @@ public class InputDeviceActionBuilderTests
         var combinationInput = new CombinationInput(1, "Abc", "Abc", [mockInputA.Object, mockInputA.Object]);
 
         // Act/Assert
-        Assert.Throws<DuplicateNameException>(() => _builder.AssignInput(combinationInput, InputPhase.Start, "abc"));
+        Assert.Throws<DuplicateNameException>(() => _builder.AssignInput(combinationInput, [InputPhase.Start], "abc"));
     }
 
     [Fact]
@@ -108,10 +123,10 @@ public class InputDeviceActionBuilderTests
         mockInputA.SetupGet(m => m.Name)
             .Returns("abc");
 
-        _builder.AssignInput(mockInputA.Object, InputPhase.Start, "abc");
+        _builder.AssignInput(mockInputA.Object, [InputPhase.Start], "abc");
 
         // Act/Assert
-        Assert.Throws<DuplicateNameException>(() => _builder.AssignInput(mockInputA.Object, InputPhase.Start, "abc"));
+        Assert.Throws<DuplicateNameException>(() => _builder.AssignInput(mockInputA.Object, [InputPhase.Start], "abc"));
     }
 
     [Fact]
@@ -127,7 +142,7 @@ public class InputDeviceActionBuilderTests
         var combinationInput = new CombinationInput(1, "Abc", "Abc", [mockInputA.Object, mockInputB.Object]);
 
         // Act/Assert
-        _builder.AssignInput(combinationInput, InputPhase.Start, "abc");
+        _builder.AssignInput(combinationInput, [InputPhase.Start], "abc");
     }
 
     [Fact]
@@ -140,7 +155,7 @@ public class InputDeviceActionBuilderTests
         var mockInputA = new Mock<HardwareInput>(1, "a", "a");
 
         // Act/Assert
-        _builder.AssignInput(mockInputA.Object, InputPhase.Start, "abc");
+        _builder.AssignInput(mockInputA.Object, [InputPhase.Start], "abc");
     }
 
     #endregion

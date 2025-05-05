@@ -11,10 +11,6 @@ public class UserInputReadContext(int userId, InputDeviceName deviceName)
     #region Variables
 
     private const float DegreeThresholdForVector = 5;
-    private static readonly InputPhase[] AllFlags = Enum.GetValues(typeof(InputPhase))
-        .Cast<InputPhase>()
-        .OrderByDescending(phase => (int)phase)
-        .ToArray();
 
     private readonly Dictionary<int, InputActionMapPair> _actionMapPairLookup = [];
     private readonly Dictionary<int, ActivatedInput> _previousActivatedInputs = [];
@@ -24,37 +20,29 @@ public class UserInputReadContext(int userId, InputDeviceName deviceName)
 
     #region Api
 
-    public IEnumerable<InputActionMapPair> InputActionPairs 
-    { 
-        get => _actionMapPairLookup.Values; 
-        internal set
-        {
-            _actionMapPairLookup.Clear();
-            foreach (var pair in value)
-            {
-                _actionMapPairLookup[pair.InputId] = pair;
-            }
-        } 
-    }
-
-    public void ActivateInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
+    public void SetInputState(IInput input, InputPhase currentPhase)
+        => SetInputState(_actionMapPairLookup[input.Id], currentPhase, PointerInformation.Default, InputPower.None);
+        
+    public void SetInputState(IInput input, InputPhase currentPhase,
         Vector2 pointerLocation)
-        => ActivatePointerInput(inputActionMapPair, triggeredPhase, 
+        => SetInputState(_actionMapPairLookup[input.Id], currentPhase, 
             new PointerInformation(PointerInformation.DefaultPointerId, [pointerLocation]), 
-            InputPower.FullPower(1));
+            currentPhase is InputPhase.Idle
+                ? InputPower.None
+                : InputPower.FullPower(1));
 
-    public void ActivateInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
+    public void SetInputState(IInput input, InputPhase currentPhase,
         Vector2 pointerLocation, params float[] inputAxisPowers)
-        => ActivatePointerInput(inputActionMapPair, triggeredPhase,
+        => SetInputState(_actionMapPairLookup[input.Id], currentPhase,
             new PointerInformation(PointerInformation.DefaultPointerId, [pointerLocation]), 
             InputPower.FromPowerLevels(inputAxisPowers));
 
-    public void ActivatePointerInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
+    public void SetInputState(IInput input, InputPhase currentPhase,
         PointerInformation pointerInformation, params float[] inputAxisPowers)
-        => ActivatePointerInput(inputActionMapPair, triggeredPhase, pointerInformation,
+        => SetInputState(_actionMapPairLookup[input.Id], currentPhase, pointerInformation,
             InputPower.FromPowerLevels(inputAxisPowers));
 
-    public void ActivatePointerInput(InputActionMapPair inputActionMapPair, InputPhase triggeredPhase,
+    private void SetInputState(InputActionMapPair inputActionMapPair, InputPhase currentPhase,
         PointerInformation pointerInformation, InputPower inputPower)
     {
         if (_currentActivatedInputs.TryGetValue(inputActionMapPair.InputId, out _))
@@ -63,34 +51,47 @@ public class UserInputReadContext(int userId, InputDeviceName deviceName)
         }
         if (_previousActivatedInputs.TryGetValue(inputActionMapPair.InputId, out var previousActivatedInput))
         {
-            pointerInformation = MergePointerInformation(pointerInformation, triggeredPhase, previousActivatedInput,
+            pointerInformation = MergePointerInformation(pointerInformation, currentPhase, previousActivatedInput,
                 DegreeThresholdForVector);
         }
 
         _currentActivatedInputs.Add(inputActionMapPair.InputId,
-            new ActivatedInput(userId, deviceName, inputActionMapPair, triggeredPhase, inputPower, pointerInformation));
+            new ActivatedInput(userId, deviceName, inputActionMapPair, currentPhase, inputPower, pointerInformation));
     }
 
     #endregion
 
     #region Helpers
 
-    internal IEnumerable<ActivatedInput> GetActivatedInputs() => _currentActivatedInputs.Values;
+    internal IEnumerable<ActivatedInput> ProcessInputs()
+    {
+        var activeInputs = _currentActivatedInputs.Values;
+        PrepareForNextRead();
 
-    internal bool ReceivedInput => _currentActivatedInputs.Any();
+        return activeInputs;
+    }
 
-    internal void PrepareForNextRead()
+    internal IEnumerable<InputActionMapPair> InputActionMapPairs
+    {
+        get => _actionMapPairLookup.Values;
+        set
+        {
+            _actionMapPairLookup.Clear();
+            foreach (var inputMapPair in value)
+            {
+                _actionMapPairLookup[inputMapPair.InputId] = inputMapPair;
+            }
+        }
+    }
+
+    private void PrepareForNextRead()
     {
         _previousActivatedInputs.Clear();
         foreach (var activatedInput in _currentActivatedInputs.Values
             .Where(input => _actionMapPairLookup.TryGetValue(input.Input.Id, out _)))
         {
-            var actionTriggerPhase = _actionMapPairLookup[activatedInput.Input.Id];
-            var lastTriggerFlag = AllFlags.Where(flag => actionTriggerPhase.TriggerPhase.HasFlag(flag))
-                .OrderByDescending(flag => (int)flag)
-                .First();
-
-            if (!activatedInput.TriggeredPhase.HasFlag(lastTriggerFlag))
+            var actionMapPair = _actionMapPairLookup[activatedInput.Input.Id];
+            if (!actionMapPair.TriggerPhases.Contains(activatedInput.TriggeredPhase))
             {
                 _previousActivatedInputs[activatedInput.Input.Id] = activatedInput;
             }

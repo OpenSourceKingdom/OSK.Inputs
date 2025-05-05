@@ -15,9 +15,9 @@ public class TestInputReader(InputReaderParameters parameters) : IInputDeviceRea
     {
     }
 
-    public Task ReadInputsAsync(UserInputReadContext readContext, CancellationToken cancellationToken = default)
+    public ValueTask ReadInputAsync(UserInputReadContext readContext, IInput input, CancellationToken cancellationToken = default)
     {
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     public void TriggerConnectionEvent()

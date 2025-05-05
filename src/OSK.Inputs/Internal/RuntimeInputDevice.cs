@@ -30,15 +30,22 @@ internal class RuntimeInputDevice(int userId, InputDeviceIdentifier deviceIdenti
         {
             return [];
         }
-        _readContext.PrepareForNextRead();
-        await InputReader.ReadInputsAsync(_readContext, cancellationToken);
 
-        return _readContext.GetActivatedInputs();
+        foreach (var actionMapPair in _readContext.InputActionMapPairs)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+            await InputReader.ReadInputAsync(_readContext, actionMapPair.DeviceInput, cancellationToken);
+        }
+
+        return _readContext.ProcessInputs();
     }
 
     public void SetInputScheme(IEnumerable<InputActionMapPair> actionMapPairs) 
     {
-        _readContext.InputActionPairs = actionMapPairs;
+        _readContext.InputActionMapPairs = actionMapPairs;
     }
 
     public void Dispose()
