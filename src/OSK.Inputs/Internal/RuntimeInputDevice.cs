@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using OSK.Inputs.Models.Configuration;
+using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Models.Runtime;
 using OSK.Inputs.Ports;
 
@@ -31,16 +32,19 @@ internal class RuntimeInputDevice(int userId, InputDeviceIdentifier deviceIdenti
             return [];
         }
 
+        _readContext.Reset();
+
         foreach (var actionMapPair in _readContext.InputActionMapPairs)
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 break;
             }
-            await InputReader.ReadInputAsync(_readContext, actionMapPair.DeviceInput, cancellationToken);
+
+            await InputReader.ReadInputAsync(_readContext, actionMapPair.InputId, cancellationToken);
         }
 
-        return _readContext.ProcessInputs();
+        return _readContext.GetInputStates();
     }
 
     public void SetInputScheme(IEnumerable<InputActionMapPair> actionMapPairs) 

@@ -272,13 +272,15 @@ public class ApplicationUserTests
 
         var deviceIdentifier = new InputDeviceIdentifier(1, new InputDeviceName("abc"));
         var inputReader = new Mock<IInputDeviceReader>();
-        inputReader.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<IInput>(), It.IsAny<CancellationToken>()))
-            .Callback((UserInputReadContext readContext, IInput input, CancellationToken _) =>
+        inputReader.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback((UserInputReadContext readContext, int inputId, CancellationToken _) =>
             {
-                readContext.SetInputState(input, InputPhase.Start);
+                readContext.SetInputState(inputId, InputPhase.Start);
             });
 
         var device = new RuntimeInputDevice(1, new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader.Object);
+        device.SetInputScheme([new InputActionMapPair(mockInput.Object, new InputActionMap(_testDefinition.InputActions.First().ActionKey, 1, Mock.Of<ISet<InputPhase>>()))]);
+
         RuntimeInputDevice[] devices = [
             device
         ];
@@ -313,16 +315,20 @@ public class ApplicationUserTests
 
         var deviceIdentifier = new InputDeviceIdentifier(1, new InputDeviceName("abc"));
         var inputReader1 = new Mock<IInputDeviceReader>();
-        inputReader1.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<IInput>(), It.IsAny<CancellationToken>()))
-            .Callback((UserInputReadContext readContext, IInput input, CancellationToken _) =>
+        inputReader1.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback((UserInputReadContext readContext, int inputId, CancellationToken _) =>
             {
-                readContext.SetInputState(input, InputPhase.Start);
+                readContext.SetInputState(inputId, InputPhase.Start);
             });
 
         var device1 = new RuntimeInputDevice(1, new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
+        device1.SetInputScheme([new InputActionMapPair(mockInput.Object, new InputActionMap(_testDefinition.InputActions.First().ActionKey, 1, Mock.Of<ISet<InputPhase>>()))]);
+
         _user.AddInputDevices(device1);
 
         var device2 = new RuntimeInputDevice(1, new InputDeviceIdentifier(2, new InputDeviceName("def")), Mock.Of<IInputDeviceConfiguration>(), Mock.Of<IInputDeviceReader>());
+        device2.SetInputScheme([new InputActionMapPair(mockInput.Object, new InputActionMap(_testDefinition.InputActions.First().ActionKey, 1, Mock.Of<ISet<InputPhase>>()))]);
+
         _user.AddInputDevices(device2);
 
         _user._inputControllers["abc"] = new RuntimeInputController(_controllerConfigurations.First(),
@@ -351,21 +357,23 @@ public class ApplicationUserTests
     {
         // Arrange
         var inputReader1 = new Mock<IInputDeviceReader>();
-        inputReader1.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<IInput>(), It.IsAny<CancellationToken>()))
-            .Callback((UserInputReadContext readContext, IInput input, CancellationToken _) =>
+        inputReader1.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback((UserInputReadContext readContext, int inputId, CancellationToken _) =>
             {
-                readContext.SetInputState(input, InputPhase.Start);
+                readContext.SetInputState(inputId, InputPhase.Start);
             });
         var device1 = new RuntimeInputDevice(1, new InputDeviceIdentifier(1, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader1.Object);
+        device1.SetInputScheme([new InputActionMapPair(Mock.Of<IInput>(), new InputActionMap(_testDefinition.InputActions.First().ActionKey, 1, Mock.Of<ISet<InputPhase>>()))]);
         _user.AddInputDevices(device1);
 
         var inputReader2 = new Mock<IInputDeviceReader>();
-        inputReader2.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<IInput>(), It.IsAny<CancellationToken>()))
-            .Callback((UserInputReadContext readContext, IInput input, CancellationToken _) =>
+        inputReader2.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback((UserInputReadContext readContext, int inputId, CancellationToken _) =>
             {
-                readContext.SetInputState(input, InputPhase.Start);
+                readContext.SetInputState(inputId, InputPhase.Start);
             });
         var device2 = new RuntimeInputDevice(1, new InputDeviceIdentifier(2, new InputDeviceName("abc")), Mock.Of<IInputDeviceConfiguration>(), inputReader2.Object);
+        device2.SetInputScheme([new InputActionMapPair(Mock.Of<IInput>(), new InputActionMap(_testDefinition.InputActions.First().ActionKey, 1, Mock.Of<ISet<InputPhase>>()))]);
         _user.AddInputDevices(device2);
 
         _user._inputControllers["abc"] = new RuntimeInputController(_controllerConfigurations.First(),
@@ -375,7 +383,7 @@ public class ApplicationUserTests
 
         await _user.ReadInputsAsync(1);
 
-        inputReader1.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<IInput>(), It.IsAny<CancellationToken>()));
+        inputReader1.Setup(m => m.ReadInputAsync(It.IsAny<UserInputReadContext>(), It.IsAny<int>(), It.IsAny<CancellationToken>()));
         var eventCalled = false;
         _user.OnActiveInputControllerChanged += (userId, controllerConfiguration) =>
         {

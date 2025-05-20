@@ -15,18 +15,18 @@ public class TestInputReader(InputReaderParameters parameters) : IInputDeviceRea
     {
     }
 
-    public ValueTask ReadInputAsync(UserInputReadContext readContext, IInput input, CancellationToken cancellationToken = default)
+    public ValueTask ReadInputAsync(UserInputReadContext readContext, int inputId, CancellationToken cancellationToken = default)
     {
         return ValueTask.CompletedTask;
     }
 
     public void TriggerConnectionEvent()
     {
-        OnDeviceDisconnected.Invoke(ControllerIdentifier);
+        OnDeviceConnected.Invoke(ControllerIdentifier);
     }
 
     public void TriggerDisconnectedEvent()
     {
-        OnDeviceConnected.Invoke(ControllerIdentifier);
+        OnDeviceDisconnected.Invoke(ControllerIdentifier);
     }
 }

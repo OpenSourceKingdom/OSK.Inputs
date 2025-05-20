@@ -20,9 +20,18 @@ public class ActivatedInput(int userId, InputDeviceName deviceName, InputActionM
 
     public InputPower InputPower => inputPower;
 
-    public PointerInformation PointerInformation => pointerInformation;
+    public PointerInformation PointerInformation { get; private set; } = pointerInformation;
 
     internal InputActionMapPair InputActionMapPair => inputActionMapPair;
+
+    #endregion
+
+    #region Helpers
+
+    internal void SetPointerInformation(PointerInformation pointerInformation)
+    {
+        PointerInformation = pointerInformation;
+    }
 
     #endregion
 }

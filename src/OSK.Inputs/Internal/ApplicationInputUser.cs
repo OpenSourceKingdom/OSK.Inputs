@@ -14,8 +14,12 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 {
     #region Variables
 
-    private readonly Dictionary<int, RuntimeInputDevice> _userInputDeviceLookup = [];
+    const float ANGLE_THRESHOLD_FOR_NEW_VECTOR = 0.5f;
+
     internal readonly Dictionary<string, RuntimeInputController> _inputControllers = [];
+
+    private readonly Dictionary<InputDeviceName, Dictionary<int, ActivatedInput>> _previousActivations = [];
+    private readonly Dictionary<int, RuntimeInputDevice> _userInputDeviceLookup = [];
     private RuntimeInputController? _activeInputController;
 
     #endregion
@@ -136,15 +140,12 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
     {
         if (_activeInputController is not null)
         {
-            var activatedInputs = await _activeInputController.InputDevices.ExecuteConcurrentResultAsync(
-                device => device.ReadInputsAsync(cancellationToken), maxConcurrentDevices, cancellationToken);
-            var allInputs = activatedInputs.SelectMany(inputs => inputs);
-            if (allInputs.Any())
+            var actions = await ReadInputControllerAsync(_activeInputController, ActiveInputDefinition, maxConcurrentDevices, cancellationToken);
+            if (actions.Any())
             {
-                return GetActionCommands(ActiveInputDefinition, allInputs);
+                return actions;
             }
         }
-
         if (cancellationToken.IsCancellationRequested)
         {
             return [];
@@ -157,14 +158,12 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
                 break;
             }
 
-            var activatedInputs = await inputController.InputDevices.ExecuteConcurrentResultAsync(
-                device => device.ReadInputsAsync(cancellationToken), 1, cancellationToken);
-            var allInputs = activatedInputs.SelectMany(inputs => inputs);
-            if (allInputs.Any())
+            var actions = await ReadInputControllerAsync(inputController, ActiveInputDefinition, maxConcurrentDevices, cancellationToken);
+            if (actions.Any())
             { 
                 _activeInputController = inputController;
                 OnActiveInputControllerChanged(userId, inputController.Configuration);
-                return GetActionCommands(ActiveInputDefinition, allInputs);
+                return actions;
             }
         }
 
@@ -221,13 +220,49 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
         }
     }
 
+    private async Task<IEnumerable<UserActionCommand>> ReadInputControllerAsync(RuntimeInputController controller, InputDefinition definition,
+        int maxConcurrentDevices, CancellationToken cancellationToken)
+    {
+        var activatedInputs = await controller.InputDevices.ExecuteConcurrentResultAsync(
+            device => device.ReadInputsAsync(cancellationToken), maxConcurrentDevices, cancellationToken);
+        var allInputs = activatedInputs.SelectMany(inputs => inputs);
+
+        return allInputs.Any()
+            ? GetActionCommands(definition, allInputs)
+            : [];
+    }
+
     private IEnumerable<UserActionCommand> GetActionCommands(InputDefinition inputDefinition, IEnumerable<ActivatedInput> activatedInputs)
     {
         var actionCommandLookup = new Dictionary<int, UserActionCommand>();
         var virtualInputLookup = new Dictionary<int, List<ActivatedInput>>();
 
-        foreach (var activatedInput in activatedInputs) 
+        var currentActivations = new Dictionary<InputDeviceName, Dictionary<int, ActivatedInput>>();
+
+        foreach (var activatedInput in activatedInputs)
         {
+            if (activatedInput.TriggeredPhase is InputPhase.Idle)
+            {
+                continue;
+            }
+            if (!activatedInput.InputActionMapPair.TriggerPhases.Contains(activatedInput.TriggeredPhase))
+            {
+                continue;
+            }
+            if (!currentActivations.TryGetValue(activatedInput.DeviceName, out var deviceActivatedInputs))
+            {
+                deviceActivatedInputs = new Dictionary<int, ActivatedInput>();
+                currentActivations[activatedInput.DeviceName] = deviceActivatedInputs;
+            }
+            currentActivations[activatedInput.DeviceName][activatedInput.Input.Id] = activatedInput;
+
+            if (_previousActivations.TryGetValue(activatedInput.DeviceName, out var devicePreviousActivatedInputs)
+                    && devicePreviousActivatedInputs.TryGetValue(activatedInput.Input.Id, out var previousActivation))
+            {
+                activatedInput.SetPointerInformation(MergePointerInformation(activatedInput.PointerInformation, activatedInput.TriggeredPhase,
+                        previousActivation, ANGLE_THRESHOLD_FOR_NEW_VECTOR));
+            }
+
             if (activatedInput.Input is MaskedInput maskedInput && maskedInput.ParentInput is not null)
             {
                 if (!virtualInputLookup.TryGetValue(maskedInput.ParentInput.Id, out var combinationInputs))
@@ -253,6 +288,11 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
             switch (maskedInput.ParentInput)
             {
                 case CombinationInput combinationInput:
+                    if (combinationInput.Inputs.Count() != virtualInputActivations.Count)
+                    {
+                        break;
+                    }
+
                     foreach (var activatedInput in virtualInputActivations)
                     {
                         if (virtualInputActionMapPair.TriggerPhases.Contains(activatedInput.TriggeredPhase))
@@ -260,11 +300,6 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
                             if (virtualActivationPhase is null || (int)activatedInput.TriggeredPhase < (int)virtualActivationPhase)
                             {
                                 virtualActivationPhase = activatedInput.TriggeredPhase;
-                            }
-                            else
-                            {
-                                virtualActivationPhase = null;
-                                break;
                             }
                         }
                     }
@@ -287,7 +322,44 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
             }
         }
 
+        _previousActivations.Clear();
+        foreach (var kvp in currentActivations)
+        {
+            _previousActivations[kvp.Key] = kvp.Value;
+        }
+           
         return actionCommandLookup.Values;
+    }
+
+    private PointerInformation MergePointerInformation(PointerInformation pointerInformation, InputPhase triggeredPhase,
+        ActivatedInput previousInput, float angleThresholdForNewVector)
+    {
+        // Pointer hasn't moved, use the previous input data as it is more complete
+        if (pointerInformation.CurrentPosition == previousInput.PointerInformation.CurrentPosition)
+        {
+            return previousInput.PointerInformation;
+        }
+
+        // The input phase transition that occurred would not require multiple pointer information states (i.e. start to end)
+        // because the pointer would 
+        var shouldMergeInformation = triggeredPhase.HasFlag(InputPhase.Active)
+            || (previousInput.TriggeredPhase.HasFlag(InputPhase.Active) && triggeredPhase.HasFlag(InputPhase.End));
+        if (!shouldMergeInformation)
+        {
+            return pointerInformation;
+        }
+
+        var previousMoveVector = previousInput.PointerInformation.CurrentPosition - previousInput.PointerInformation.PreviousPosition;
+        var newMoveVector = pointerInformation.CurrentPosition - previousInput.PointerInformation.CurrentPosition;
+
+        // Validate that the new mouse position is actually a different vector movement    
+        if (previousMoveVector.GetAngleBetween(newMoveVector) >= angleThresholdForNewVector)
+        {
+            return new PointerInformation(pointerInformation.PointerId,
+                previousInput.PointerInformation.PointerPositions.Append(pointerInformation.CurrentPosition).ToArray());
+        }
+
+        return previousInput.PointerInformation;
     }
 
     #endregion

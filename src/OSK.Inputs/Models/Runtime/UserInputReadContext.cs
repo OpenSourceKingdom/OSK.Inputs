@@ -13,49 +13,47 @@ public class UserInputReadContext(int userId, InputDeviceName deviceName)
     private const float DegreeThresholdForVector = 5;
 
     private readonly Dictionary<int, InputActionMapPair> _actionMapPairLookup = [];
-    private readonly Dictionary<int, ActivatedInput> _previousActivatedInputs = [];
-    private readonly Dictionary<int, ActivatedInput> _currentActivatedInputs = [];
+    private readonly Dictionary<int, ActivatedInput> _inputActivationStates = [];
 
     #endregion
 
     #region Api
 
-    public void SetInputState(IInput input, InputPhase currentPhase)
-        => SetInputState(_actionMapPairLookup[input.Id], currentPhase, PointerInformation.Default, InputPower.None);
+    public void SetInputState(int inputId, InputPhase currentPhase)
+        => SetInputState(inputId, currentPhase, PointerInformation.Default, InputPower.None);
         
-    public void SetInputState(IInput input, InputPhase currentPhase,
+    public void SetInputState(int inputId, InputPhase currentPhase,
         Vector2 pointerLocation)
-        => SetInputState(_actionMapPairLookup[input.Id], currentPhase, 
+        => SetInputState(inputId, currentPhase, 
             new PointerInformation(PointerInformation.DefaultPointerId, [pointerLocation]), 
             currentPhase is InputPhase.Idle
                 ? InputPower.None
                 : InputPower.FullPower(1));
 
-    public void SetInputState(IInput input, InputPhase currentPhase,
+    public void SetInputState(int inputId, InputPhase currentPhase,
         Vector2 pointerLocation, params float[] inputAxisPowers)
-        => SetInputState(_actionMapPairLookup[input.Id], currentPhase,
+        => SetInputState(inputId, currentPhase,
             new PointerInformation(PointerInformation.DefaultPointerId, [pointerLocation]), 
             InputPower.FromPowerLevels(inputAxisPowers));
 
-    public void SetInputState(IInput input, InputPhase currentPhase,
+    public void SetInputState(int inputId, InputPhase currentPhase,
         PointerInformation pointerInformation, params float[] inputAxisPowers)
-        => SetInputState(_actionMapPairLookup[input.Id], currentPhase, pointerInformation,
+        => SetInputState(inputId, currentPhase, pointerInformation,
             InputPower.FromPowerLevels(inputAxisPowers));
 
-    private void SetInputState(InputActionMapPair inputActionMapPair, InputPhase currentPhase,
+    private void SetInputState(int inputId, InputPhase currentPhase,
         PointerInformation pointerInformation, InputPower inputPower)
     {
-        if (_currentActivatedInputs.TryGetValue(inputActionMapPair.InputId, out _))
+        if (!_actionMapPairLookup.TryGetValue(inputId, out var inputActionMapPair))
         {
             return;
         }
-        if (_previousActivatedInputs.TryGetValue(inputActionMapPair.InputId, out var previousActivatedInput))
+        if (_inputActivationStates.TryGetValue(inputActionMapPair.InputId, out _))
         {
-            pointerInformation = MergePointerInformation(pointerInformation, currentPhase, previousActivatedInput,
-                DegreeThresholdForVector);
+            return;
         }
 
-        _currentActivatedInputs.Add(inputActionMapPair.InputId,
+        _inputActivationStates.Add(inputActionMapPair.InputId,
             new ActivatedInput(userId, deviceName, inputActionMapPair, currentPhase, inputPower, pointerInformation));
     }
 
@@ -63,12 +61,14 @@ public class UserInputReadContext(int userId, InputDeviceName deviceName)
 
     #region Helpers
 
-    internal IEnumerable<ActivatedInput> ProcessInputs()
+    internal IEnumerable<ActivatedInput> GetInputStates()
     {
-        var activeInputs = _currentActivatedInputs.Values;
-        PrepareForNextRead();
+        return _inputActivationStates.Values;
+    }
 
-        return activeInputs;
+    internal void Reset()
+    {
+        _inputActivationStates.Clear();
     }
 
     internal IEnumerable<InputActionMapPair> InputActionMapPairs
@@ -82,53 +82,6 @@ public class UserInputReadContext(int userId, InputDeviceName deviceName)
                 _actionMapPairLookup[inputMapPair.InputId] = inputMapPair;
             }
         }
-    }
-
-    private void PrepareForNextRead()
-    {
-        _previousActivatedInputs.Clear();
-        foreach (var activatedInput in _currentActivatedInputs.Values
-            .Where(input => _actionMapPairLookup.TryGetValue(input.Input.Id, out _)))
-        {
-            var actionMapPair = _actionMapPairLookup[activatedInput.Input.Id];
-            if (!actionMapPair.TriggerPhases.Contains(activatedInput.TriggeredPhase))
-            {
-                _previousActivatedInputs[activatedInput.Input.Id] = activatedInput;
-            }
-        }
-
-        _currentActivatedInputs.Clear();
-    }
-
-    private PointerInformation MergePointerInformation(PointerInformation pointerInformation, InputPhase triggeredPhase,
-        ActivatedInput previousInput, float angleThresholdForNewVector)
-    {
-        // Pointer hasn't moved, use the previous input data as it is more complete
-        if (pointerInformation.CurrentPosition == previousInput.PointerInformation.CurrentPosition)
-        {
-            return previousInput.PointerInformation;
-        }
-
-        // The input phase transition that occurred would not require multiple pointer information states (i.e. start to end)
-        // because the pointer would 
-        var shouldMergeInformation = triggeredPhase.HasFlag(InputPhase.Active)
-            || (previousInput.TriggeredPhase.HasFlag(InputPhase.Active) && triggeredPhase.HasFlag(InputPhase.End));
-        if (!shouldMergeInformation)
-        {
-            return pointerInformation;
-        }
-
-        var previousMoveVector = previousInput.PointerInformation.CurrentPosition - previousInput.PointerInformation.PreviousPosition;
-        var newMoveVector = pointerInformation.CurrentPosition - previousInput.PointerInformation.CurrentPosition;
-
-        // Validate that the new mouse position is actually a different vector movement    
-        if (previousMoveVector.GetAngleBetween(newMoveVector) >= angleThresholdForNewVector)
-        {
-            return new PointerInformation(pointerInformation.PointerId,
-                previousInput.PointerInformation.PointerPositions.Append(pointerInformation.CurrentPosition).ToArray());
-        }
-
-        return previousInput.PointerInformation;
     }
 
     #endregion

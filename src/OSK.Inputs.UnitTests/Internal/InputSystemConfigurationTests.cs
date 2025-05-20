@@ -79,10 +79,7 @@ public class InputSystemConfigurationTests
         });
 
         // Act
-        var inputs = await manager.ReadInputsAsync(new InputReadOptions()
-        {
-            MaxConcurrentDevices = 2
-        });
+        var inputs = await manager.ReadInputsAsync(InputReadOptions.DefaultTwoUsers);
 
         // Assert
     }

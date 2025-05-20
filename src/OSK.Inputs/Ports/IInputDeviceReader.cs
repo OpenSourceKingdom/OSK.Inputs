@@ -13,5 +13,5 @@ public interface IInputDeviceReader: IDisposable
     event Action<InputDeviceIdentifier> OnDeviceDisconnected;
     event Action<InputDeviceIdentifier> OnDeviceConnected;
 
-    ValueTask ReadInputAsync(UserInputReadContext context, IInput input, CancellationToken cancellationToken = default);
+    ValueTask ReadInputAsync(UserInputReadContext context, int inputId, CancellationToken cancellationToken = default);
 }
