@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace OSK.Inputs.Models.Inputs;
+﻿namespace OSK.Inputs.Models.Inputs;
 
 /// <summary>
 /// The input phase is the state of a given input. These values represent:

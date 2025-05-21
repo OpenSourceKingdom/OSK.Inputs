@@ -15,7 +15,7 @@ public class TestInputReader(InputReaderParameters parameters) : IInputDeviceRea
     {
     }
 
-    public ValueTask ReadInputAsync(UserInputReadContext readContext, int inputId, CancellationToken cancellationToken = default)
+    public ValueTask ReadInputAsync(DeviceInputReadContext readContext, IInput input, CancellationToken cancellationToken = default)
     {
         return ValueTask.CompletedTask;
     }

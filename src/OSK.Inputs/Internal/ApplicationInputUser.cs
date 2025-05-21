@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
-using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Models.Runtime;
 
 namespace OSK.Inputs.Internal;
@@ -14,11 +12,8 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 {
     #region Variables
 
-    const float ANGLE_THRESHOLD_FOR_NEW_VECTOR = 0.5f;
-
     internal readonly Dictionary<string, RuntimeInputController> _inputControllers = [];
 
-    private readonly Dictionary<InputDeviceName, Dictionary<int, ActivatedInput>> _previousActivations = [];
     private readonly Dictionary<int, RuntimeInputDevice> _userInputDeviceLookup = [];
     private RuntimeInputController? _activeInputController;
 
@@ -108,16 +103,8 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
                 }
 
                 var inputLookup = runtimeInputDevice.Configuration.Inputs.ToDictionary(input => input.Id);
-                var actionMapPairs = deviceMap.InputActionMaps.SelectMany(actionMap => 
-                {
-                    var input = inputLookup[actionMap.InputId];
-                    return input switch
-                    {
-                        CombinationInput combinationInput => combinationInput.Inputs.Select(comboInput => new InputActionMapPair(new MaskedInput(comboInput, combinationInput), actionMap)),
-                        _ => [ new InputActionMapPair(input, actionMap) ]
-                    };
-                });
-                runtimeInputDevice.SetInputScheme(actionMapPairs);
+                var activeInputs = deviceMap.InputActionMaps.Select(actionMap => inputLookup[actionMap.InputId]);
+                runtimeInputDevice.SetActiveInputs(deviceMap, activeInputs);
                 return runtimeInputDevice;
             })
                 .Where(device => device is not null);
@@ -223,143 +210,29 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
     private async Task<IEnumerable<UserActionCommand>> ReadInputControllerAsync(RuntimeInputController controller, InputDefinition definition,
         int maxConcurrentDevices, CancellationToken cancellationToken)
     {
-        var activatedInputs = await controller.InputDevices.ExecuteConcurrentResultAsync(
-            device => device.ReadInputsAsync(cancellationToken), maxConcurrentDevices, cancellationToken);
-        var allInputs = activatedInputs.SelectMany(inputs => inputs);
+        var actionCommandsByDevice = await controller.InputDevices.Where(device => device.ActionMap is not null).ExecuteConcurrentResultAsync(
+            async (device) =>
+            {
+                var activatedInputs = await device.ReadInputsAsync(cancellationToken);
 
-        return allInputs.Any()
-            ? GetActionCommands(definition, allInputs)
-            : [];
-    }
-
-    private IEnumerable<UserActionCommand> GetActionCommands(InputDefinition inputDefinition, IEnumerable<ActivatedInput> activatedInputs)
-    {
-        var actionCommandLookup = new Dictionary<int, UserActionCommand>();
-        var virtualInputLookup = new Dictionary<int, List<ActivatedInput>>();
-
-        var currentActivations = new Dictionary<InputDeviceName, Dictionary<int, ActivatedInput>>();
-
-        foreach (var activatedInput in activatedInputs)
+                var actionMapLookup = device.ActionMap!.InputActionMaps.ToDictionary(actionMap => actionMap.InputId);
+                return activatedInputs.Where(activatedInput 
+                    => actionMapLookup.TryGetValue(activatedInput.Input.Id, out var inputActionMap) 
+                     && inputActionMap.TriggerPhases.Contains(activatedInput.TriggeredPhase))
+                    .Select(activatedInput
+                        => new UserActionCommand(userId, activatedInput, definition[actionMapLookup[activatedInput.Input.Id].ActionKey]));
+            }, maxConcurrentDevices, cancellationToken);
+        
+        var actionCommands = new Dictionary<string, UserActionCommand>();
+        foreach (var actionCommand in actionCommandsByDevice.SelectMany(actionCommands => actionCommands))
         {
-            if (activatedInput.TriggeredPhase is InputPhase.Idle)
+            if (!actionCommands.TryGetValue(actionCommand.InputAction.ActionKey, out _))
             {
-                continue;
-            }
-            if (!activatedInput.InputActionMapPair.TriggerPhases.Contains(activatedInput.TriggeredPhase))
-            {
-                continue;
-            }
-            if (!currentActivations.TryGetValue(activatedInput.DeviceName, out var deviceActivatedInputs))
-            {
-                deviceActivatedInputs = new Dictionary<int, ActivatedInput>();
-                currentActivations[activatedInput.DeviceName] = deviceActivatedInputs;
-            }
-            currentActivations[activatedInput.DeviceName][activatedInput.Input.Id] = activatedInput;
-
-            if (_previousActivations.TryGetValue(activatedInput.DeviceName, out var devicePreviousActivatedInputs)
-                    && devicePreviousActivatedInputs.TryGetValue(activatedInput.Input.Id, out var previousActivation))
-            {
-                activatedInput.SetPointerInformation(MergePointerInformation(activatedInput.PointerInformation, activatedInput.TriggeredPhase,
-                        previousActivation, ANGLE_THRESHOLD_FOR_NEW_VECTOR));
-            }
-
-            if (activatedInput.Input is MaskedInput maskedInput && maskedInput.ParentInput is not null)
-            {
-                if (!virtualInputLookup.TryGetValue(maskedInput.ParentInput.Id, out var combinationInputs))
-                {
-                    combinationInputs = [];
-                    virtualInputLookup[maskedInput.ParentInput.Id] = combinationInputs;
-                }
-
-                combinationInputs.Add(activatedInput);
-            }
-            else
-            {
-                actionCommandLookup[activatedInput.Input.Id] = new UserActionCommand(userId, activatedInput, inputDefinition[activatedInput.ActionKey]);
+                actionCommands.Add(actionCommand.InputAction.ActionKey, actionCommand);
             }
         }
 
-        foreach (var virtualInputActivations in virtualInputLookup.Values)
-        {
-            var maskedInput = (MaskedInput)virtualInputActivations.First().Input;
-            var virtualInputActionMapPair = virtualInputActivations.First().InputActionMapPair;
-            InputPhase? virtualActivationPhase = null;
-
-            switch (maskedInput.ParentInput)
-            {
-                case CombinationInput combinationInput:
-                    if (combinationInput.Inputs.Count() != virtualInputActivations.Count)
-                    {
-                        break;
-                    }
-
-                    foreach (var activatedInput in virtualInputActivations)
-                    {
-                        if (virtualInputActionMapPair.TriggerPhases.Contains(activatedInput.TriggeredPhase))
-                        {
-                            if (virtualActivationPhase is null || (int)activatedInput.TriggeredPhase < (int)virtualActivationPhase)
-                            {
-                                virtualActivationPhase = activatedInput.TriggeredPhase;
-                            }
-                        }
-                    }
-
-                    break;
-            }
-
-            if (virtualActivationPhase is not null)
-            {
-                foreach (var input in virtualInputActivations)
-                {
-                    actionCommandLookup.Remove(input.Input.Id);
-                }
-
-                var firstActivatedInput = virtualInputActivations.First();
-                actionCommandLookup[maskedInput.ParentInput!.Id] = new UserActionCommand(userId,
-                    new ActivatedInput(userId, firstActivatedInput.DeviceName, firstActivatedInput.InputActionMapPair,
-                       virtualActivationPhase.Value, firstActivatedInput.InputPower, firstActivatedInput.PointerInformation),
-                    inputDefinition[virtualInputActionMapPair.ActionKey]);
-            }
-        }
-
-        _previousActivations.Clear();
-        foreach (var kvp in currentActivations)
-        {
-            _previousActivations[kvp.Key] = kvp.Value;
-        }
-           
-        return actionCommandLookup.Values;
-    }
-
-    private PointerInformation MergePointerInformation(PointerInformation pointerInformation, InputPhase triggeredPhase,
-        ActivatedInput previousInput, float angleThresholdForNewVector)
-    {
-        // Pointer hasn't moved, use the previous input data as it is more complete
-        if (pointerInformation.CurrentPosition == previousInput.PointerInformation.CurrentPosition)
-        {
-            return previousInput.PointerInformation;
-        }
-
-        // The input phase transition that occurred would not require multiple pointer information states (i.e. start to end)
-        // because the pointer would 
-        var shouldMergeInformation = triggeredPhase.HasFlag(InputPhase.Active)
-            || (previousInput.TriggeredPhase.HasFlag(InputPhase.Active) && triggeredPhase.HasFlag(InputPhase.End));
-        if (!shouldMergeInformation)
-        {
-            return pointerInformation;
-        }
-
-        var previousMoveVector = previousInput.PointerInformation.CurrentPosition - previousInput.PointerInformation.PreviousPosition;
-        var newMoveVector = pointerInformation.CurrentPosition - previousInput.PointerInformation.CurrentPosition;
-
-        // Validate that the new mouse position is actually a different vector movement    
-        if (previousMoveVector.GetAngleBetween(newMoveVector) >= angleThresholdForNewVector)
-        {
-            return new PointerInformation(pointerInformation.PointerId,
-                previousInput.PointerInformation.PointerPositions.Append(pointerInformation.CurrentPosition).ToArray());
-        }
-
-        return previousInput.PointerInformation;
+        return actionCommands.Values;
     }
 
     #endregion

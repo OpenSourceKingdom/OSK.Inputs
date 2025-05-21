@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OSK.Functions.Outputs;
 using OSK.Functions.Outputs.Logging;
-using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Runtime;
 using OSK.Inputs.Options;
