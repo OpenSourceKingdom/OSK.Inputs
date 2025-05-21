@@ -150,7 +150,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -174,7 +174,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -203,7 +203,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -232,7 +232,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -260,7 +260,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-              .Returns(Mock.Of<IInputReader>());
+              .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -393,7 +393,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -427,7 +427,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -507,7 +507,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -538,7 +538,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -574,7 +574,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -902,7 +902,7 @@ public class InputManagerTests
             .ReturnsAsync(_outputFactory.Succeed((IEnumerable<ActiveInputScheme>)[]));
 
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(), It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         // Act
         var result = await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, new JoinUserOptions()
@@ -957,7 +957,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -992,7 +992,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -1024,7 +1024,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));
@@ -1050,7 +1050,7 @@ public class InputManagerTests
         // Arrange
         _mockInputReaderProvider.Setup(m => m.GetInputReader(It.IsAny<IInputDeviceConfiguration>(),
             It.IsAny<InputDeviceIdentifier>()))
-            .Returns(Mock.Of<IInputReader>());
+            .Returns(Mock.Of<IInputDeviceReader>());
 
         _mockInputSchemeRepository.Setup(m => m.GetCustomInputSchemesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed(Enumerable.Empty<InputScheme>()));

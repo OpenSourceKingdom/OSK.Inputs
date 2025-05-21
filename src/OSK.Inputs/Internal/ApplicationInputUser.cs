@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
-using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Models.Runtime;
 
 namespace OSK.Inputs.Internal;
@@ -14,8 +12,9 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 {
     #region Variables
 
-    private readonly Dictionary<int, RuntimeInputDevice> _userInputDeviceLookup = [];
     internal readonly Dictionary<string, RuntimeInputController> _inputControllers = [];
+
+    private readonly Dictionary<int, RuntimeInputDevice> _userInputDeviceLookup = [];
     private RuntimeInputController? _activeInputController;
 
     #endregion
@@ -53,12 +52,9 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
             RemoveInputController(controller);
         }
 
+
         _inputControllers.Clear();
     }
-
-    #endregion
-    
-    #region Publc
 
     public bool TryGetDevice(int deviceId, out RuntimeInputDevice device)
     {
@@ -72,8 +68,8 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
             if (!_userInputDeviceLookup.TryGetValue(inputDevice.DeviceIdentifier.DeviceId, out _))
             {
                 _userInputDeviceLookup.Add(inputDevice.DeviceIdentifier.DeviceId, inputDevice);
-                inputDevice.InputReader.OnControllerDisconnected += NotifyDeviceDisconnected;
-                inputDevice.InputReader.OnControllerReconnected += NotifyDeviceReconnected;
+                inputDevice.InputReader.OnDeviceDisconnected += NotifyDeviceDisconnected;
+                inputDevice.InputReader.OnDeviceConnected += NotifyDeviceReconnected;
             }
         }
 
@@ -107,16 +103,8 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
                 }
 
                 var inputLookup = runtimeInputDevice.Configuration.Inputs.ToDictionary(input => input.Id);
-                var actionMapPairs = deviceMap.InputActionMaps.SelectMany(actionMap => 
-                {
-                    var input = inputLookup[actionMap.InputId];
-                    return input switch
-                    {
-                        CombinationInput combinationInput => combinationInput.Inputs.Select(comboInput => new InputActionMapPair(new MaskedInput(comboInput, combinationInput), actionMap)),
-                        _ => [ new InputActionMapPair(input, actionMap) ]
-                    };
-                });
-                runtimeInputDevice.SetInputScheme(actionMapPairs);
+                var activeInputs = deviceMap.InputActionMaps.Select(actionMap => inputLookup[actionMap.InputId]);
+                runtimeInputDevice.SetActiveInputs(deviceMap, activeInputs);
                 return runtimeInputDevice;
             })
                 .Where(device => device is not null);
@@ -135,19 +123,16 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
         }
     }
 
-    public async Task<IEnumerable<UserActionCommand>> ReadInputsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<UserActionCommand>> ReadInputsAsync(int maxConcurrentDevices, CancellationToken cancellationToken = default)
     {
         if (_activeInputController is not null)
         {
-            var activatedInputs = await _activeInputController.InputDevices.ExecuteConcurrentResultAsync(
-                device => device.ReadInputsAsync(cancellationToken), 1, cancellationToken);
-            var allInputs = activatedInputs.SelectMany(inputs => inputs);
-            if (allInputs.Any())
+            var actions = await ReadInputControllerAsync(_activeInputController, ActiveInputDefinition, maxConcurrentDevices, cancellationToken);
+            if (actions.Any())
             {
-                return GetActionCommands(ActiveInputDefinition, allInputs);
+                return actions;
             }
         }
-
         if (cancellationToken.IsCancellationRequested)
         {
             return [];
@@ -160,14 +145,12 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
                 break;
             }
 
-            var activatedInputs = await inputController.InputDevices.ExecuteConcurrentResultAsync(
-                device => device.ReadInputsAsync(cancellationToken), 1, cancellationToken);
-            var allInputs = activatedInputs.SelectMany(inputs => inputs);
-            if (allInputs.Any())
+            var actions = await ReadInputControllerAsync(inputController, ActiveInputDefinition, maxConcurrentDevices, cancellationToken);
+            if (actions.Any())
             { 
                 _activeInputController = inputController;
                 OnActiveInputControllerChanged(userId, inputController.Configuration);
-                return GetActionCommands(ActiveInputDefinition, allInputs);
+                return actions;
             }
         }
 
@@ -224,73 +207,32 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
         }
     }
 
-    private IEnumerable<UserActionCommand> GetActionCommands(InputDefinition inputDefinition, IEnumerable<ActivatedInput> activatedInputs)
+    private async Task<IEnumerable<UserActionCommand>> ReadInputControllerAsync(RuntimeInputController controller, InputDefinition definition,
+        int maxConcurrentDevices, CancellationToken cancellationToken)
     {
-        var actionCommandLookup = new Dictionary<int, UserActionCommand>();
-        var virtualInputLookup = new Dictionary<int, List<ActivatedInput>>();
+        var actionCommandsByDevice = await controller.InputDevices.Where(device => device.ActionMap is not null).ExecuteConcurrentResultAsync(
+            async (device) =>
+            {
+                var activatedInputs = await device.ReadInputsAsync(cancellationToken);
 
-        foreach (var activatedInput in activatedInputs) 
+                var actionMapLookup = device.ActionMap!.InputActionMaps.ToDictionary(actionMap => actionMap.InputId);
+                return activatedInputs.Where(activatedInput 
+                    => actionMapLookup.TryGetValue(activatedInput.Input.Id, out var inputActionMap) 
+                     && inputActionMap.TriggerPhases.Contains(activatedInput.TriggeredPhase))
+                    .Select(activatedInput
+                        => new UserActionCommand(userId, activatedInput, definition[actionMapLookup[activatedInput.Input.Id].ActionKey]));
+            }, maxConcurrentDevices, cancellationToken);
+        
+        var actionCommands = new Dictionary<string, UserActionCommand>();
+        foreach (var actionCommand in actionCommandsByDevice.SelectMany(actionCommands => actionCommands))
         {
-            if (activatedInput.Input is MaskedInput maskedInput && maskedInput.ParentInput is not null)
+            if (!actionCommands.TryGetValue(actionCommand.InputAction.ActionKey, out _))
             {
-                if (!virtualInputLookup.TryGetValue(maskedInput.ParentInput.Id, out var combinationInputs))
-                {
-                    combinationInputs = [];
-                    virtualInputLookup[maskedInput.ParentInput.Id] = combinationInputs;
-                }
-
-                combinationInputs.Add(activatedInput);
-            }
-            else
-            {
-                actionCommandLookup[activatedInput.Input.Id] = new UserActionCommand(userId, activatedInput, inputDefinition[activatedInput.ActionKey]);
+                actionCommands.Add(actionCommand.InputAction.ActionKey, actionCommand);
             }
         }
 
-        foreach (var virtualInputActivations in virtualInputLookup.Values)
-        {
-            var maskedInput = (MaskedInput)virtualInputActivations.First().Input;
-            var virtualInputActionMapPair = virtualInputActivations.First().InputActionMapPair;
-            InputPhase? virtualActivationPhase = null;
-
-            switch (maskedInput.ParentInput)
-            {
-                case CombinationInput combinationInput:
-                    foreach (var activatedInput in virtualInputActivations)
-                    {
-                        if (virtualInputActionMapPair.TriggerPhase.HasFlag(activatedInput.TriggeredPhase))
-                        {
-                            if (virtualActivationPhase is null || (int)activatedInput.TriggeredPhase < (int)virtualActivationPhase)
-                            {
-                                virtualActivationPhase = activatedInput.TriggeredPhase;
-                            }
-                            else
-                            {
-                                virtualActivationPhase = null;
-                                break;
-                            }
-                        }
-                    }
-
-                    break;
-            }
-
-            if (virtualActivationPhase is not null)
-            {
-                foreach (var input in virtualInputActivations)
-                {
-                    actionCommandLookup.Remove(input.Input.Id);
-                }
-
-                var firstActivatedInput = virtualInputActivations.First();
-                actionCommandLookup[maskedInput.ParentInput!.Id] = new UserActionCommand(userId,
-                    new ActivatedInput(userId, firstActivatedInput.DeviceName, firstActivatedInput.InputActionMapPair,
-                       virtualActivationPhase.Value, firstActivatedInput.InputPower, firstActivatedInput.PointerInformation),
-                    inputDefinition[virtualInputActionMapPair.ActionKey]);
-            }
-        }
-
-        return actionCommandLookup.Values;
+        return actionCommands.Values;
     }
 
     #endregion

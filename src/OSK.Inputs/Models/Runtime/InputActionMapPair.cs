@@ -1,4 +1,5 @@
-﻿using OSK.Inputs.Models.Configuration;
+﻿using System.Collections.Generic;
+using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
 
 namespace OSK.Inputs.Models.Runtime;
@@ -12,5 +13,5 @@ public struct InputActionMapPair(IInput input, InputActionMap actionMap)
 
     public IInput DeviceInput => input;
 
-    public InputPhase TriggerPhase => actionMap.InputPhase;
+    public ISet<InputPhase> TriggerPhases => actionMap.TriggerPhases;
 }

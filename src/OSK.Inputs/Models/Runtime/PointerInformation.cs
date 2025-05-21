@@ -5,9 +5,13 @@ public class PointerInformation(int pointerId, Vector2[] pointerPositions)
 {
     public const int DefaultPointerId = 999;
 
+    public static PointerInformation Default { get; } = new PointerInformation(DefaultPointerId, []);
+
     public int PointerId => pointerId;
 
-    public Vector2 CurrentPosition => pointerPositions[^1];
+    public Vector2 CurrentPosition => pointerPositions.Length == 1
+        ? pointerPositions[^1]
+        : Vector2.Zero;
 
     public Vector2 PreviousPosition => pointerPositions.Length > 1
         ? pointerPositions[^2]

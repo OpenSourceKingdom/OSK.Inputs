@@ -76,6 +76,18 @@ public static class EnumerableExtensions
                 : action(value);
         }
 
+        if (maxDegreesOfConcrruency == 1)
+        {
+            var resultTaskList = new List<Task<TResult>>();
+            foreach (var item in source)
+            {
+                var resultTask = action(item);
+                await Task.WhenAll(resultTask);
+                resultTaskList.Add(resultTask);
+            }
+
+            return resultTaskList;
+        }
         if (source is IList<T> list && list.Count <= maxDegreesOfConcrruency)
         {
             if (list.Count == 0)
@@ -90,7 +102,7 @@ public static class EnumerableExtensions
         var results = new List<Task<TResult>>();
         foreach (var item in source)
         {
-            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await semaphore.WaitAsync(cancellationToken);
 
             var result = ExecuteActionAsync(item, isParallel);
             results.Add(result);
@@ -99,7 +111,7 @@ public static class EnumerableExtensions
 
         try
         {
-            await Task.WhenAll(results).ConfigureAwait(false);
+            await Task.WhenAll(results);
         }
         catch
         {

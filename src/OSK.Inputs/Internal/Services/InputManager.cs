@@ -303,8 +303,8 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationTokens);
 
         var userInputs = await _userLookup.Values.ExecuteConcurrentResultAsync(
-            user => user.ReadInputsAsync(cancellationTokenSource.Token),
-            maxDegreesOfConcrruency: readOptions.MaxConcurrentDevices,
+            user => user.ReadInputsAsync(readOptions.MaxConcurrentDevices, cancellationTokenSource.Token),
+            maxDegreesOfConcrruency: readOptions.MaxConcurrenUsers,
             isParallel: readOptions.RunInputUsersInParallel,
             cancellationToken: cancellationTokenSource.Token);
 
@@ -341,7 +341,7 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         }
 
         var inputReader = inputReaderProvider.GetInputReader(deviceConfiguration, deviceIdentifier);
-        return new RuntimeInputDevice(userId, deviceIdentifier, deviceConfiguration, inputReader);
+        return new RuntimeInputDevice(deviceIdentifier, deviceConfiguration, inputReader);
     }
 
     private async Task<IOutput<IEnumerable<InputScheme>>> GetActiveInputSchemesForUserAsync(int userId, InputDefinition inputDefinition, CancellationToken cancellationToken)
