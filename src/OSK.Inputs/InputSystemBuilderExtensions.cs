@@ -5,55 +5,55 @@ using OSK.Inputs.Ports;
 namespace OSK.Inputs;
 public static class InputSystemBuilderExtensions
 {
-    #region Public
+    #region Device Extensions
 
-    public static IInputSystemBuilder AddXboxController<TInputReader>(this IInputSystemBuilder builder, Action<XboxController> configurator)
+    public static IInputSystemBuilder AddXboxController<TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
     {
-        return builder.AddInputDevice<XboxController, TInputReader>(configurator);
+        return builder.AddInputDevice<XboxController, TInputReader>();
     }
 
-    public static IInputSystemBuilder AddPlayStationController<TInputReader>(this IInputSystemBuilder builder, Action<PlayStationController> configurator)
+    public static IInputSystemBuilder AddPlayStationController<TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
     {
         return builder.AddInputDevice<PlayStationController, TInputReader>(configurator);
     }
 
-    public static IInputSystemBuilder AddKeyboard<TInputReader>(this IInputSystemBuilder builder, Action<Keyboard> configurator)
+    public static IInputSystemBuilder AddKeyboard<TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
     {
         return builder.AddInputDevice<Keyboard, TInputReader>(configurator);
     }
 
-    public static IInputSystemBuilder AddMouse<TInputReader>(this IInputSystemBuilder builder, Action<Mouse> configurator)
+    public static IInputSystemBuilder AddMouse<TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
     {
         return builder.AddInputDevice<Mouse, TInputReader>(configurator);
     }
 
-    public static IInputSystemBuilder AddSensorController<TInputReader>(this IInputSystemBuilder builder, Action<SensorController> configurator)
+    public static IInputSystemBuilder AddSensorController<TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
     {
         return builder.AddInputDevice<SensorController, TInputReader>(configurator);
+    }
+
+    public static IInputSystemBuilder AddCustomDevice<TDevice, TInputReader>(this IInputSystemBuilder builder)
+        where TDevice : InputDevice
+        where TInputReader : IInputDeviceReader
+    {
+        return builder.AddInputDevice<TDevice, TInputReader>();
     }
 
     #endregion
 
     #region Helpers
 
-    private static IInputSystemBuilder AddInputDevice<TConfigurator, TInputReader>(this IInputSystemBuilder builder, Action<TConfigurator> configuratorAction)
+    private static IInputSystemBuilder AddInputDevice<TDevice, TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
-        where TConfigurator : InputDevice
+        where TDevice : InputDevice
     {
-        if (configuratorAction is null)
-        {
-            throw new ArgumentNullException(nameof(configuratorAction));
-        }
-
-        var configurator = (TConfigurator)Activator.CreateInstance(typeof(TConfigurator), typeof(TInputReader));
-        configuratorAction(configurator);
-
-        builder.AddInputController(configurator.BuildDeviceConfiguration());
+        var device = (TDevice)Activator.CreateInstance(typeof(TDevice), typeof(TInputReader));
+        builder.AddInputDevice(device.GetDeviceConfiguration());
 
         return builder;
     }

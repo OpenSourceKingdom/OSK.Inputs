@@ -6,8 +6,7 @@ using OSK.Inputs.Models.Inputs;
 using OSK.Inputs.Ports;
 
 namespace OSK.Inputs.Internal;
-internal class DefaultInputDeviceConfiguration(InputDeviceName deviceName, Type readerType, IEnumerable<IInput> inputs,
-    Func<IInput, bool>? validator) : IInputDeviceConfiguration
+internal class DefaultInputDeviceConfiguration(InputDeviceName deviceName, Type readerType, IEnumerable<IInput> inputs) : IInputDeviceConfiguration
 {
     private readonly Dictionary<int, IInput> _inputLookup = inputs?.ToDictionary(input => input.Id) ?? [];
 
@@ -32,6 +31,5 @@ internal class DefaultInputDeviceConfiguration(InputDeviceName deviceName, Type 
     /// <param name="input">The input being added to a scheme</param>
     /// <returns>Whether the input is valid for this device</returns>
     public bool IsValidInput(IInput input) 
-        => validator?.Invoke(input) 
-        ?? _inputLookup.TryGetValue(input.Id, out var inputValue) && inputValue.DeviceType.Equals(input.DeviceType, StringComparison.Ordinal);
+        => _inputLookup.TryGetValue(input.Id, out var inputValue) && inputValue.DeviceType.Equals(input.DeviceType, StringComparison.Ordinal);
 }

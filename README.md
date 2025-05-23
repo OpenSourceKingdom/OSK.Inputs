@@ -1,62 +1,66 @@
 # OSK.Inputs
 A set of core logic and implementations that are able to define the foundations of device input and their related input schemes for users. By using this library, you can set developer
-defined controller definitions, schemes, and action maps using standard .NET dependency injection. This allows for separation from some specific game engines using this an abstraction library
-to other implementations that may use well known input libraries, such as Unity3D, MonoGame, SDL2, and others, or even custom implementations.
+defined controller definitions, schemes, and action maps using standard .NET dependency injection. This allows for separation from some specific game engines using this abstraction library
+to other implementations that may use well known input libraries, such as Unity3D, MonoGame, SDL2, and others, or even custom implementations. Additionally, the library is also setup to support
+local multiplayer across users and devices associated to a given game engine.
 
 # Design and Usage
-The breakdown of the library follows:
- * `InputDefinition` - represents a top level input template or definition. This can be thought of as the name and other related settings for user input that is set per interaction type. For example, you may have a definition for vehicle, person, or other controls where user inputs will trigger different actions based on the type of input.
- * `InputControllerConfiguration` - this represents an actual controller of some sort and can contain one or more receivers and their input schemes. This can be specified as needed by developers when setting up their input definitions. This can be imagined as the physical xbox or playstation controller, wherein the inputs are contained
- * `InputReceiverConfiguration` - This is the actual input receiver that receives user input. This can be viewed as the mechanism directly receiving the input.
-	* Note: in the scope of this library, controllers are meant to act as a container of a known input that can be used to display GUIs to a user and allow for easier developer handling for frontend interfaces. In most cases, a controller may very well only have the one receiver that receives the input but in some cases, a controller might take more than one receiver (i.e. keyboard and mouse as a single PC controller) so that when showing input schemes a developer can iterate through the list of receivers to show the user
- * `InputReceiverDescription` - This is defined on the definition and is the main way integrations are added to the library. Implementations will need to add their own receiver descriptions that will allow the library's receiver to be created using dependency injection
- * `InputScheme` - represents the action maps that are tied to specific input receivers on a controller.
- *  Inputs are broken into the following:
-   * `IInput` - a central abstraction for all input types
-   * `HardwareInput` - a base input that represents a physical button, joystick, or other real world hardware input
-   * `VirtualInput` - a base input that represents a software based input, such as a `CombinationInput`
-   * Note: each button input can be set with its own list of options that will allow for customization per inpu/receiver
- * `IInputSchemeRepository` - This is a repository that allows developers to set a custom adapter that can save/load input schemes and user selected active schemes. The default scheme repository is a no op and will only return empty/default responses.
+The core logic and implementations relies on a the following interfaces and components:
+* `IInputManager`:  represents the fundamental access point to the library and its usage. This handles the `IApplicationInputUser`s and their respective devices and actions. Users can call the receive input function to retrieve inputs from users
+* `IInputDeviceReader`: the core integration point for input systems utilizing the abstractions associated to this library. By using this interface, you can add new input devices to be available to users
+* `InputSystemConfiguration`: the core configuration object that defines how the input manager and application users operate. This contains data related to the input definitions, schemes, and related actions that are triggered upon receiving input
+* `InputDefinition`: the definition file that specifies what actions are available for triggering and the related input schemes associated to the definition
+* `InputScheme`: the configuration of a set of input devices that are associated to a given input definition. All actions defined in the input definition must be mapped to inputs in the input scheme
 
-When adding input definitions, input controllers and receivers, and their related input schemes, developers should be aware that the library will attempt to enforce all stated action keys are assigned to prevent unintentional mistakes when creating user input schemes.
-Input Definitions can be set to allow or disallow custom user input schemes, but if the customer user schemes are allowed then developers will need to ensure that a valid `IInputSchemeRepository` is added to the dependency container. The provided implementation will not save or load
-custom schemes and will always assume that there is only one input scheme availanble for a user.
+To add the input library to a DI container, the `AddInputs` method should be utilized and configuration set using the `IInputSystemBuilder` configuration action
 
-After adding the package, input definitions, controllers, receivers, and schemes can be added similar to the following example:
-```
- services.AddInputs(builder => {
-    builder.AddInputDefinition("Vehicle", definition => {
-        definition
-            .AddAction("Fire", "Fires Main Gun")
-            .AddAction("Reload", "Reloads the main Gun")
+Input System Configuration and Validation
+----
+Input validation takes place during the startup phase of the DI container. The input system's input definitions, schemes, input devices, etc. are all checked, as much as possible, to validate the input system is correctly configured before being
+used with the `IInputManager`. This validation is unskippable.
 
-            // Allows adding custom input receivers not specified in defaults
-            .AddInputController("Keyboard and Mouse", builder => {
-                builder.UseMouse()
-                builder.UseKeyboard()
-            })
-             .WithInputScheme("", isDefault: true, configurator => {
+The input system configuration can be setup to allow for multiple local users as well as with the use of custom input schemes that can be defined by users. There is a default `IInputSchemeRepository` that allows for in-memory input scheme storage, 
+but long term storage can be implemented by adding a custom `IInputSchemeRepository` implementation using the `UseInputSchemeRepository` method on the `IInputSystemBuilder`
 
-             });
+Input Definitions and Schemes
+----
+An Input Definition is the template by which input schemes are created. An input definition can be thought of as a separation of actions that are available to a user. For example, a game application may allow users acces to a variety of vehicles and aircraft
+which could require separate input definitions to perform the needed actions (i.e. moving a tank does not require actions for pitch, yaw, etc.). Input definitions can be set by a user at runtime to allow for definitions to switched as needed by an application 
+ (i.e. user switches from tank to aircraft to infantry, etc.). Additionally, action events must be set with the associated actions, which are used to trigger developer code when an input is read from an input device.
+ Some extensions are available in `InputDefinitionBuilderExtensions` to help configure input definitions and their actions. 
 
-             .AddPlayStationController
-                .WithInputScheme("", isDefault: true, configurator => {
+Input schemes must define a mapping for every action available on an input definition. This is to help prevent unexpected behavior with missing actions on schemes.
 
-                })
-        })
-    });
-```
+Input Devices and Controllers
+----
+The core concepts for how input is read is through individual `IInputDeviceReader`. An input device can be thought of as the actual device that receives input from a user, so this would be similar to a keyboard, mouse, xbox or playstation controllers, etc.
+The `IInputDeviceReader` is a specific input device reader and this allows potential for different input device implementations to be used to read input on a per device basis. New input device readers can be configured using the
+extensions found in `InputSystemBuilderExtensions`, with some common configurations being available on the extension API surface. These extensions expect that an implementation `IInputDeviceReader` is provided along with the associated `InputDevice` object.
+The `InputDevice` defines the types of inputs the device utilizes. 
 
-With the dependency injection setup, the primary entry point will be the `IInputManager`, which is setup to allow saving custom input schemes as well as getting the list of input definitions
-to show users on a settings page or similar. To start listening for inputs from the configuration, developers will want to get an `IInputHandler` from the input manager. The input manageer will
-then provide an input handler that will listen for input across all input controllers and receivers that were set in the configuration. Additionally, the input handler will provide users a way to listen for
-input controller changes should a user attempt to send input from a different controller than the original one they started with.
+An Input Controller is defined as a set of input devices that should be allowed to share in a specific input scheme. For example, an input scheme might have an input controller that contains both a Keyboard and Mouse input device and thus all actions for an
+input definition can be mapped to both the keyboard and mouse within the same scheme. Input controllers are handled internally within the library and are created automatically based on the input scheme configurations created during startup.
 
-# Integrations
-The library breaks out the inputs and their related receivers in a way that can allow for developers to only add packages for inputs and receivers that they are interested in for their application. Any new inputs being added
-will need to use the `IInput` to be usable and any new input receivers will need to use the `IInputReceiver` interface as well as adding an `InputReceiverDescriptor` for the specific receiver.
-The implementations for IInputReceiver are expected to contain a parameter for `InputReceiverConfiguration`. Additionally, input receivers are expected to listen to the cancellation tokens that are given and return an empty list
-or the currently read list if the cancellation token is cancelled prior to completion of reading all inputs on an input receiver. If a cancellation exception is thrown, the default implementations will not catch it.
+Inputs and Virtual Inputs
+----
+Inputs are utilized by `InputDevice`s during configuration so that `IInputDeviceReader`s know what to read when an input device is receiving input. Inputs are defined by `IInput` but the two primary implementations provided by the library
+is `HardwareInput` and `VirtualInput`. Hardware input can be thought of as the physical button or sticks on a controller or keyboard, whereas virtual inputs can be thought of as an input defined by software. For example, combination inputs 
+are software based inputs (Shift + 1 for '!'). Custom implementations of `IInput` can be defined as long as the `IInputDeviceReader` used with the input is able to understand how to interpret it.
+
+Some virtual inputs are defined by the library and are available for use. These include:
+* Combination Inputs
+* Swipe Inputs are planned for addition in the future
+
+Note: validation is performed on the input device reader to ensure that the input is valid for the device reader.
+
+
+# Input Device Integrations
+The primary interface to implement is the `IInputDeviceReader` as it is what is used to actually read an input from a device. This happens through a single input read method that is called during input reading of a user's assigned input devices.
+The device reader should inform the library of the state of the input being requested through the input read context that is passed to the read method along with the actual input for processing. The input device reader implementation does not need
+to be aware of virtual inputs as those are defined and processed by the internals of the library.
+
+Note: Input Device readers are created by the library using the input reader type defined when using the input system builder. The readers are currently expected to be transiently generated by default through the current library implementation for 
+`IInputReaderProvider`. Though it should be possible for consumers to define a custom implementation of `IInputReaderProvider` if it is added to the DI container prior to the core service collection extension being used.
 
 # Contributions and Issues
 Any and all contributions are appreciated! Please be sure to follow the branch naming convention OSK-{issue number}-{deliminated}-{branch}-{name} as current workflows rely on it for automatic issue closure. Please submit issues for discussion and tracking using the github issue tracker.

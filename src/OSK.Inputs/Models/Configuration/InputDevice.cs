@@ -12,7 +12,7 @@ public abstract class InputDevice(InputDeviceName deviceName, Type inputReaderTy
 
     public abstract IEnumerable<IInput> AllInputs { get; }
 
-    internal IInputDeviceConfiguration BuildDeviceConfiguration()
+    internal IInputDeviceConfiguration GetDeviceConfiguration()
     {
         var duplicateIdentifiers = AllInputs.GroupBy(input => input.Id).Where(group => group.Count() > 1);
         if (duplicateIdentifiers.Any())
@@ -28,7 +28,7 @@ public abstract class InputDevice(InputDeviceName deviceName, Type inputReaderTy
             throw new DuplicateNameException($"One or more input names had duplicate names for the {deviceName} device. The following inputs had the error: {error}");
         }
 
-        return new DefaultInputDeviceConfiguration(deviceName, inputReaderType, AllInputs, null);
+        return new DefaultInputDeviceConfiguration(deviceName, inputReaderType, AllInputs);
     }
 
     #endregion

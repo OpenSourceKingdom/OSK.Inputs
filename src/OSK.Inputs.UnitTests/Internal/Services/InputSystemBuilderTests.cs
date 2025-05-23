@@ -75,20 +75,20 @@ public class InputSystemBuilderTests
 
     #endregion
 
-    #region AddInputController
+    #region AddInputDevice
 
     [Fact]
-    public void AddInputController_NullConfiguration_ThrowsArgumentNullException()
+    public void AddInputDevice_NullConfiguration_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _builder.AddInputController(null!));
+        Assert.Throws<ArgumentNullException>(() => _builder.AddInputDevice(null!));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]
-    public void AddInputController_InvalidControllerName_ThrowsArgumentNullException(string? deviceName)
+    public void AddInputDevice_InvalidControllerName_ThrowsArgumentNullException(string? deviceName)
     {
         // Arrange
         var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
@@ -96,25 +96,25 @@ public class InputSystemBuilderTests
             .Returns(new InputDeviceName(deviceName));
         
         // Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _builder.AddInputController(mockControllerConfiguration.Object));
+        Assert.Throws<ArgumentNullException>(() => _builder.AddInputDevice(mockControllerConfiguration.Object));
     }
 
     [Fact]
-    public void AddInputController_DuplicateControllerName_ThrowsDuplicateNameException()
+    public void AddInputDevice_DuplicateControllerName_ThrowsDuplicateNameException()
     {
         // Arrange
         var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
         mockControllerConfiguration.SetupGet(m => m.DeviceName)
             .Returns(new InputDeviceName("abc"));
 
-        _builder.AddInputController(mockControllerConfiguration.Object);
+        _builder.AddInputDevice(mockControllerConfiguration.Object);
 
         // Act/Assert
-        Assert.Throws<DuplicateNameException>(() => _builder.AddInputController(mockControllerConfiguration.Object));
+        Assert.Throws<DuplicateNameException>(() => _builder.AddInputDevice(mockControllerConfiguration.Object));
     }
 
     [Fact]
-    public void AddInputController_Valid_ReturnsSuccesfully()
+    public void AddInputDevice_Valid_ReturnsSuccesfully()
     {
         // Arrange
         var mockControllerConfiguration = new Mock<IInputDeviceConfiguration>();
@@ -122,7 +122,7 @@ public class InputSystemBuilderTests
             .Returns(new InputDeviceName("abc"));
 
         //Act/Assert
-        _builder.AddInputController(mockControllerConfiguration.Object);
+        _builder.AddInputDevice(mockControllerConfiguration.Object);
     }
 
     #endregion
@@ -212,7 +212,7 @@ public class InputSystemBuilderTests
             .Returns(new InputDeviceName("abc"));
 
         _builder
-            .AddInputController(mockInputController.Object)
+            .AddInputDevice(mockInputController.Object)
             .AddInputDefinition("test", definitionBuilder => { })
             .WithMaxLocalUsers(12)
             .AllowCustomSchemes()
