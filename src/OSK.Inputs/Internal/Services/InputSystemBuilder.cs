@@ -43,7 +43,7 @@ internal class InputSystemBuilder(IServiceCollection services,
         return this;
     }
 
-    public IInputSystemBuilder AddInputController(IInputDeviceConfiguration deviceConfiguration)
+    public IInputSystemBuilder AddInputDevice(IInputDeviceConfiguration deviceConfiguration)
     {
         if (deviceConfiguration is null)
         {

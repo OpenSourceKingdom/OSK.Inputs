@@ -17,11 +17,11 @@ public class InputSystemConfigurationTests
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddInputs(builder =>
         {
-            builder.AddKeyboard<TestInputReader>(_ => { });
-            builder.AddMouse<TestInputReader>(_ => { });
-            builder.AddPlayStationController<TestInputReader>(_ => { });
-            builder.AddXboxController<TestInputReader>(_ => { });
-            builder.AddSensorController<TestInputReader>(_ => { });
+            builder.AddKeyboard<TestInputReader>();
+            builder.AddMouse<TestInputReader>();
+            builder.AddPlayStationController<TestInputReader>();
+            builder.AddXboxController<TestInputReader>();
+            builder.AddSensorController<TestInputReader>();
 
             builder.AddInputDefinition("Test", definition =>
             {
@@ -49,8 +49,8 @@ public class InputSystemConfigurationTests
         serviceCollection.AddLogging();
         serviceCollection.AddInputs(builder =>
         {
-            builder.AddKeyboard<TestInputReader>(_ => { });
-            builder.AddMouse<TestInputReader>(_ => { });
+            builder.AddKeyboard<TestInputReader>();
+            builder.AddMouse<TestInputReader>();
 
             builder.AddInputDefinition("Test", definition =>
             {

@@ -9,7 +9,7 @@ public interface IInputSystemBuilder
 {
     IInputSystemBuilder AddInputDefinition(string name, Action<IInputDefinitionBuilder> buildAction);
 
-    IInputSystemBuilder AddInputController(IInputDeviceConfiguration configuration);
+    IInputSystemBuilder AddInputDevice(IInputDeviceConfiguration configuration);
 
     IInputSystemBuilder WithMaxLocalUsers(int maxLocalUsers);
 
