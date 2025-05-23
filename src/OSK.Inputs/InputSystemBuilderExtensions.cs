@@ -16,25 +16,25 @@ public static class InputSystemBuilderExtensions
     public static IInputSystemBuilder AddPlayStationController<TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
     {
-        return builder.AddInputDevice<PlayStationController, TInputReader>(configurator);
+        return builder.AddInputDevice<PlayStationController, TInputReader>();
     }
 
     public static IInputSystemBuilder AddKeyboard<TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
     {
-        return builder.AddInputDevice<Keyboard, TInputReader>(configurator);
+        return builder.AddInputDevice<Keyboard, TInputReader>();
     }
 
     public static IInputSystemBuilder AddMouse<TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
     {
-        return builder.AddInputDevice<Mouse, TInputReader>(configurator);
+        return builder.AddInputDevice<Mouse, TInputReader>();
     }
 
     public static IInputSystemBuilder AddSensorController<TInputReader>(this IInputSystemBuilder builder)
         where TInputReader : IInputDeviceReader
     {
-        return builder.AddInputDevice<SensorController, TInputReader>(configurator);
+        return builder.AddInputDevice<SensorController, TInputReader>();
     }
 
     public static IInputSystemBuilder AddCustomDevice<TDevice, TInputReader>(this IInputSystemBuilder builder)
