@@ -18,7 +18,7 @@ public class InputActivationContext(IServiceProvider serviceProvider, IEnumerabl
             InputActivationDelegate executionDelegate =
                 @event => command.InputAction.ActionExecutor(@event);
 
-            var activationEvent = new InputActivationEvent(serviceProvider, command.ActivatedInput, command.InputAction);
+            var activationEvent = new InputActivationEvent(serviceProvider, command.UserId, command.ActivatedInput, command.InputAction);
             if (middleware != null)
             {
                 await middleware(executionDelegate, activationEvent);
