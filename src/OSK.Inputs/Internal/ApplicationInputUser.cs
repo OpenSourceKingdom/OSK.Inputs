@@ -75,7 +75,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
 
         if (ActiveInputDefinition is not null)
         {
-            SetActiveInputDefinition(ActiveInputDefinition, _inputControllers.Values.Select(controller => controller.InputScheme));
+            SetActiveInputDefinition(ActiveInputDefinition, _inputControllers.Values.Select(controller => controller.InputScheme).ToArray());
         }
     }
 
@@ -88,7 +88,7 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
         foreach (var scheme in activeInputSchemes)
         {
             var controllerConfiguration = inputSystemConfiguration.InputControllers.FirstOrDefaultByString(
-                controller => scheme.ControllerId, scheme.ControllerId);
+                controller => controller.ControllerName, scheme.ControllerId);
             if (controllerConfiguration is null)
             {
                 continue;

@@ -46,7 +46,7 @@ public class ApplicationUserTests
         _deviceConfigurations.Add(mockDevice2.Object);
 
         _controllerConfigurations = [];
-        _controllerConfigurations.Add(new InputControllerConfiguration("test", [mockDevice.Object.DeviceName]));
+        _controllerConfigurations.Add(new InputControllerConfiguration("NewDevice", [mockDevice.Object.DeviceName]));
         _controllerConfigurations.Add(new InputControllerConfiguration("abc", [mockDevice2.Object.DeviceName]));
 
         _testScheme = new InputScheme("Abc", "abc", false, [ new InputDeviceActionMap(mockDevice.Object.DeviceName, []) ]);
@@ -212,13 +212,14 @@ public class ApplicationUserTests
 
     [Fact]
     public void SetActiveInputSchemes_OverwritesOriginalData()
-    {
+        {
         // Arrange
-        var newTestScheme = new InputScheme("whatdayaknow", "NewScheme", false, [ new InputDeviceActionMap(_deviceConfigurations.Last().DeviceName, []) ]);
+        _controllerConfigurations.Add(new InputControllerConfiguration("NewDevice", [new InputDeviceName("NewDevice")]));
+        var newTestScheme = new InputScheme("whatdayaknow", "NewScheme", false, [ new InputDeviceActionMap(new InputDeviceName("NewDevice"), []) ]);
         var newTestDefinition = new InputDefinition("whatdayaknow", [], [ newTestScheme ]);
 
         // Act
-        _user.SetActiveInputDefinition(newTestDefinition, [newTestScheme]);
+         _user.SetActiveInputDefinition(newTestDefinition, [newTestScheme]);
 
         // Assert
         Assert.Equal(newTestDefinition, _user.ActiveInputDefinition);
