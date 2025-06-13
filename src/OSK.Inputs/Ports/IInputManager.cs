@@ -106,5 +106,12 @@ public interface IInputManager
     Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, string controllerId, string schemeName,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Attempts to set the maximum number of users that the input system will allow locally
+    /// </summary>
+    /// <param name="maxLocalUsers">The total number of ussers the input system will allow locally</param>
+    /// <returns>An output that represents the outcome of the function</returns>
+    IOutput UpdateMaxLocalUsers(int maxLocalUsers);
+
     Task<InputActivationContext> ReadInputsAsync(InputReadOptions readOptions, CancellationToken cancellationToken = default);
 }

@@ -7,7 +7,7 @@ public class InputSystemConfiguration(IEnumerable<InputDefinition> inputDefiniti
 {
     public bool AllowCustomInputSchemes => allowCustomInputSchemes;
 
-    public int MaxLocalUsers => maxLocalUsers;
+    public int MaxLocalUsers { get; internal set; } = maxLocalUsers;
 
     public IReadOnlyCollection<InputControllerConfiguration> InputControllers { get; } = controllerConfigurations.ToArray();
 

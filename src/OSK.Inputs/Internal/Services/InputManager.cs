@@ -294,6 +294,21 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return _userLookup.Values;
     }
 
+    public IOutput UpdateMaxLocalUsers(int maxLocalUsers)
+    {
+        if (maxLocalUsers <= 0)
+        {
+            return outputFactory.Fail($"The maximum number of local users must be greater than or equal to 0, but was {maxLocalUsers}.");
+        }
+        if (maxLocalUsers < _userLookup.Count)
+        {
+            return outputFactory.Fail($"The maximum number of local users must be greater than or equal to the current number of users ({_userLookup.Count}), but was {maxLocalUsers}.");
+        }
+
+        Configuration.MaxLocalUsers = maxLocalUsers;
+        return outputFactory.Succeed();
+    }
+
     public async Task<InputActivationContext> ReadInputsAsync(InputReadOptions readOptions, CancellationToken cancellationToken = default)
     {
         CancellationToken[] cancellationTokens = readOptions.DeviceReadTime.HasValue && readOptions.DeviceReadTime > TimeSpan.Zero
