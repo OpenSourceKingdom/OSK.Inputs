@@ -284,6 +284,14 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         OnInputDeviceAdded(new ApplicationUserInputDeviceEvent(user, deviceIdentifier));
     }
 
+    public void UnpairDevice(InputDeviceIdentifier deviceIdentifier)
+    {
+        foreach (var user in _userLookup.Values)
+        {
+            user.RemoveInputDevice(deviceIdentifier);
+        }
+    }
+
     public IApplicationInputUser GetApplicationInputUser(int userId)
         => _userLookup.TryGetValue(userId, out var applicationInputUser)
             ? applicationInputUser
@@ -294,18 +302,30 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         return _userLookup.Values;
     }
 
-    public IOutput UpdateMaxLocalUsers(int maxLocalUsers)
+    public IOutput Reconfigure(Action<InputManagerRuntimeConfigurator> runtimeConfiguration)
     {
-        if (maxLocalUsers <= 0)
+        if (runtimeConfiguration is null)
         {
-            return outputFactory.Fail($"The maximum number of local users must be greater than or equal to 0, but was {maxLocalUsers}.");
-        }
-        if (maxLocalUsers < _userLookup.Count)
-        {
-            return outputFactory.Fail($"The maximum number of local users must be greater than or equal to the current number of users ({_userLookup.Count}), but was {maxLocalUsers}.");
+            throw new ArgumentNullException(nameof(runtimeConfiguration), "The runtime configuration action must be set to reconfigure the input manager.");
         }
 
-        Configuration.MaxLocalUsers = maxLocalUsers;
+        var configurator = new InputManagerRuntimeConfigurator();
+        runtimeConfiguration(configurator);
+
+        if (configurator.MaxLocalUsers is not null)
+        {
+            if (configurator.MaxLocalUsers <= 0)
+            {
+                return outputFactory.Fail($"Unable to set the maximum number of local users to {configurator.MaxLocalUsers} since it must be greater than 0.");
+            }
+            if (configurator.MaxLocalUsers < _userLookup.Count)
+            {
+                return outputFactory.Fail($"Unable to set the maximum number of local users to {configurator.MaxLocalUsers} since there are currently {_userLookup.Count} users joined.");
+            }
+
+            inputSystemConfiguration.MaxLocalUsers = configurator.MaxLocalUsers.Value;
+        }
+
         return outputFactory.Succeed();
     }
 

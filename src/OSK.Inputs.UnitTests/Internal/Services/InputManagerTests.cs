@@ -1136,27 +1136,33 @@ public class InputManagerTests
 
     #endregion
 
-    #region UpdateMaxLocalUsers
+    #region Reconfigure
+
+    [Fact]
+    public void Reconfigure_NullConfiguration_ThrowsArgumentNullException()
+    {
+        // Arrange/Act/Assert
+        Assert.Throws<ArgumentNullException>(() => _2UserManagerWithNoCustomSchemes.Reconfigure(null!));
+    }
 
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void UpdateMaxLocalUsers_SetToInvalidValue_Fails(int invalidValue)
+    public void Reconfigure_SetInvalidMaxLocalUsers_Fails(int invalidValue)
     {
         // Arrange
         var originalMax = _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers;
 
         // Act
-        var result = _2UserManagerWithNoCustomSchemes.UpdateMaxLocalUsers(invalidValue);
+        var result = _2UserManagerWithNoCustomSchemes.Reconfigure(configurator => configurator.SetMaxLocalUsers(invalidValue));
 
         // Assert
         Assert.False(result.IsSuccessful);
-        // Reset to original value
-        _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers = originalMax;
+        Assert.Equal(originalMax, _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers);
     }
 
     [Fact]
-    public async Task UpdateMaxLocalUsers_DecreaseBelowCurrentUserCount_Fails()
+    public async Task Reconfigure_DecreaseMaxLocalUsersBelowCurrentUserCount_Fails()
     {
         // Arrange
         var originalMax = _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers;
@@ -1170,48 +1176,55 @@ public class InputManagerTests
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(1, JoinUserOptions.Default);
         await _2UserManagerWithNoCustomSchemes.JoinUserAsync(2, JoinUserOptions.Default);
 
-        // Try to set max local users to 1 (less than current user count)
-        var result = _2UserManagerWithNoCustomSchemes.UpdateMaxLocalUsers(1);
+        // Act
+        var result = _2UserManagerWithNoCustomSchemes.Reconfigure(configurator => configurator.SetMaxLocalUsers(1));
 
         // Assert
         Assert.False(result.IsSuccessful);
-        // Reset to original value
-        _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers = originalMax;
+        Assert.Equal(originalMax, _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers);
     }
 
     [Fact]
-    public void UpdateMaxLocalUsers_SetToSameValue_Succeeds()
+    public void Reconfigure_SetSameMaxLocalUsers_Succeeds()
     {
         // Arrange
         var originalMax = _4UserManagerWithCustomSchemes.Configuration.MaxLocalUsers;
 
         // Act
-        var result = _4UserManagerWithCustomSchemes.UpdateMaxLocalUsers(originalMax);
+        var result = _4UserManagerWithCustomSchemes.Reconfigure(configurator => configurator.SetMaxLocalUsers(originalMax));
 
         // Assert
         Assert.True(result.IsSuccessful);
         Assert.Equal(originalMax, _4UserManagerWithCustomSchemes.Configuration.MaxLocalUsers);
-
-        // Reset to original value
-        _4UserManagerWithCustomSchemes.Configuration.MaxLocalUsers = originalMax;
     }
 
     [Fact]
-    public void UpdateMaxLocalUsers_IncreaseMaxLocalUsers_Succeeds()
+    public void Reconfigure_IncreaseMaxLocalUsers_Succeeds()
     {
         // Arrange
         var originalMax = _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers;
         var newMax = originalMax + 2;
 
         // Act
-        var result = _2UserManagerWithNoCustomSchemes.UpdateMaxLocalUsers(newMax);
+        var result = _2UserManagerWithNoCustomSchemes.Reconfigure(configurator => configurator.SetMaxLocalUsers(newMax));
 
         // Assert
         Assert.True(result.IsSuccessful);
         Assert.Equal(newMax, _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers);
+    }
 
-        // Reset to original value
-        _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers = originalMax;
+    [Fact]
+    public void Reconfigure_NoMaxLocalUsersSet_DoesNotChangeValueAndSucceeds()
+    {
+        // Arrange
+        var originalMax = _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers;
+
+        // Act
+        var result = _2UserManagerWithNoCustomSchemes.Reconfigure(_ => { });
+
+        // Assert
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(originalMax, _2UserManagerWithNoCustomSchemes.Configuration.MaxLocalUsers);
     }
 
     #endregion

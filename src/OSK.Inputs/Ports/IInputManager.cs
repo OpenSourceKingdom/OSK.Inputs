@@ -58,6 +58,12 @@ public interface IInputManager
     void PairDevice(int userId, InputDeviceIdentifier deviceIdentifier);
 
     /// <summary>
+    /// Unpairs a device from the input system and associated user
+    /// </summary>
+    /// <param name="deviceIdentifier">The device identifier that will be unpaired</param>
+    void UnpairDevice(InputDeviceIdentifier deviceIdentifier);
+
+    /// <summary>
     /// Gets all the users that have been joined to the input manager
     /// </summary>
     /// <returns>A collection of the input users attached to the input manager</returns>
@@ -107,11 +113,11 @@ public interface IInputManager
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Attempts to set the maximum number of users that the input system will allow locally
+    /// Attempts to reconfigure the input manager with a new configuration
     /// </summary>
-    /// <param name="maxLocalUsers">The total number of ussers the input system will allow locally</param>
-    /// <returns>An output that represents the outcome of the function</returns>
-    IOutput UpdateMaxLocalUsers(int maxLocalUsers);
+    /// <param name="configuration">The configuration action to apply to a new input configuration that the input manager will use/</param>
+    /// <returns>An output that represents the outcome of the configuration attempt</returns>
+    IOutput Reconfigure(Action<InputManagerRuntimeConfigurator> configuration);
 
     Task<InputActivationContext> ReadInputsAsync(InputReadOptions readOptions, CancellationToken cancellationToken = default);
 }
