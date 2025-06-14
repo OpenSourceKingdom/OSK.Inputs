@@ -284,6 +284,14 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
         OnInputDeviceAdded(new ApplicationUserInputDeviceEvent(user, deviceIdentifier));
     }
 
+    public void UnpairDevice(InputDeviceIdentifier deviceIdentifier)
+    {
+        foreach (var user in _userLookup.Values)
+        {
+            user.RemoveInputDevice(deviceIdentifier);
+        }
+    }
+
     public IApplicationInputUser GetApplicationInputUser(int userId)
         => _userLookup.TryGetValue(userId, out var applicationInputUser)
             ? applicationInputUser
@@ -292,6 +300,33 @@ internal class InputManager(InputSystemConfiguration inputSystemConfiguration, I
     public IEnumerable<IApplicationInputUser> GetApplicationInputUsers()
     {
         return _userLookup.Values;
+    }
+
+    public IOutput Reconfigure(Action<InputManagerRuntimeConfigurator> runtimeConfiguration)
+    {
+        if (runtimeConfiguration is null)
+        {
+            throw new ArgumentNullException(nameof(runtimeConfiguration), "The runtime configuration action must be set to reconfigure the input manager.");
+        }
+
+        var configurator = new InputManagerRuntimeConfigurator();
+        runtimeConfiguration(configurator);
+
+        if (configurator.MaxLocalUsers is not null)
+        {
+            if (configurator.MaxLocalUsers <= 0)
+            {
+                return outputFactory.Fail($"Unable to set the maximum number of local users to {configurator.MaxLocalUsers} since it must be greater than 0.");
+            }
+            if (configurator.MaxLocalUsers < _userLookup.Count)
+            {
+                return outputFactory.Fail($"Unable to set the maximum number of local users to {configurator.MaxLocalUsers} since there are currently {_userLookup.Count} users joined.");
+            }
+
+            inputSystemConfiguration.MaxLocalUsers = configurator.MaxLocalUsers.Value;
+        }
+
+        return outputFactory.Succeed();
     }
 
     public async Task<InputActivationContext> ReadInputsAsync(InputReadOptions readOptions, CancellationToken cancellationToken = default)

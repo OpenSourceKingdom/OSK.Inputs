@@ -79,6 +79,17 @@ internal class ApplicationInputUser(int userId, InputSystemConfiguration inputSy
         }
     }
 
+    public void RemoveInputDevice(InputDeviceIdentifier deviceIdentifier)
+    {
+        if (_userInputDeviceLookup.TryGetValue(deviceIdentifier.DeviceId, out var inputDevice)) 
+        {
+            _userInputDeviceLookup.Remove(deviceIdentifier.DeviceId);
+            inputDevice.Dispose();
+
+            SetActiveInputDefinition(ActiveInputDefinition, _inputControllers.Values.Select(controller => controller.InputScheme).ToArray());
+        }
+    }
+
     public void SetActiveInputDefinition(InputDefinition inputDefinition, IEnumerable<InputScheme> activeInputSchemes)
     {
         ActiveInputDefinition = inputDefinition;
