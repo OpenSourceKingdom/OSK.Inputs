@@ -58,6 +58,12 @@ public interface IInputManager
     void PairDevice(int userId, InputDeviceIdentifier deviceIdentifier);
 
     /// <summary>
+    /// Unpairs a device from the input system and associated user
+    /// </summary>
+    /// <param name="deviceIdentifier">The device identifier that will be unpaired</param>
+    void UnpairDevice(InputDeviceIdentifier deviceIdentifier);
+
+    /// <summary>
     /// Gets all the users that have been joined to the input manager
     /// </summary>
     /// <returns>A collection of the input users attached to the input manager</returns>
@@ -105,6 +111,13 @@ public interface IInputManager
     Task<IOutput<InputScheme>> SaveCustomInputSchemeAsync(InputScheme inputScheme, CancellationToken cancellationToken = default);
     Task<IOutput> DeleteCustomInputSchemeAsync(string inputDefinitionName, string controllerId, string schemeName,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Attempts to reconfigure the input manager with a new configuration
+    /// </summary>
+    /// <param name="configuration">The configuration action to apply to a new input configuration that the input manager will use/</param>
+    /// <returns>An output that represents the outcome of the configuration attempt</returns>
+    IOutput Reconfigure(Action<InputManagerRuntimeConfigurator> configuration);
 
     Task<InputActivationContext> ReadInputsAsync(InputReadOptions readOptions, CancellationToken cancellationToken = default);
 }

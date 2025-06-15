@@ -16,9 +16,12 @@ public static class ServiceCollectionExtensions
         }
 
         services.TryAddTransient<IInputDefinitionBuilder, InputDefinitionBuilder>();
-        services.TryAddTransient<IInputManager, InputManager>();
         services.TryAddTransient<IInputReaderProvider, DefaultInputReaderProvider>();
         services.TryAddTransient<IInputValidationService, InputValidationService>();
+
+        // Making a singleton so that we don't lose the user information and data whenever
+        // an input system object is request from the DI container
+        services.TryAddSingleton<IInputManager, InputManager>();
 
         var builder = new InputSystemBuilder(services);
         builderConfiguration(builder);
