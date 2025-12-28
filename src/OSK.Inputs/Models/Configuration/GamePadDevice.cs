@@ -21,9 +21,9 @@ public abstract class GamePadDevice(InputDeviceName inputControllerName, Type in
     public static readonly GamePadButtonInput Triangle = new GamePadButtonInput(15, "Triangle");
     public static readonly GamePadButtonInput Circle = new GamePadButtonInput(16, "Circle");
 
-    public static readonly GamePadButtonInput RightTrigger = new GamePadButtonInput(30, "Right Trigger");
+    public static readonly GamePadTriggerInput RightTrigger = new GamePadTriggerInput(30, "Right Trigger");
     public static readonly GamePadButtonInput RightBumper = new GamePadButtonInput(31, "Right Bumper");
-    public static readonly GamePadButtonInput LeftTrigger = new GamePadButtonInput(32, "Left Trigger");
+    public static readonly GamePadTriggerInput LeftTrigger = new GamePadTriggerInput(32, "Left Trigger");
     public static readonly GamePadButtonInput LeftBumper = new GamePadButtonInput(33, "Left Bumper");
 
     public static readonly GamePadButtonInput DpadLeft = new GamePadButtonInput(40, "Dpad Left");
