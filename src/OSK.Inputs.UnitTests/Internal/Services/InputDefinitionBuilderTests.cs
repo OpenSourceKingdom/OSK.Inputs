@@ -3,6 +3,7 @@ using Moq;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models.Configuration;
 using OSK.Inputs.Models.Inputs;
+using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
 
 namespace OSK.Inputs.UnitTests.Internal.Services;
@@ -154,6 +155,24 @@ public class InputDefinitionBuilderTests
         Assert.Contains(action2, definition.InputActions);
 
         Assert.Equal(3, definition.InputSchemes.Count());
+    }
+
+    [Fact]
+    public void Build_TestRegistrationService_Valid_ReturnsInputDefinition()
+    {
+        // Arrange
+        _builder.RegisterActions<TestRegistrationService>();
+
+        // Act
+        var definition = _builder.Build();
+
+        // Assert
+        Assert.NotNull(definition);
+
+        Assert.Equal(2, definition.InputActions.Count);
+
+        Assert.True(definition.InputActions.Count(action => nameof(TestRegistrationService.ValidMethodA).Equals(action.ActionKey)) == 1);
+        Assert.True(definition.InputActions.Count(action => "SpecialAction".Equals(action.ActionKey)) == 1);
     }
 
     #endregion
