@@ -1,6 +1,12 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using OSK.Functions.Outputs.Logging;
+using OSK.Functions.Outputs.Logging.Abstractions;
+using OSK.Inputs.Abstractions;
+using OSK.Inputs.Internal;
+using OSK.Inputs.Internal.Models;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Ports;
 
@@ -8,25 +14,30 @@ namespace OSK.Inputs;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInputs(this IServiceCollection services, Action<IInputSystemBuilder> builderConfiguration)
+    extension(IServiceCollection services)
     {
-        if (builderConfiguration is null)
+        public IServiceCollection AddInputs()
         {
-            throw new ArgumentNullException(nameof(builderConfiguration));
+            services.AddLoggingFunctionOutputs();
+
+            services.TryAddScoped<IInputProcessor, InputProcessor>();
+            services.TryAddScoped<IInputUserManager, InputUserManager>();
+            services.TryAddScoped<IInputSystem, InputSystem>();
+            services.TryAddScoped<IInputNotificationPublisher, InputNotificationPublisher>();
+            services.TryAddScoped<IInputSystemNotifier>(provider
+                => provider.GetRequiredService<IInputNotificationPublisher>());
+
+            services.TryAddSingleton<IInputConfigurationProvider>(serviceProvider =>
+            {
+                var configurationBuilder = serviceProvider.GetRequiredService<IInputSystemConfigurationBuilder>();
+                var schemeRepository = serviceProvider.GetService<IInputSchemeRepository>() 
+                    ?? new InMemorySchemeRepository(serviceProvider.GetRequiredService<IOutputFactory<InMemorySchemeRepository>>());
+
+                return ActivatorUtilities.CreateInstance<InputConfigurationProvider>(serviceProvider,
+                    configurationBuilder.Build(), schemeRepository, Enumerable.Empty<InputUser>());
+            });
+
+            return services; 
         }
-
-        services.TryAddTransient<IInputDefinitionBuilder, InputDefinitionBuilder>();
-        services.TryAddTransient<IInputReaderProvider, DefaultInputReaderProvider>();
-        services.TryAddTransient<IInputValidationService, InputValidationService>();
-
-        // Making a singleton so that we don't lose the user information and data whenever
-        // an input system object is request from the DI container
-        services.TryAddSingleton<IInputManager, InputManager>();
-
-        var builder = new InputSystemBuilder(services);
-        builderConfiguration(builder);
-        builder.ApplyInputSystemConfiguration();
-
-        return services;
-     }
+    }
 }

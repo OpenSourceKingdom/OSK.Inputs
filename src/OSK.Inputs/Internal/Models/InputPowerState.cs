@@ -1,0 +1,13 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using OSK.Inputs.Abstractions;
+
+namespace OSK.Inputs.Internal.Models;
+
+internal class InputPowerState: DeviceInputState
+{
+    public int TapCount { get; set; }
+
+    public required InputPower[] InputPowers { get; set; }
+}

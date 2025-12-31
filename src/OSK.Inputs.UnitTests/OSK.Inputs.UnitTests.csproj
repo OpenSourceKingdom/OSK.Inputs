@@ -25,4 +25,9 @@
 	  <ProjectReference Include="..\OSK.Inputs\OSK.Inputs.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Internal\Services\" />
+	  <Folder Include="_Helpers\" />
+	</ItemGroup>
+
 </Project>
