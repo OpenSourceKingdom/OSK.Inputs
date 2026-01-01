@@ -7,26 +7,30 @@ internal class InputNotificationPublisher : IInputNotificationPublisher
 {
     #region IInputNotificationPublisher
 
-    public event Action<InputDeviceNotification> OnDeviceEvent = delegate { };
-    public event Action<InputUserNotification> OnUserEvent = delegate { };
+    public event Action<InputDeviceNotification> OnDeviceNotification = delegate { };
+    public event Action<InputUserNotification> OnUserNotification = delegate { };
+    public event Action<InputSystemNotification> OnSystemNotification = delegate { };
 
-    public void Notify(IInputSystemNotification inputSystemEvent)
+    public void Notify(IInputNotification notification)
     {
-        if (inputSystemEvent is null)
+        if (notification is null)
         {
-            throw new ArgumentNullException(nameof(inputSystemEvent));
+            throw new ArgumentNullException(nameof(notification));
         }
 
-        switch (inputSystemEvent)
+        switch (notification)
         {
-            case InputDeviceNotification deviceEvent:
-                OnDeviceEvent(deviceEvent);
+            case InputDeviceNotification deviceNotification:
+                OnDeviceNotification(deviceNotification);
                 break;
-            case InputUserNotification userEvent:
-                OnUserEvent(userEvent);
+            case InputUserNotification userNotification:
+                OnUserNotification(userNotification);
+                break;            
+            case InputSystemNotification systemNotification:
+                OnSystemNotification(systemNotification);
                 break;
             default:
-                throw new InvalidOperationException($"The notifier was not configured to publish an event of type '{inputSystemEvent.GetType().FullName}'.");
+                throw new InvalidOperationException($"The notifier was not configured to publish an event of type '{notification.GetType().FullName}'.");
         }
     }
 

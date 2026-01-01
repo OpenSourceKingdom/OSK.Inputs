@@ -15,7 +15,7 @@ internal class InMemorySchemeRepository(IOutputFactory<InMemorySchemeRepository>
 {
     #region Variables
 
-    private readonly Dictionary<int, List<PreferredInputScheme>> _preferredSchemeLookup = [];
+    internal readonly Dictionary<int, List<PreferredInputScheme>> _preferredSchemeLookup = [];
 
     #endregion
 
@@ -30,8 +30,7 @@ internal class InMemorySchemeRepository(IOutputFactory<InMemorySchemeRepository>
             schemes = [];
         }
 
-        _preferredSchemeLookup[scheme.UserId] = schemes.Where(s => !s.DefinitionName.Equals(scheme.DefinitionName, StringComparison.OrdinalIgnoreCase) 
-                    || !s.SchemeName.Equals(scheme.SchemeName, StringComparison.OrdinalIgnoreCase))
+        _preferredSchemeLookup[scheme.UserId] = schemes.Where(s => !s.DefinitionName.Equals(scheme.DefinitionName, StringComparison.OrdinalIgnoreCase))
                     .Append(scheme)
                     .ToList();
 

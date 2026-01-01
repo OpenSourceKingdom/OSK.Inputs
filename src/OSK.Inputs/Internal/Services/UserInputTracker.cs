@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
@@ -11,7 +10,7 @@ using OSK.Inputs.Internal.Models;
 namespace OSK.Inputs.Internal;
 
 internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, InputSchemeActionMap schemeMap, 
-    InputProcessorConfiguration processorConfiguration, ILogger<UserInputTracker> logger)
+    InputProcessorConfiguration processorConfiguration, ILogger<UserInputTracker> logger): IUserInputTracker
 {
     #region Variables
 
@@ -24,11 +23,13 @@ internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, In
 
     #endregion
 
-    #region Api
+    #region IUserInputTracker
 
     public ActiveInputScheme ActiveScheme => scheme;
 
-    public IEnumerable<TriggeredActionEvent> Process(TimeSpan deltaTime)
+    public int UserId => userId;
+
+    public IEnumerable<TriggeredActionEvent> Update(TimeSpan deltaTime)
     {
         var removalDelay = processorConfiguration.TapActivationTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
 

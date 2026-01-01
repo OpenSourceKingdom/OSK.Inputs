@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
+﻿using System.Numerics;
 using OSK.Inputs.Abstractions.Configuration;
 
 namespace OSK.Inputs.Abstractions.Runtime;

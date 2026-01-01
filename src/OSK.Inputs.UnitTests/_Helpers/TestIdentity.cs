@@ -1,6 +1,6 @@
 ﻿using OSK.Inputs.Abstractions.Configuration;
 
-namespace OSK.Inputs.Abstractions.UnitTests._Helpers;
+namespace OSK.Inputs.UnitTests._Helpers;
 
 public class TestIdentity
 {

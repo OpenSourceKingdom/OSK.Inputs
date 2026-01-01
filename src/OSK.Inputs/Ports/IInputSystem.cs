@@ -20,7 +20,7 @@ public interface IInputSystem
 
     bool PausedInput { get; }
 
-    void Pause(bool pause);
+    void ToggleInputProcessing(bool pause);
 
     Task InitializeAsync(CancellationToken cancellationToken = default);
 

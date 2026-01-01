@@ -6,29 +6,36 @@ using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Ports;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Notifications;
 
 namespace OSK.Inputs.Internal.Services;
 
 internal class InputSystem(IInputConfigurationProvider configurationProvider, IInputUserManager userManager,
-    IInputProcessor inputProcessor, IInputSystemNotifier notifier, IInputSchemeRepository schemeRepository,
+    IInputProcessor inputProcessor, IInputNotificationPublisher notificationPublisher, IInputSchemeRepository schemeRepository,
     IOutputFactory<InputSystem> outputFactory) : IInputSystem
 {
     #region IInputSystem
 
     public InputSystemConfiguration Configuration => configurationProvider.Configuration;
 
-    public IInputSystemNotifier Notifier => notifier;
+    public IInputSystemNotifier Notifier => notificationPublisher;
 
     public IInputUserManager UserManager => userManager;
 
     public bool AllowCustomSchemes => schemeRepository.AllowCustomSchemes;
 
-    public bool PausedInput { get; private set; }
+    public bool PausedInput { get; internal set; }
 
-    public void Pause(bool pause)
+    public void ToggleInputProcessing(bool pause)
     {
+        if (pause == PausedInput)
+        {
+            return;
+        }
+
         PausedInput = pause;
-        inputProcessor.Pause(pause);
+        inputProcessor.ToggleInputProcessing(pause);
+        notificationPublisher.Notify(new InputProcessingStateChangedNotification(!pause));
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -77,14 +84,14 @@ internal class InputSystem(IInputConfigurationProvider configurationProvider, II
         return await schemeRepository.SaveCustomInputScheme(scheme, cancellationToken);
     }
 
-    public async Task<IOutput> SaveCustomInputSchemeAsync(CustomInputScheme scheme, CancellationToken cancellationToken = default)
-    {
-        return await schemeRepository.SaveCustomInputScheme(scheme, cancellationToken);
-    }
-
     public void Update(TimeSpan deltaTime)
     {
-        inputProcessor.ProcessInputs(deltaTime);
+        if (PausedInput)
+        {
+            return;
+        }
+
+        inputProcessor.Update(deltaTime);
     }
 
     #endregion

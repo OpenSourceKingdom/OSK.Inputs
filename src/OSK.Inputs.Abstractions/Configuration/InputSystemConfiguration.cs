@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Configuration;

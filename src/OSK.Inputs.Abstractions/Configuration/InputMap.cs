@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace OSK.Inputs.Abstractions.Configuration;
+﻿namespace OSK.Inputs.Abstractions.Configuration;
 
 public readonly struct InputMap
 {

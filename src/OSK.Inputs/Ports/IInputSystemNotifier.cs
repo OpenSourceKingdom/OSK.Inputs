@@ -7,6 +7,7 @@ namespace OSK.Inputs.Ports;
 [HexagonalIntegration(HexagonalIntegrationType.LibraryProvided)]
 public interface IInputSystemNotifier
 {
-    event Action<InputDeviceNotification> OnDeviceEvent;
-    event Action<InputUserNotification> OnUserEvent;
+    event Action<InputDeviceNotification> OnDeviceNotification;
+    event Action<InputUserNotification> OnUserNotification;
+    event Action<InputSystemNotification> OnSystemNotification;
 }

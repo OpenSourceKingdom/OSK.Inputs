@@ -5,5 +5,5 @@ namespace OSK.Inputs.Internal;
 
 internal interface IInputNotificationPublisher: IInputSystemNotifier
 {
-    void Notify(IInputSystemNotification inputSystemEvent);
+    void Notify(IInputNotification inputNotification);
 }

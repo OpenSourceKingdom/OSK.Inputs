@@ -8,9 +8,9 @@ namespace OSK.Inputs.Abstractions;
 [HexagonalIntegration(HexagonalIntegrationType.LibraryProvided)]
 public interface IInputProcessor
 {
-    void Pause(bool pause);
+    void ToggleInputProcessing(bool pause);
 
-    void ProcessInputs(TimeSpan deltaTime);
+    void Update(TimeSpan deltaTime);
 
     void ProcessEvent(InputEvent inputEvent);
 
