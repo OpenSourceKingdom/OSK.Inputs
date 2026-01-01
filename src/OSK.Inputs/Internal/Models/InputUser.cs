@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using OSK.Inputs.Abstractions;
+using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 

@@ -33,8 +33,7 @@ public static class ServiceCollectionExtensions
                 var schemeRepository = serviceProvider.GetService<IInputSchemeRepository>() 
                     ?? new InMemorySchemeRepository(serviceProvider.GetRequiredService<IOutputFactory<InMemorySchemeRepository>>());
 
-                return ActivatorUtilities.CreateInstance<InputConfigurationProvider>(serviceProvider,
-                    configurationBuilder.Build(), schemeRepository, Enumerable.Empty<InputUser>());
+                return ActivatorUtilities.CreateInstance<InputConfigurationProvider>(serviceProvider, configurationBuilder.Build());
             });
 
             return services; 

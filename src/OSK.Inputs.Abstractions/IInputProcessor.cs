@@ -1,6 +1,7 @@
 ﻿using System;
 using OSK.Hexagonal.MetaData;
-using OSK.Inputs.Abstractions.Events;
+using OSK.Inputs.Abstractions.Runtime;
+using OSK.Inputs.Abstractions.Notifications;
 
 namespace OSK.Inputs.Abstractions;
 
@@ -11,7 +12,7 @@ public interface IInputProcessor
 
     void ProcessInputs(TimeSpan deltaTime);
 
-    void ProcessActivation(InputActivation activation);
+    void ProcessEvent(InputEvent inputEvent);
 
-    void HandleDeviceEvent(DeviceStateChangedEvent deviceEvent);
+    void HandleDeviceNotification(DeviceStateChangedNotification notification);
 }

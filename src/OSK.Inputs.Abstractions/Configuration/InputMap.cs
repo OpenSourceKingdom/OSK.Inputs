@@ -6,9 +6,9 @@ public readonly struct InputMap
 {
     #region Variables
 
-    public int InputId { get; init; }
+    public required int InputId { get; init; }
 
-    public string ActionName { get; init; }
+    public required string ActionName { get; init; }
 
     #endregion
 }

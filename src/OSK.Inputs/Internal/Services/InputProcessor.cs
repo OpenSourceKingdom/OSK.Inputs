@@ -3,12 +3,13 @@ using Microsoft.Extensions.Logging;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Ports;
 using System.Collections.Generic;
-using OSK.Inputs.Abstractions.Events;
 using System.Linq;
 using OSK.Inputs.Options;
 using OSK.Inputs.Abstractions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OSK.Inputs.Internal.Models;
+using OSK.Inputs.Abstractions.Runtime;
+using OSK.Inputs.Abstractions.Notifications;
 
 namespace OSK.Inputs.Internal.Services;
 
@@ -57,25 +58,25 @@ internal partial class InputProcessor: IInputProcessor
 
         foreach (var inputTracker in _userInputTrackerLookup.Values)
         {
-            var triggeredActivations = inputTracker.Process(deltaTime);
-            foreach (var triggeredActivation in triggeredActivations)
+            var triggeredActions = inputTracker.Process(deltaTime);
+            foreach (var triggeredAction in triggeredActions)
             {
-                triggeredActivation.ActionMap.Action.Execute(triggeredActivation.ActivationContext);
+                triggeredAction.Execute();
             }
         }
     }
 
-    public void ProcessActivation(InputActivation activation)
+    public void ProcessEvent(InputEvent inputEvent)
     {
-        if (activation is null)
+        if (inputEvent is null)
         {
-            throw new ArgumentNullException(nameof(activation));
+            throw new ArgumentNullException(nameof(inputEvent));
         }
         if (_paused)
         {
             return;
         }
-        if (activation is not DeviceInputActivation deviceInputActivation)
+        if (inputEvent is not PhysicalInputEvent deviceInputActivation)
         {
             return;
         }
@@ -84,7 +85,7 @@ internal partial class InputProcessor: IInputProcessor
         if (inputUser is null)
         {
             LogNoInputUserForDeviceWarning(_logger, deviceInputActivation.DeviceIdentifier.Identity);
-            _notificationPublisher.Notify(new UnrecognizedDeviceEvent(deviceInputActivation.DeviceIdentifier));
+            _notificationPublisher.Notify(new UnrecognizedDeviceNotification(deviceInputActivation.DeviceIdentifier));
             return;
         }
 
@@ -93,10 +94,10 @@ internal partial class InputProcessor: IInputProcessor
             inputTracker = CreateTracker(_configurationProvider.Configuration, inputUser.ActiveScheme);
         }
 
-        var triggeredActivation = inputTracker.Track(activation);
-        if (triggeredActivation is not null)
+        var triggeredAction = inputTracker.Track(inputEvent);
+        if (triggeredAction is not null)
         {
-            triggeredActivation.Value.ActionMap.Action.Execute(triggeredActivation.Value.ActivationContext);
+            triggeredAction.Value.Execute();
         }
     }
 
@@ -105,25 +106,25 @@ internal partial class InputProcessor: IInputProcessor
         _paused = pause;
     }
 
-    public void HandleDeviceEvent(DeviceStateChangedEvent deviceEvent)
+    public void HandleDeviceNotification(DeviceStateChangedNotification deviceNotification)
     {
-        if (deviceEvent is null)
+        if (deviceNotification is null)
         {
-            throw new ArgumentNullException(nameof(deviceEvent));
+            throw new ArgumentNullException(nameof(deviceNotification));
         }
 
-        var user = _userManager.GetInputUserForDevice(deviceEvent.DeviceIdentifier.DeviceId);
+        var user = _userManager.GetInputUserForDevice(deviceNotification.DeviceIdentifier.DeviceId);
         if (user is null)
         {
-            _notificationPublisher.Notify(deviceEvent);
+            _notificationPublisher.Notify(deviceNotification);
         }
         else
         {
-            var device = user.GetDevice(deviceEvent.DeviceIdentifier.DeviceId);
-            var deviceEventType = deviceEvent.Status is DeviceStatus.Disconnected 
-                ? DeviceEventType.Disconnected 
-                : DeviceEventType.Connected;
-            _notificationPublisher.Notify(new UserDeviceEvent(user.Id, deviceEvent.DeviceIdentifier, deviceEventType));
+            var device = user.GetDevice(deviceNotification.DeviceIdentifier.DeviceId);
+            UserDeviceNotification userDeviceNotification = deviceNotification.Status is DeviceStatus.Disconnected 
+                ? new UserDeviceDisconnectedNotification(user.Id, deviceNotification.DeviceIdentifier) 
+                : new UserDeviceConnectedNotification(user.Id, deviceNotification.DeviceIdentifier);
+            _notificationPublisher.Notify(userDeviceNotification);
         }
     }
 
@@ -183,17 +184,17 @@ internal partial class InputProcessor: IInputProcessor
         return targetUser;
     }
 
-    private void HandleUserEvent(InputUserEvent userEvent)
+    private void HandleUserEvent(InputUserNotification userEvent)
     {
         switch (userEvent)
         {
-            case InputUserSchemeChangeEvent schemeChangeEvent:
+            case InputUserSchemeChangeNotification schemeChangeEvent:
                 _userInputTrackerLookup[schemeChangeEvent.UserId] = CreateTracker(_configurationProvider.Configuration, schemeChangeEvent.NewScheme);
                 break;
-            case InputUserJoinedEvent userJoinedEvent:
+            case InputUserJoinedNotification userJoinedEvent:
                 _userInputTrackerLookup[userJoinedEvent.UserId] = CreateTracker(_configurationProvider.Configuration, userJoinedEvent.User.ActiveScheme);
                 break;
-            case InputUserRemovedEvent userRemovedEvent:
+            case InputUserRemovedNotification userRemovedEvent:
                 _userInputTrackerLookup.Remove(userRemovedEvent.UserId);
                 break;
         }

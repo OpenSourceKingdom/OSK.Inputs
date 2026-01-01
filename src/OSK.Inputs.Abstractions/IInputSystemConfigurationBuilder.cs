@@ -2,6 +2,7 @@
 
 namespace OSK.Inputs.Abstractions;
 
+
 public interface IInputSystemConfigurationBuilder
 {
     InputSystemConfiguration Build();

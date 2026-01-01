@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSK.Inputs.UnitTests", "OSK
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSK.Inputs.Abstractions", "OSK.Inputs.Abstractions\OSK.Inputs.Abstractions.csproj", "{32D6EDA0-92AD-48C1-A00D-13895304B9AF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSK.Inputs.Abstractions.UnitTests", "OSK.Inputs.Abstractions.UnitTests\OSK.Inputs.Abstractions.UnitTests.csproj", "{DCD7D81F-BE9D-4DDD-B8FF-2371BCCB4E36}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{32D6EDA0-92AD-48C1-A00D-13895304B9AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{32D6EDA0-92AD-48C1-A00D-13895304B9AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{32D6EDA0-92AD-48C1-A00D-13895304B9AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCD7D81F-BE9D-4DDD-B8FF-2371BCCB4E36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCD7D81F-BE9D-4DDD-B8FF-2371BCCB4E36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCD7D81F-BE9D-4DDD-B8FF-2371BCCB4E36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCD7D81F-BE9D-4DDD-B8FF-2371BCCB4E36}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

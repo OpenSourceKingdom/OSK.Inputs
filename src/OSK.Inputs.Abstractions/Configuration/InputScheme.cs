@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
-public class InputScheme(string name, IEnumerable<VirtualInput> virtualInputs, IEnumerable<InputDeviceMap> deviceMaps,
+public class InputScheme(string name, IEnumerable<InputDeviceMap> deviceMaps,
     bool isDefault, bool isCustom)
 {
     #region Variables
@@ -19,8 +20,6 @@ public class InputScheme(string name, IEnumerable<VirtualInput> virtualInputs, I
     public bool IsCustom => isCustom;
 
     public bool IsDefault => isDefault;
-
-    public IReadOnlyCollection<VirtualInput> VirtualInputs { get; } = [.. virtualInputs];
 
     public IReadOnlyCollection<InputDeviceMap> DeviceMaps => _deviceMapLookup.Values;
 

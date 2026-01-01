@@ -3,6 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Hexagonal.MetaData;
+using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Abstractions;
 

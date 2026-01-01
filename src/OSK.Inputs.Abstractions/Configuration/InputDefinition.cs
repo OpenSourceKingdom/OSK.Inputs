@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace OSK.Inputs.Abstractions.Configuration;
@@ -48,10 +49,16 @@ public class InputDefinition(string name, IEnumerable<InputScheme> schemes, IEnu
         {
             return;
         }
+        if (string.IsNullOrWhiteSpace(scheme.DefinitionName)
+            || !scheme.DefinitionName.Equals(Name, StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(scheme.Name))
+        {
+            return;
+        }
 
         if (!_schemeLookup.TryGetValue(scheme.Name, out var currentScheme) || currentScheme.IsCustom)
         {
-            _schemeLookup[scheme.Name] = currentScheme;
+            _schemeLookup[scheme.Name] = new InputScheme(scheme.Name, scheme.DeviceMaps, false, true);
         }
     }
 

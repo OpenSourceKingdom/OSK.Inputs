@@ -1,15 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
-public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> deviceDescriptors, IEnumerable<InputDefinition> definitions,
-    InputProcessorConfiguration processorConfiguration, JoinPolicy joinPolicy)
+public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> deviceSpecifications, IEnumerable<InputDefinition> definitions,
+    InputProcessorConfiguration processorConfiguration, InputSystemJoinPolicy joinPolicy)
 {
     #region Variables
 
-    private readonly Dictionary<InputDeviceIdentity, InputDeviceSpecification> _deviceDescriptorLookup = deviceDescriptors.ToDictionary(descriptor => descriptor.DeviceIdentity);
+    private readonly Dictionary<InputDeviceIdentity, InputDeviceSpecification> _deviceSpecificationLookup = deviceSpecifications.ToDictionary(descriptor => descriptor.DeviceIdentity);
     private readonly Dictionary<string, InputDefinition> _inputDefinitionLookup = definitions.ToDictionary(definition => definition.Name);
 
     #endregion
@@ -18,7 +19,7 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
 
     public InputProcessorConfiguration ProcessorConfiguration => processorConfiguration;
 
-    public JoinPolicy JoinPolicy => joinPolicy;
+    public InputSystemJoinPolicy JoinPolicy => joinPolicy;
 
     public IReadOnlyCollection<InputDeviceCombination> SupportedDeviceCombinations { get; }
         = GetUniqueCombinations(definitions);
@@ -26,9 +27,9 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
     public IReadOnlyCollection<InputDefinition> Definitions
         => _inputDefinitionLookup.Values;
 
-    public InputDeviceSpecification? GetDeviceDescriptor(InputDeviceIdentity deviceName)
-        => _deviceDescriptorLookup.TryGetValue(deviceName, out var descriptor)
-            ? descriptor
+    public InputDeviceSpecification? GetDeviceSpecification(InputDeviceIdentity deviceName)
+        => _deviceSpecificationLookup.TryGetValue(deviceName, out var specification)
+            ? specification
             : null;
     
     public InputDefinition? GetDefinition(string definitionName)
@@ -50,10 +51,10 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
             return null;
         }
 
-        var deviceMaps = scheme.DeviceMaps.Where(deviceMap => _deviceDescriptorLookup.TryGetValue(deviceMap.DeviceIdentity, out _))
+        var deviceMaps = scheme.DeviceMaps.Where(deviceMap => _deviceSpecificationLookup.TryGetValue(deviceMap.DeviceIdentity, out _))
                 .Select(deviceMap =>
                 {
-                    var requiredInputs = _deviceDescriptorLookup[deviceMap.DeviceIdentity].Inputs.Select(input =>
+                    var actionMaps = _deviceSpecificationLookup[deviceMap.DeviceIdentity].Inputs.Select(input =>
                     {
                         var inputMap = deviceMap.GetInputMap(input.Id);
                         var action = inputMap is null
@@ -62,13 +63,20 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
 
                     return inputMap is null || action is null
                             ? null
-                            : new InputActionMap() { Input = input, Map = inputMap.Value, Action = action };
-                    }).Where(inputMap => inputMap is not null).Cast<InputActionMap>() ?? [];
+                            : new DeviceInputActionMap() 
+                            { 
+                                Input = input,
+                                Action = action,
+                                LinkedInputIds = input is CombinationInput combinationInput
+                                    ? [.. combinationInput.DeviceInputs.Select(i => i.Id)]
+                                    : []
+                            };
+                    }).Where(inputMap => inputMap is not null).Cast<DeviceInputActionMap>() ?? [];
 
-                    return new DeviceSchemeActionMap(deviceMap.DeviceIdentity, requiredInputs);
+                    return new DeviceSchemeActionMap(deviceMap.DeviceIdentity, actionMaps);
                 });
 
-        return new InputSchemeActionMap(scheme.VirtualInputs, deviceMaps);
+        return new InputSchemeActionMap(deviceMaps);
     }
 
     public void ApplyCustomInputSchemes(IEnumerable<CustomInputScheme> customSchemes)

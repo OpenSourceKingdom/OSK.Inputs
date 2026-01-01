@@ -13,9 +13,9 @@ public class InputDeviceMap
 
     #region Api
 
-    public InputDeviceIdentity DeviceIdentity { get; init; }
+    public required InputDeviceIdentity DeviceIdentity { get; init; }
 
-    public IReadOnlyCollection<InputMap> InputMaps 
+    public required IReadOnlyCollection<InputMap> InputMaps 
     {
         get => _inputMapLookup.Values;
         init

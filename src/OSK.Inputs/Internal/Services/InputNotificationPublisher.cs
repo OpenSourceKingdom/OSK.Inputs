@@ -1,5 +1,5 @@
 ﻿using System;
-using OSK.Inputs.Abstractions.Events;
+using OSK.Inputs.Abstractions.Notifications;
 
 namespace OSK.Inputs.Internal.Services;
 
@@ -7,10 +7,10 @@ internal class InputNotificationPublisher : IInputNotificationPublisher
 {
     #region IInputNotificationPublisher
 
-    public event Action<InputDeviceEvent> OnDeviceEvent = delegate { };
-    public event Action<InputUserEvent> OnUserEvent = delegate { };
+    public event Action<InputDeviceNotification> OnDeviceEvent = delegate { };
+    public event Action<InputUserNotification> OnUserEvent = delegate { };
 
-    public void Notify(IInputSystemEvent inputSystemEvent)
+    public void Notify(IInputSystemNotification inputSystemEvent)
     {
         if (inputSystemEvent is null)
         {
@@ -19,10 +19,10 @@ internal class InputNotificationPublisher : IInputNotificationPublisher
 
         switch (inputSystemEvent)
         {
-            case InputDeviceEvent deviceEvent:
+            case InputDeviceNotification deviceEvent:
                 OnDeviceEvent(deviceEvent);
                 break;
-            case InputUserEvent userEvent:
+            case InputUserNotification userEvent:
                 OnUserEvent(userEvent);
                 break;
             default:

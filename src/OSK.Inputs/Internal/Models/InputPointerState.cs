@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
-using OSK.Inputs.Abstractions;
+using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 

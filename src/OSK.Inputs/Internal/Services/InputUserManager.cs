@@ -7,11 +7,12 @@ using Microsoft.Extensions.Logging;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
-using OSK.Inputs.Abstractions.Events;
 using OSK.Inputs.Options;
 using OSK.Inputs.Ports;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Internal.Models;
+using OSK.Inputs.Abstractions.Runtime;
+using OSK.Inputs.Abstractions.Notifications;
 
 namespace OSK.Inputs.Internal.Services;
 
@@ -58,12 +59,12 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         var activeScheme = GetActiveScheme(newUserId, inputDefinition);
         _users[newUserId] = new InputUser(newUserId, activeScheme);
 
-        notificationPublisher.Notify(new InputUserJoinedEvent(_users[newUserId]));
+        notificationPublisher.Notify(new InputUserJoinedNotification(_users[newUserId]));
 
         foreach (var device in devicesToPair)
         {
             _users[newUserId].AddDevice(device);
-            notificationPublisher.Notify(new UserDeviceEvent(newUserId, device, DeviceEventType.Paired));
+            notificationPublisher.Notify(new DevicePairedNotification(newUserId, device));
         }
 
         return outputFactory.Succeed((IInputUser)_users[newUserId]);
@@ -104,7 +105,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
     {
         if (_users.Remove(userId))
         {
-            notificationPublisher.Notify(new InputUserRemovedEvent(userId));
+            notificationPublisher.Notify(new InputUserRemovedNotification(userId));
         }
     }
 
@@ -137,7 +138,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         var pairedDevice = user.RemoveDevice(deviceId);
         if (pairedDevice is not null)
         {
-            notificationPublisher.Notify(new UserDeviceEvent(userId, pairedDevice.DeviceIdentifier, DeviceEventType.Unpaired));
+            notificationPublisher.Notify(new DeviceUnpairedNotification(userId, pairedDevice.DeviceIdentifier));
         }
     }
 

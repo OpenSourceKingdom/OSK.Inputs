@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
+using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Services;
 

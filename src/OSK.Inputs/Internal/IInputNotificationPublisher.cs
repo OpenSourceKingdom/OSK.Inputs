@@ -1,9 +1,9 @@
-﻿using OSK.Inputs.Abstractions.Events;
-using OSK.Inputs.Ports;
+﻿using OSK.Inputs.Ports;
+using OSK.Inputs.Abstractions.Notifications;
 
 namespace OSK.Inputs.Internal;
 
 internal interface IInputNotificationPublisher: IInputSystemNotifier
 {
-    void Notify(IInputSystemEvent inputSystemEvent);
+    void Notify(IInputSystemNotification inputSystemEvent);
 }

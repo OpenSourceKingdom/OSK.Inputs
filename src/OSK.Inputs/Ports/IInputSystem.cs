@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Hexagonal.MetaData;
-using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 
 namespace OSK.Inputs.Ports;
