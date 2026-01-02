@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Hexagonal.MetaData;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Models;
 
 namespace OSK.Inputs.Ports;
 
@@ -26,7 +27,7 @@ public interface IInputSystem
 
     Task<IOutput> DeleteCustomSchemeAsync(string definitionName, string schemeName, CancellationToken cancellationToken = default);
 
-    Task<IOutput> SaveCustomSchemeAsync(CustomInputScheme scheme, CancellationToken cancellationToken = default);
+    Task<IOutput> SaveCustomSchemeAsync(CustomInputScheme scheme, SchemeSaveFlags saveFlags, CancellationToken cancellationToken = default);
 
     void Update(TimeSpan deltaTime);
 }

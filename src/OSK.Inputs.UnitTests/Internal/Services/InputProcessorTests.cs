@@ -31,6 +31,7 @@ public class InputProcessorTests
     private readonly Mock<IInputUserManager> _mockUserManager;
     private readonly Mock<IInputNotificationPublisher> _mockNotificationPublisher;
     private readonly Mock<IUserInputTracker> _mockUserInputTracker;
+    private readonly Mock<IServiceProvider> _mockServiceProvider;
     private readonly IOutputFactory<InputProcessor> _outputFactory;
 
     private readonly InputProcessor _processor;
@@ -48,14 +49,16 @@ public class InputProcessorTests
         _outputFactory = new MockOutputFactory<InputProcessor>();
 
         var mockLogger = new Mock<ILogger<UserInputTracker>>();
-        var mockProvider = new Mock<IServiceProvider>();
-        mockProvider.Setup(m => m.GetService(typeof(ILogger<UserInputTracker>)))
+        _mockServiceProvider = new Mock<IServiceProvider>();
+        _mockServiceProvider.Setup(m => m.GetService(typeof(ILogger<UserInputTracker>)))
             .Returns(mockLogger.Object);
+        _mockServiceProvider.Setup(m => m.GetService(typeof(IOutputFactory<UserInputTracker>)))
+            .Returns(new MockOutputFactory<UserInputTracker>());
 
         _processor = new InputProcessor(_mockUserManager.Object, 
             _mockNotificationPublisher.Object, 
             _mockConfigurationProvider.Object,
-            mockProvider.Object, 
+            _mockServiceProvider.Object, 
             Mock.Of<ILogger<InputProcessor>>(), 
             _outputFactory,
             (_, _, _, _) => _mockUserInputTracker.Object);
@@ -678,6 +681,18 @@ public class InputProcessorTests
         Assert.True(output.IsSuccessful);
 
         _mockNotificationPublisher.Verify(m => m.Notify(It.IsAny<IInputNotification>()), Times.Never);
+    }
+
+    #endregion
+
+    #region ObjectFactory
+
+    [Fact]
+    public void ObjectFactory_UserInputTrackerFactory_Validation()
+    {
+        // Arrange/Act/Assert
+        Assert.NotNull(_processor._userInputTrackerFactory.Invoke(_mockServiceProvider.Object,
+            [1, new ActiveInputScheme("Abc", "Abc"), new InputSchemeActionMap([]), new InputProcessorConfiguration()]));
     }
 
     #endregion

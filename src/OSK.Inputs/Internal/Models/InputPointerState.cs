@@ -31,9 +31,13 @@ internal class InputPointerState(int pointerId, int maxRecords): DeviceInputStat
             }
 
             var deltaTime = (record.Time - currentRecord.Value.Time).TotalSeconds;
-            var newVelocity =  (record.Position - currentRecord.Value.Position) / (float) deltaTime;
+            var newVelocity = deltaTime > 0
+                ? (record.Position - currentRecord.Value.Position) / (float) deltaTime
+                : Vector2.Zero;
 
-            currentAcceleration = (newVelocity - currentVelocity) / (float)deltaTime;
+            currentAcceleration = deltaTime > 0
+                ? (newVelocity - currentVelocity) / (float)deltaTime
+                : Vector2.Zero;
             currentVelocity = newVelocity;
             currentRecord = record;
         }

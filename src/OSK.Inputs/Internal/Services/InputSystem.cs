@@ -7,12 +7,13 @@ using OSK.Inputs.Abstractions;
 using OSK.Inputs.Ports;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Notifications;
+using OSK.Inputs.Models;
 
 namespace OSK.Inputs.Internal.Services;
 
 internal class InputSystem(IInputConfigurationProvider configurationProvider, IInputUserManager userManager,
     IInputProcessor inputProcessor, IInputNotificationPublisher notificationPublisher, IInputSchemeRepository schemeRepository,
-    IOutputFactory<InputSystem> outputFactory) : IInputSystem
+    IInputSystemConfigurationValidator validator, IOutputFactory<InputSystem> outputFactory) : IInputSystem
 {
     #region IInputSystem
 
@@ -56,7 +57,7 @@ internal class InputSystem(IInputConfigurationProvider configurationProvider, II
         return await schemeRepository.DeleteCustomSchemeAsync(definitionName, schemeName, cancellationToken);
     }
 
-    public async Task<IOutput> SaveCustomSchemeAsync(CustomInputScheme scheme, CancellationToken cancellationToken = default)
+    public async Task<IOutput> SaveCustomSchemeAsync(CustomInputScheme scheme, SchemeSaveFlags saveFlags, CancellationToken cancellationToken = default)
     {
         if (scheme is null)
         {
@@ -68,20 +69,21 @@ internal class InputSystem(IInputConfigurationProvider configurationProvider, II
             return outputFactory.Fail("Custom input schemes are not allowed with the input system. If it is desired, please register a scheme repository that can support it.");
         }
 
-        if (string.IsNullOrWhiteSpace(scheme.DefinitionName))
+        var schemeValidation = validator.ValidateCustomScheme(configurationProvider.Configuration, scheme, saveFlags.HasFlag(SchemeSaveFlags.Overwrite));
+        if (!schemeValidation.IsValid)
         {
-            return outputFactory.Fail("Definition name can not be empty.");
-        }
-        if (string.IsNullOrWhiteSpace(scheme.Name))
-        {
-            return outputFactory.Fail("Name can not be empty.");
-        }
-        if (configurationProvider.Configuration.GetDefinition(scheme.DefinitionName) is null)
-        {
-            return outputFactory.Fail($"No input definition with the name {scheme.DefinitionName} exists.");
+            return schemeValidation.Result is InputConfigurationValidation.DuplicateData
+                ? outputFactory.Duplicate($"The scheme name {scheme.Name} already exists on input definition {scheme.DefinitionName}, if overwriting is desired then ensure the save flag is set correctly.")
+                : outputFactory.Fail($"There was a validation error with the custom scheme: {Environment.NewLine}{schemeValidation.Message}");
         }
 
-        return await schemeRepository.SaveCustomInputScheme(scheme, cancellationToken);
+        var saveOutput = await schemeRepository.SaveCustomInputScheme(scheme, cancellationToken);
+        if (!saveOutput.IsSuccessful)
+        {
+            return saveOutput;
+        }
+
+        return await userManager.LoadUserConfigurationAsync();
     }
 
     public void Update(TimeSpan deltaTime)

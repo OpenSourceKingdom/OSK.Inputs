@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Notifications;
 using OSK.Inputs.Internal;
 using OSK.Inputs.Internal.Services;
+using OSK.Inputs.Models;
 using OSK.Inputs.Ports;
 using Xunit;
 
@@ -26,6 +28,7 @@ public class InputSystemTests
     private readonly Mock<IInputNotificationPublisher> _mockInputNotificationPublisher;
     private readonly Mock<IInputUserManager> _mockUserManager;
     private readonly Mock<IInputConfigurationProvider> _mockConfigurationProvider;
+    private readonly Mock<IInputSystemConfigurationValidator> _mockValidator;
     private readonly IOutputFactory<InputSystem> _outputFactory;
 
     private readonly InputSystem _inputSystem;
@@ -41,10 +44,11 @@ public class InputSystemTests
         _mockInputNotificationPublisher = new();
         _mockUserManager = new();
         _mockConfigurationProvider = new();
+        _mockValidator = new();
         _outputFactory = new MockOutputFactory<InputSystem>();
 
         _inputSystem = new InputSystem(_mockConfigurationProvider.Object, _mockUserManager.Object,
-            _mockInputProcessor.Object, _mockInputNotificationPublisher.Object, _mockSchemeRepository.Object, _outputFactory);
+            _mockInputProcessor.Object, _mockInputNotificationPublisher.Object, _mockSchemeRepository.Object, _mockValidator.Object, _outputFactory);
     }
 
     #endregion
@@ -218,51 +222,85 @@ public class InputSystemTests
     public async Task SaveCustomSchemeAsync_NullScheme_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _inputSystem.SaveCustomSchemeAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _inputSystem.SaveCustomSchemeAsync(null!, SchemeSaveFlags.None));
     }
 
     [Fact]
     public async Task SaveCustomSchemeAsync_DoesNotAllowCustomSchemes_ReturnsBadRequest()
     {
         // Arrange/Act
-        var output = await _inputSystem.SaveCustomSchemeAsync(new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] });
-
-        // Assert
-        Assert.False(output.IsSuccessful);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("  ")]
-    public async Task SaveCustomSchemeAsync_InvalidDefinitionName_ReturnsBadRequest(string? name)
-    {
-        // Arrange
-        _mockSchemeRepository.SetupGet(m => m.AllowCustomSchemes)
-            .Returns(true);
-
-        // Act
-        var output = await _inputSystem.SaveCustomSchemeAsync(new CustomInputScheme() { DefinitionName = name!, Name = "Abc", DeviceMaps = [] });
+        var output = await _inputSystem.SaveCustomSchemeAsync(new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
+            SchemeSaveFlags.None);
 
         // Assert
         Assert.False(output.IsSuccessful);
     }
 
     [Fact]
-    public async Task SaveCustomSchemeAsync_DefinitionNotFound_ReturnsBadRequest()
+    public async Task SaveCustomSchemeAsync_ValidatorIndicatesConflict_ReturnsDuplicate()
     {
         // Arrange
         _mockSchemeRepository.SetupGet(m => m.AllowCustomSchemes)
             .Returns(true);
 
+        _mockValidator.Setup(m => m.ValidateCustomScheme(It.IsAny<InputSystemConfiguration>(), It.IsAny<CustomInputScheme>(),
+            It.IsAny<bool>()))
+            .Returns(InputConfigurationValidationResult.ForScheme(s => s.Name, InputConfigurationValidation.DuplicateData));
+
+        // Act
+        var output = await _inputSystem.SaveCustomSchemeAsync(new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] }, 
+            SchemeSaveFlags.None);
+
+        // Assert
+        Assert.False(output.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.DuplicateData, output.StatusCode.SpecificityCode);
+    }
+
+    [Theory]
+    [InlineData(InputConfigurationValidation.MissingData)]
+    [InlineData(InputConfigurationValidation.InvalidData)]
+    public async Task SaveCustomSchemeAsync_ValidatorIndicatesBadOrMissingData_InvalidParameter(InputConfigurationValidation validation)
+    {
+        // Arrange
+        _mockSchemeRepository.SetupGet(m => m.AllowCustomSchemes)
+            .Returns(true);
+
+        _mockValidator.Setup(m => m.ValidateCustomScheme(It.IsAny<InputSystemConfiguration>(), It.IsAny<CustomInputScheme>(),
+            It.IsAny<bool>()))
+            .Returns(InputConfigurationValidationResult.ForScheme(s => s.Name, validation));
+
+        // Act
+        var output = await _inputSystem.SaveCustomSchemeAsync(new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
+            SchemeSaveFlags.None);
+
+        // Assert
+        Assert.False(output.IsSuccessful);
+        Assert.Equal(OutputSpecificityCode.InvalidParameter, output.StatusCode.SpecificityCode);
+    }
+
+    [Fact]
+    public async Task SaveCustomSchemeAsync_SchemeRepositoryReturnsError_ReturnsErrorAndDoesNotCallUserManager()
+    {
+        // Arrange
+        _mockSchemeRepository.SetupGet(m => m.AllowCustomSchemes)
+            .Returns(true);
+        _mockSchemeRepository.Setup(m => m.SaveCustomInputScheme(It.IsAny<CustomInputScheme>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CustomInputScheme scheme, CancellationToken _) => _outputFactory.Fail<CustomInputScheme>("Bad day"));
+
+        _mockValidator.Setup(m => m.ValidateCustomScheme(It.IsAny<InputSystemConfiguration>(), It.IsAny<CustomInputScheme>(),
+            It.IsAny<bool>()))
+            .Returns(InputConfigurationValidationResult.Success);
+
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [new InputDefinition("Abc", [], [], false)], new(), new()));
 
         // Act
-        var output = await _inputSystem.SaveCustomSchemeAsync(new CustomInputScheme() { DefinitionName = "No", Name = "Abc", DeviceMaps = [] });
+        var output = await _inputSystem.SaveCustomSchemeAsync(new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
+            SchemeSaveFlags.None);
 
         // Assert
         Assert.False(output.IsSuccessful);
+        _mockUserManager.Verify(m => m.LoadUserConfigurationAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -274,14 +312,23 @@ public class InputSystemTests
         _mockSchemeRepository.Setup(m => m.SaveCustomInputScheme(It.IsAny<CustomInputScheme>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((CustomInputScheme scheme, CancellationToken _) => _outputFactory.Succeed(scheme));
 
+        _mockUserManager.Setup(m => m.LoadUserConfigurationAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed());
+
+        _mockValidator.Setup(m => m.ValidateCustomScheme(It.IsAny<InputSystemConfiguration>(), It.IsAny<CustomInputScheme>(),
+            It.IsAny<bool>()))
+            .Returns(InputConfigurationValidationResult.Success);
+
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [new InputDefinition("Abc", [], [], false)], new(), new()));
 
         // Act
-        var output = await _inputSystem.SaveCustomSchemeAsync(new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] });
+        var output = await _inputSystem.SaveCustomSchemeAsync(new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
+            SchemeSaveFlags.None);
 
         // Assert
         Assert.True(output.IsSuccessful);
+        _mockUserManager.Verify(m => m.LoadUserConfigurationAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion

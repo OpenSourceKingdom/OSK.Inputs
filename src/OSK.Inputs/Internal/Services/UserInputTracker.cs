@@ -34,7 +34,7 @@ internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, In
 
     public IEnumerable<TriggeredActionEvent> Update(TimeSpan deltaTime)
     {
-        var removalDelay = processorConfiguration.TapActivationTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
+        var removalDelay = processorConfiguration.TapDelayTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
 
         var triggeredActions = new List<TriggeredActionEvent>();
         foreach (var deviceTracker in _deviceInputTrackerLookup.Values)
@@ -120,7 +120,7 @@ internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, In
 
         inputState.MappedAction = triggeredActivation?.ActionMap;
 
-        if (inputState.Phase is InputPhase.End && processorConfiguration.TapActivationTime is null)
+        if (inputState.Phase is InputPhase.End && processorConfiguration.TapDelayTime is null)
         {
             deviceTracker.RemoveState(inputState);
         }

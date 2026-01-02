@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using OSK.Functions.Outputs.Logging;
 using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
+using OSK.Inputs.Exceptions;
 using OSK.Inputs.Internal;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Ports;
@@ -18,6 +19,8 @@ public static class ServiceCollectionExtensions
         {
             services.AddLoggingFunctionOutputs();
 
+            services.TryAddTransient<IInputSystemConfigurationValidator, InputSystemConfigurationValidator>();
+
             services.TryAddScoped<IInputProcessor, InputProcessor>();
             services.TryAddScoped<IInputUserManager, InputUserManager>();
             services.TryAddScoped<IInputSystem, InputSystem>();
@@ -27,11 +30,17 @@ public static class ServiceCollectionExtensions
 
             services.TryAddSingleton<IInputConfigurationProvider>(serviceProvider =>
             {
-                var configurationBuilder = serviceProvider.GetRequiredService<IInputSystemConfigurationBuilder>();
-                var schemeRepository = serviceProvider.GetService<IInputSchemeRepository>() 
-                    ?? new InMemorySchemeRepository(serviceProvider.GetRequiredService<IOutputFactory<InMemorySchemeRepository>>());
+                var configurationSource = serviceProvider.GetRequiredService<IInputSystemConfigurationSource>();
+                var validator = serviceProvider.GetRequiredService<IInputSystemConfigurationValidator>();
 
-                return ActivatorUtilities.CreateInstance<InputConfigurationProvider>(serviceProvider, configurationBuilder.Build());
+                var configuration = configurationSource.GetConfiguration();
+                var validation = validator.Validate(configuration);
+                if (!validation.IsValid)
+                {
+                    throw new InputSystemValidationException($"The input system configuration had a validation error. Configuration Type: {validation.ConfigurationType} Target: {validation.TargetName} Message: {validation.Message}");
+                }
+
+                return new InputConfigurationProvider(configuration);
             });
 
             return services; 
