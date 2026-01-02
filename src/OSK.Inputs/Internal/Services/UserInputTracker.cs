@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using OSK.Functions.Outputs.Abstractions;
+using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.Runtime;
@@ -10,7 +12,8 @@ using OSK.Inputs.Internal.Models;
 namespace OSK.Inputs.Internal;
 
 internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, InputSchemeActionMap schemeMap, 
-    InputProcessorConfiguration processorConfiguration, ILogger<UserInputTracker> logger): IUserInputTracker
+    InputProcessorConfiguration processorConfiguration, ILogger<UserInputTracker> logger,
+    IOutputFactory<UserInputTracker> outputFactory): IUserInputTracker
 {
     #region Variables
 
@@ -63,7 +66,9 @@ internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, In
 
                 var inputEvent = GetEventForState(inputState);
                 triggeredAction = inputEvent is not null && inputState.MappedAction is not null
-                    ? reprocess ? Track(inputEvent) : GetTriggeredActivation(inputState, inputEvent, inputState.MappedAction)
+                    ? reprocess 
+                        ? Track(inputEvent).Value 
+                        : GetTriggeredActivation(inputState, inputEvent, inputState.MappedAction)
                     : null;
 
                 if (triggeredAction is not null)
@@ -81,27 +86,27 @@ internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, In
         return triggeredActions;
     }
 
-    public TriggeredActionEvent? Track(InputEvent inputActivation)
+    public IOutput<TriggeredActionEvent?> Track(InputEvent inputEvent)
     {
-        if (inputActivation is not PhysicalInputEvent activation)
+        if (inputEvent is not PhysicalInputEvent physicalInputEvent)
         {
-            return null;
+            return outputFactory.Fail<TriggeredActionEvent?>("The input event was not a physical input event");
         }
-        if (!_deviceInputTrackerLookup.TryGetValue(activation.DeviceIdentifier.Identity, out var deviceTracker))
+        if (!_deviceInputTrackerLookup.TryGetValue(physicalInputEvent.DeviceIdentifier.Identity, out var deviceTracker))
         {
-            return null;
+            return outputFactory.Fail<TriggeredActionEvent?>("No device tracker was found for the device triggering the input.");
         }
 
-        var actionMaps = deviceTracker.SchemeMap.GetActionMaps(activation.Input.Id);
+        var actionMaps = deviceTracker.SchemeMap.GetActionMaps(physicalInputEvent.Input.Id);
         if (!actionMaps.Any())
         {
-            return null;
+            return outputFactory.Fail<TriggeredActionEvent?>("No action map found for the input");
         }
 
-        var inputState = GetAndUpdateInputState(deviceTracker, activation);
+        var inputState = GetAndUpdateInputState(deviceTracker, physicalInputEvent);
         if (inputState is null)
         {
-            return null;
+            return outputFactory.Fail<TriggeredActionEvent?>("Unable to acquire input state");
         }
 
         var virtualActionMaps = actionMaps.Where(map => map.Input is VirtualInput);
@@ -110,7 +115,7 @@ internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, In
         var virtualInputActivationContext = ProcessVirtualInputActivation(deviceTracker, inputState, virtualActionMaps);
         var triggeredActivation = virtualInputActivationContext is null && inputActionMap is not null 
                 && inputActionMap.Action.TriggerPhases.Contains(inputState.Phase)
-            ? GetTriggeredActivation(inputState, activation, inputActionMap)
+            ? GetTriggeredActivation(inputState, physicalInputEvent, inputActionMap)
             : virtualInputActivationContext;
 
         inputState.MappedAction = triggeredActivation?.ActionMap;
@@ -120,7 +125,7 @@ internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, In
             deviceTracker.RemoveState(inputState);
         }
 
-        return triggeredActivation;
+        return outputFactory.Succeed(triggeredActivation);
     }
 
     #endregion

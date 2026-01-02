@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using OSK.Functions.Outputs.Abstractions;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal.Models;
 
@@ -14,5 +15,5 @@ internal interface IUserInputTracker
 
     IEnumerable<TriggeredActionEvent> Update(TimeSpan deltaTime);
 
-    TriggeredActionEvent? Track(InputEvent inputActivation);
+    IOutput<TriggeredActionEvent?> Track(InputEvent inputActivation);
 }

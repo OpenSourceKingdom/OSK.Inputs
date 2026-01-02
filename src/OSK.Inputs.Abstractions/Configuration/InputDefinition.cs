@@ -8,8 +8,8 @@ public class InputDefinition(string name, IEnumerable<InputScheme> schemes, IEnu
 {
     #region Variables
 
-    private Dictionary<string, InputScheme> _schemeLookup = schemes.ToDictionary(scheme => scheme.Name);
-    private readonly Dictionary<string, InputAction> _actionLookup = actions.ToDictionary(action => action.Name);
+    private Dictionary<string, InputScheme> _schemeLookup = schemes.ToDictionary(scheme => scheme.Name, StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, InputAction> _actionLookup = actions.ToDictionary(action => action.Name, StringComparer.OrdinalIgnoreCase);
 
     #endregion
 

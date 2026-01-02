@@ -22,8 +22,9 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
 {
     #region Variables
 
-    private readonly Dictionary<int, InputUser> _users = [];
-    private readonly Dictionary<int, Dictionary<string, PreferredInputScheme>> _userPreferredSchemesLookup = [];
+    // TODO: Encapsulation Better
+    internal readonly Dictionary<int, InputUser> _users = [];
+    internal readonly Dictionary<int, Dictionary<string, PreferredInputScheme>> _userPreferredSchemesLookup = [];
 
     #endregion
 
@@ -53,10 +54,31 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             ? 1
             : _users.Values.Max(user => user.Id) + 1;
 
-        var inputDefinition = configurationProvider.Configuration.Definitions.FirstOrDefault(definition => definition.IsDefault)
+        InputDefinition? inputDefinition = null;
+        var useActiveDefinition = !string.IsNullOrWhiteSpace(options.ActiveScheme?.DefinitionName);
+        if (useActiveDefinition)
+        {
+            inputDefinition = configurationProvider.Configuration.Definitions.FirstOrDefault(definition
+                => definition.Name.Equals(options.ActiveScheme!.Value.DefinitionName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        inputDefinition = inputDefinition ?? configurationProvider.Configuration.Definitions.FirstOrDefault(definition 
+            => definition.IsDefault)
             ?? configurationProvider.Configuration.Definitions.First();
 
+        if (useActiveDefinition && !inputDefinition.Name.Equals(options.ActiveScheme!.Value.DefinitionName, StringComparison.OrdinalIgnoreCase))
+        {
+            LogCreateUseActiveDefinitionNameNotFoundWarning(logger, options.ActiveScheme.Value.DefinitionName, inputDefinition.Name);
+        }
+
         var activeScheme = GetActiveScheme(newUserId, inputDefinition);
+
+        if (!string.IsNullOrWhiteSpace(options.ActiveScheme?.SchemeName)
+             && !activeScheme.SchemeName.Equals(options.ActiveScheme!.Value.SchemeName, StringComparison.OrdinalIgnoreCase)) 
+        {
+            LogCreateUserActiveSchemeNameNotFoundWarning(logger, inputDefinition.Name, options.ActiveScheme.Value.SchemeName, activeScheme.SchemeName);
+        }
+
         _users[newUserId] = new InputUser(newUserId, activeScheme);
 
         notificationPublisher.Notify(new InputUserJoinedNotification(_users[newUserId]));
@@ -70,24 +92,30 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         return outputFactory.Succeed((IInputUser)_users[newUserId]);
     }
 
-    public void SetActiveDefinition(int userId, string definitionName)
+    public IOutput SetActiveDefinition(int userId, string definitionName)
     {
+        if (!_users.TryGetValue(userId, out var user))
+        {
+            LogSetActiveDefinitionForBadUserInformation(logger, userId);
+            return outputFactory.NotFound($"User {userId} does not exist.");
+        }
+
         if (string.IsNullOrWhiteSpace(definitionName))
         {
-            return;
+            LogActiveDefinitionNameNotFoundWarning(logger, "{Empty}");
+            return outputFactory.Fail("Input definition name cannot be null.");
         }
 
         var definition = configurationProvider.Configuration.GetDefinition(definitionName);
         if (definition is null)
         {
-            return;
-        }
-
-        if (!_users.TryGetValue(userId, out var user))
-        {
+            LogActiveDefinitionNameNotFoundWarning(logger, definitionName);
+            return outputFactory.NotFound($"Input definition with name {definition} does not exist.");
         }
 
         user.ActiveScheme = GetActiveScheme(userId, definition);
+        notificationPublisher.Notify(new InputUserSchemeChangeNotification(userId, user.ActiveScheme));
+        return outputFactory.Succeed();
     }
 
     public IInputUser? GetInputUserForDevice(int deviceId)
@@ -101,17 +129,31 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
     public IEnumerable<IInputUser> GetUsers()
         => _users.Values;
 
-    public void RemoveUser(int userId)
+    public bool RemoveUser(int userId)
     {
-        if (_users.Remove(userId))
+        if (_users.TryGetValue(userId, out var user))
         {
+            foreach (var deviceIdentifier in user.GetPairedDevices().Select(device => device.DeviceIdentifier).ToArray())
+            {
+                UnpairDevice(userId, deviceIdentifier.DeviceId);
+            }
+
+            _users.Remove(userId);
             notificationPublisher.Notify(new InputUserRemovedNotification(userId));
+            return true;
         }
+
+        return false;
     }
 
     public IOutput PairDevice(int userId, RuntimeDeviceIdentifier device)
     {
-        var pairedUser = GetInputUserForDevice(userId);
+        if (!_users.TryGetValue(userId, out var user))
+        {
+            return outputFactory.NotFound($"Unable to pair device {device.DeviceId}, {device.Identity.Name}, because there is no user with id {userId}.");
+        }
+
+        var pairedUser = GetInputUserForDevice(device.DeviceId);
         if (pairedUser is not null)
         {
             return pairedUser.Id == userId
@@ -119,48 +161,48 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
                 : outputFactory.Fail($"Unable to pair device {device.DeviceId}, {device.Identity.Name}, to user {userId} because it is already paired to {pairedUser.Id}.");
         }
 
-        if (!_users.TryGetValue(userId, out var user))
-        {
-            return outputFactory.Fail($"Unable to pair device {device.DeviceId}, {device.Identity.Name}, because there is no user with id {userId}.");
-        }
-
         user.AddDevice(device);
         return outputFactory.Succeed();
     }
 
-    public void UnpairDevice(int userId, int deviceId)
+    public bool UnpairDevice(int userId, int deviceId)
     {
         if (!_users.TryGetValue(userId, out var user))
         {
-            return;
+            return false;
         }
 
         var pairedDevice = user.RemoveDevice(deviceId);
         if (pairedDevice is not null)
         {
             notificationPublisher.Notify(new DeviceUnpairedNotification(userId, pairedDevice.DeviceIdentifier));
+            return true;
         }
+
+        return false;
     }
 
     public async Task<IOutput> SavePreferredSchemeAsync(PreferredInputScheme scheme, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(scheme.DefinitionName))
-        {
-            return outputFactory.Fail("Definition name can not be empty.");
-        }
-        if (string.IsNullOrWhiteSpace(scheme.SchemeName))
-        {
-            return outputFactory.Fail("Scheme name can not be empty.");
-        }
         if (scheme.UserId < 0 || scheme.UserId >= configurationProvider.Configuration.JoinPolicy.MaxUsers)
         {
             return outputFactory.Fail($"The provided user id must be non-zero and less than the max users ({configurationProvider.Configuration.JoinPolicy.MaxUsers}) for the input system.");
+        }
+
+        if (string.IsNullOrWhiteSpace(scheme.DefinitionName))
+        {
+            return outputFactory.Fail("Definition name can not be empty.");
         }
 
         var definition = configurationProvider.Configuration.GetDefinition(scheme.DefinitionName);
         if (definition is null)
         {
             return outputFactory.NotFound($"No input definition with the name '{scheme.DefinitionName}' exists.");
+        }
+
+        if (string.IsNullOrWhiteSpace(scheme.SchemeName))
+        {
+            return outputFactory.Fail("Scheme name can not be empty.");
         }
 
         if (definition.GetScheme(scheme.SchemeName) is null)
@@ -181,7 +223,22 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             // Only take one preferred scheme for each definition, even if the repository returns multiples.
             // There should only ever be 1 preferred scheme per definition, so multiples would indicate either a
             // mistake in the repository or some malicious intent
-            foreach (var userPreferredSchemes in getUserPreferredSchemes.Value.GroupBy(scheme => scheme.UserId))
+            foreach (var userPreferredSchemes in getUserPreferredSchemes.Value
+                .Where(preferredScheme =>
+                {
+                    if (preferredScheme.UserId < 0 || preferredScheme.UserId > configurationProvider.Configuration.JoinPolicy.MaxUsers)
+                    {
+                        return false;
+                    }
+
+                    var definition = configurationProvider.Configuration.GetDefinition(preferredScheme.DefinitionName);
+                    if (definition is null)
+                    {
+                        return false;
+                    }
+
+                    return definition.GetScheme(preferredScheme.SchemeName) is not null;
+                }).GroupBy(scheme => scheme.UserId))
             {
                 _userPreferredSchemesLookup[userPreferredSchemes.Key] = 
                     userPreferredSchemes.GroupBy(scheme => scheme.DefinitionName)
@@ -210,25 +267,26 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
 
     #region Helpers
 
-    private ActiveInputScheme GetActiveScheme(int userId, InputDefinition definition)
+    private ActiveInputScheme GetActiveScheme(int userId, InputDefinition definition, string? preferredSchemeName = null)
     {
+        if (!string.IsNullOrWhiteSpace(preferredSchemeName))
+        {
+            var activeScheme = definition.GetScheme(preferredSchemeName);
+            if (activeScheme is not null)
+            {
+                return new ActiveInputScheme(definition.Name, preferredSchemeName);
+            }
+        }
+
         if (_userPreferredSchemesLookup.TryGetValue(userId, out var userPreferredSchemeLookup)
              && userPreferredSchemeLookup.TryGetValue(definition.Name, out var preferredInputScheme)
              && definition.GetScheme(preferredInputScheme.SchemeName) is not null)
         {
-            return new ActiveInputScheme()
-            {
-                DefinitionName = definition.Name,
-                SchemeName = preferredInputScheme.SchemeName
-            };
+            return new ActiveInputScheme(definition.Name, preferredInputScheme.SchemeName);
         }
 
         var defaultScheme = definition.Schemes.FirstOrDefault(scheme => scheme.IsDefault) ?? definition.Schemes.First();
-        return new ActiveInputScheme()
-        {
-            DefinitionName = definition.Name,
-            SchemeName = defaultScheme.Name
-        };
+        return new ActiveInputScheme(definition.Name, defaultScheme.Name);
     }
 
     #endregion
@@ -240,6 +298,21 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
 
     [LoggerMessage(eventId: 2, LogLevel.Warning, "An error was encountered when attmepting to get custom input shcemes, using an empty list; error: {error}")]
     private static partial void LogLoadCustomSchemesFailedWarning(ILogger logger, string error);
+
+    [LoggerMessage(eventId: 3, LogLevel.Warning, "An attempt was made to create a user with a specified active definition name '{definitionName}' that was not found in the input system, defaulting to using '{defaultDefinitionName}'.")]
+    private static partial void LogCreateUseActiveDefinitionNameNotFoundWarning(ILogger logger, string definitionName, string defaultDefinitionName);
+
+    [LoggerMessage(eventId: 4, LogLevel.Warning, "An attempt was made to create a user for the definition name '{definitionName}' with the active input scheme '{schemeName}' but the scheme was not found, defaulting to using '{defaultSchemeName}'.")]
+    private static partial void LogCreateUserActiveSchemeNameNotFoundWarning(ILogger logger,  string definitionName, string schemeName, string defaultSchemeName);
+
+    [LoggerMessage(eventId: 5, LogLevel.Warning, "An attempt was made set a user with a specified active definition name '{definitionName}' that was not found in the input system, ignoring.")]
+    private static partial void LogActiveDefinitionNameNotFoundWarning(ILogger logger, string definitionName);
+
+    [LoggerMessage(eventId: 6, LogLevel.Information, "An attempt was made to set a user input scheme for the definition name '{definitionName}' with the active input scheme '{schemeName}' but the scheme was not found, ignoring.")]
+    private static partial void LogActiveSchemeNameNotFoundInformation(ILogger logger, string definitionName, string schemeName);
+
+    [LoggerMessage(eventId: 7, LogLevel.Information, "An attempt was made to set the active definition for user {userId} but that user does not exist, ignoring.")]
+    private static partial void LogSetActiveDefinitionForBadUserInformation(ILogger logger, int userId);
 
     #endregion
 }

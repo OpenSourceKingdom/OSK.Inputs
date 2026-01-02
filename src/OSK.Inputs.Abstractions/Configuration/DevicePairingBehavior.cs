@@ -2,6 +2,6 @@
 
 public enum DevicePairingBehavior
 {
-    Greedy,
+    Balanced,
     Manual
 }

@@ -7,5 +7,5 @@ public class UserJoinOptions
 {
     public IEnumerable<RuntimeDeviceIdentifier>? DevicesToPair { get; set; }
 
-    public string? ActiveDefinitionName { get; set; }
+    public ActiveInputScheme? ActiveScheme { get; set; }
 }

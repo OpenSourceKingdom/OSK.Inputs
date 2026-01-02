@@ -14,7 +14,7 @@ public interface IInputUserManager
 {
     IOutput<IInputUser> CreateUser(UserJoinOptions joinOptions);
 
-    void RemoveUser(int userId);
+    bool RemoveUser(int userId);
 
     IInputUser? GetUser(int userId);
 
@@ -24,9 +24,9 @@ public interface IInputUserManager
 
     IOutput PairDevice(int userId, RuntimeDeviceIdentifier device);
 
-    void UnpairDevice(int userId, int deviceId);
+    bool UnpairDevice(int userId, int deviceId);
 
-    void SetActiveDefinition(int userId, string definitionName);
+    IOutput SetActiveDefinition(int userId, string definitionName);
 
     Task<IOutput> SavePreferredSchemeAsync(PreferredInputScheme scheme, CancellationToken cancellationToken = default);
 

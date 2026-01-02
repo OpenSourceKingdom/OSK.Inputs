@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OSK.Functions.Outputs.Abstractions;
+using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Notifications;
@@ -26,25 +28,41 @@ internal partial class InputProcessor: IInputProcessor
     private readonly IInputConfigurationProvider _configurationProvider;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<InputProcessor> _logger;
+    private readonly IOutputFactory<InputProcessor> _outputFactory;
 
-    private static readonly ObjectFactory<UserInputTracker> _inputTrackerFactory
+    internal readonly ObjectFactory<UserInputTracker> _userInputTrackerFactory
         = ActivatorUtilities.CreateFactory<UserInputTracker>([typeof(int), typeof(ActiveInputScheme),
             typeof(InputSchemeActionMap), typeof(InputProcessorConfiguration)]);
+
+    private readonly Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IUserInputTracker> _newInputTrackerFactory;
 
     #endregion
 
     #region Constructors
 
     public InputProcessor(IInputUserManager userManager, IInputNotificationPublisher notificationPublisher, 
-        IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger)
+        IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger,
+        IOutputFactory<InputProcessor> outputFactory)
     {
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         _configurationProvider = configurationProvider ?? throw new ArgumentNullException(nameof(configurationProvider));
         _notificationPublisher = notificationPublisher ?? throw new ArgumentNullException(nameof(notificationPublisher));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _outputFactory = outputFactory ?? throw new ArgumentNullException(nameof(outputFactory));
 
         notificationPublisher.OnUserNotification += HandleUserEvent;
+        _newInputTrackerFactory = (userId, activeScheme, schemeActionMap, processorConfiguration)
+            => _userInputTrackerFactory(_serviceProvider, [userId, activeScheme, schemeActionMap, processorConfiguration]);
+    }
+
+    internal InputProcessor(IInputUserManager userManager, IInputNotificationPublisher notificationPublisher,
+        IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger,
+        IOutputFactory<InputProcessor> outputFactory,
+        Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IUserInputTracker> customTrackerFactory)
+        : this(userManager, notificationPublisher, configurationProvider, serviceProvider, logger, outputFactory)
+    {
+        _newInputTrackerFactory = customTrackerFactory ?? throw new ArgumentNullException(nameof(customTrackerFactory));
     }
 
     #endregion
@@ -68,7 +86,7 @@ internal partial class InputProcessor: IInputProcessor
         }
     }
 
-    public void ProcessEvent(InputEvent inputEvent)
+    public IOutput ProcessEvent(InputEvent inputEvent)
     {
         if (inputEvent is null)
         {
@@ -76,26 +94,29 @@ internal partial class InputProcessor: IInputProcessor
         }
         if (_pauseInputProcessing)
         {
-            return;
+            return _outputFactory.Fail("Input processing paused");
         }
         if (inputEvent is not PhysicalInputEvent physicalInputEvent)
         {
             LogUnsupportedInputTypeInformation(_logger, inputEvent.GetType().FullName);
-            return;
+            return _outputFactory.Fail($"Input type '{inputEvent.Input.GetType().FullName}' is not supported.");
         }
 
         var inputTracker = GetInputTrackerForDevice(physicalInputEvent.DeviceIdentifier);
         if (inputTracker is null)
         {
-            return;
+            return _outputFactory.Fail($"Unrecognized error, unable to get an input tracker for the device or user.");
         }
 
-        var triggeredAction = inputTracker.Track(inputEvent);
-        if (triggeredAction is not null)
+        var triggeredActionOutput = inputTracker.Track(inputEvent);
+        if (triggeredActionOutput.IsSuccessful && triggeredActionOutput.Value is not null)
         {
-            LogInputActionTriggeredDebug(_logger, inputTracker.UserId, physicalInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, triggeredAction.Value.ActionMap.Action.Name);
-            triggeredAction.Value.Execute();
+            LogInputActionTriggeredDebug(_logger, inputTracker.UserId, physicalInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, 
+                triggeredActionOutput.Value.Value.ActionMap.Action.Name);
+            triggeredActionOutput.Value.Value.Execute();
         }
+
+        return triggeredActionOutput;
     }
 
     public void ToggleInputProcessing(bool pause)
@@ -129,7 +150,29 @@ internal partial class InputProcessor: IInputProcessor
 
     #region Helpers
 
-    private (InputDefinition, InputScheme) GetInputScheme(InputSystemConfiguration configuration, ActiveInputScheme activeScheme)
+    private void HandleUserEvent(InputUserNotification userEvent)
+    {
+        switch (userEvent)
+        {
+            case InputUserSchemeChangeNotification schemeChangeEvent:
+                _userInputTrackerLookup[schemeChangeEvent.UserId] = CreateTracker(schemeChangeEvent.UserId, _configurationProvider.Configuration, schemeChangeEvent.NewScheme);
+                LogSchemeChangeDebug(_logger, schemeChangeEvent.UserId, schemeChangeEvent.NewScheme.DefinitionName, schemeChangeEvent.NewScheme.SchemeName);
+                break;
+            case InputUserJoinedNotification userJoinedEvent:
+                _userInputTrackerLookup[userJoinedEvent.UserId] = CreateTracker(userJoinedEvent.UserId, _configurationProvider.Configuration, userJoinedEvent.User.ActiveScheme);
+                LogUserJoinedDebug(_logger, userJoinedEvent.UserId);
+                break;
+            case InputUserRemovedNotification userRemovedEvent:
+                _userInputTrackerLookup.Remove(userRemovedEvent.UserId);
+                LogUserRemovedDebug(_logger, userRemovedEvent.UserId);
+                break;
+            default:
+                LogUnknownUserNotificationInformation(_logger, userEvent.GetType().FullName);
+                break;
+        }
+    }
+
+    private (InputDefinition, InputScheme) GetViableInputScheme(InputSystemConfiguration configuration, ActiveInputScheme activeScheme)
     {
         var inputDefinition = configuration.GetDefinition(activeScheme.DefinitionName);
         if (inputDefinition is null)
@@ -166,8 +209,8 @@ internal partial class InputProcessor: IInputProcessor
             return null;
         }
 
-        var targetUser = _userManager.GetUsers()
-                                    .FirstOrDefault(user => user.PairedDevices.All(pd => pd.DeviceIdentifier.Identity != deviceIdentifier.Identity));
+        var targetUser = GetUserForDevicePairing(configuration.SupportedDeviceCombinations, _userManager.GetUsers(), 
+            configuration.JoinPolicy.DeviceJoinBehavior, deviceIdentifier.Identity);
         if (targetUser is null)
         {
             LogNewUserCreateDebug(_logger, deviceIdentifier);
@@ -180,30 +223,15 @@ internal partial class InputProcessor: IInputProcessor
             targetUser = createUserOutput.Value;
         }
 
-        _userManager.PairDevice(targetUser.Id, deviceIdentifier);
-        return targetUser;
-    }
-
-    private void HandleUserEvent(InputUserNotification userEvent)
-    {
-        switch (userEvent)
+        var pairedOutput = _userManager.PairDevice(targetUser.Id, deviceIdentifier);
+        if (!pairedOutput.IsSuccessful)
         {
-            case InputUserSchemeChangeNotification schemeChangeEvent:
-                _userInputTrackerLookup[schemeChangeEvent.UserId] = CreateTracker(schemeChangeEvent.UserId, _configurationProvider.Configuration, schemeChangeEvent.NewScheme);
-                LogSchemeChangeDebug(_logger, schemeChangeEvent.UserId, schemeChangeEvent.NewScheme.DefinitionName, schemeChangeEvent.NewScheme.SchemeName);
-                break;
-            case InputUserJoinedNotification userJoinedEvent:
-                _userInputTrackerLookup[userJoinedEvent.UserId] = CreateTracker(userJoinedEvent.UserId, _configurationProvider.Configuration, userJoinedEvent.User.ActiveScheme);
-                LogUserJoinedDebug(_logger, userJoinedEvent.UserId);
-                break;
-            case InputUserRemovedNotification userRemovedEvent:
-                _userInputTrackerLookup.Remove(userRemovedEvent.UserId);
-                LogUserRemovedDebug(_logger, userRemovedEvent.UserId);
-                break;
-            default:
-                LogUnknownUserNotificationInformation(_logger, userEvent.GetType().FullName);
-                break;
+            LogDevicePairingFailedWarning(_logger, targetUser.Id, deviceIdentifier);
+            _notificationPublisher.Notify(new DevicePairingFailedNotification(targetUser.Id, deviceIdentifier));
+            return null;
         }
+
+        return targetUser;
     }
 
     private IUserInputTracker? GetInputTrackerForDevice(RuntimeDeviceIdentifier deviceIdentifier)
@@ -232,57 +260,69 @@ internal partial class InputProcessor: IInputProcessor
 
     private IUserInputTracker CreateTracker(int userId, InputSystemConfiguration configuration, ActiveInputScheme activeScheme)
     {
-        var (inputDefinition, inputScheme) = GetInputScheme(configuration, activeScheme);
+        var (inputDefinition, inputScheme) = GetViableInputScheme(configuration, activeScheme);
         var schemeActionMap = configuration.GetSchemeMap(inputDefinition.Name, inputScheme.Name);
+        if (schemeActionMap is null)
+        {
+            throw new InvalidOperationException($"Scheme action map for user input tracker was null, but this should not have been possible; definition: {inputDefinition.Name}, scheme: {inputScheme.Name}.");
+        }
 
-        return _inputTrackerFactory.Invoke(_serviceProvider, [userId, activeScheme, schemeActionMap, configuration.ProcessorConfiguration]);
+        return _newInputTrackerFactory(userId, activeScheme, schemeActionMap, configuration.ProcessorConfiguration);
     }
 
-    #endregion
+    private IInputUser? GetUserForDevicePairing(IEnumerable<InputDeviceCombination> supportedDeviceCombinations,
+        IEnumerable<IInputUser> users, DevicePairingBehavior pairingBehavior, InputDeviceIdentity newDeviceIdentity)
+    {
+        if (!users.Any())
+        {
+            return null;
+        }
 
-    #region Logging
+        var deviceCombinationLookup = supportedDeviceCombinations.SelectMany(combination
+            => combination.DeviceIdentities.Select(identity => new { DeviceIdentity = identity, Combination = combination }))
+            .GroupBy(deviceIdentityCombinations => deviceIdentityCombinations.DeviceIdentity)
+            .ToDictionary(deviceIdentityCombinationGroup => deviceIdentityCombinationGroup.Key,
+                deviceIdentityCombinationGroup 
+                    => deviceIdentityCombinationGroup.Select(identityCombinationPair => identityCombinationPair.Combination)
+                                                     .Distinct()
+                                                     .ToArray());
 
-    [LoggerMessage(eventId: 1, LogLevel.Warning, "An input was received for a device named '{deviceIdentity}' but no user was found to be paired to it, thus the input will be ignored.")]
-    private static partial void LogNoInputUserForDeviceWarning(ILogger logger, InputDeviceIdentity deviceIdentity);
+        var userDevicePairingData = users.Select(user =>
+        {
+            var pairedDeviceSet = user.PairedDevices.Select(pairedDevice => pairedDevice.DeviceIdentifier.Identity).ToHashSet();
+            var completedCombinations = supportedDeviceCombinations.Count(combination => combination.DeviceIdentities.All(identity => pairedDeviceSet.Contains(identity)));
+            var missingNewDevice = !pairedDeviceSet.Contains(newDeviceIdentity);
+            var fewestDevicesToCompleteClosestCombinationWithDevice = missingNewDevice
+                ? supportedDeviceCombinations
+                    .Where(combination => combination.Contains(newDeviceIdentity))
+                    .Select(combination => combination.DeviceIdentities.Count(identity => !pairedDeviceSet.Contains(identity)))
+                    .Min()
+                : 100;
 
-    [LoggerMessage(eventId: 3, LogLevel.Warning, "An attempt was made to use an active scheme with input definition '{desiredDefinitionName}' but it did not exist, defaulting to '{defaultDefinitionName}'.")]
-    private static partial void LogInvalidDefinitionUsageWarning(ILogger logger, string desiredDefinitionName, string defaultDefinitionName);
+            return new
+            {
+                User = user,
+                IsMissingNewDevice = missingNewDevice,
+                TotalPairedDevices = user.PairedDevices.Count,
+                TotalCombinationsCompleted = completedCombinations,
+                FewestDevicesToCompleteClosestCombinationWithDevice = fewestDevicesToCompleteClosestCombinationWithDevice
+            };
+        });
 
-    [LoggerMessage(eventId: 4, LogLevel.Warning, "An attempt was made to use an active scheme '{desiredSchemeName}' with input definition '{definitionName}' but the scheme did not exist, defaulting to '{defaultSchemeName}'.")]
-    private static partial void LogInvalidSchemeUsageWarning(ILogger logger, string definitionName, string desiredSchemeName, string defaultSchemeName);
+        IInputUser? pairedUser = null;
+        switch (pairingBehavior)
+        {
+            case DevicePairingBehavior.Balanced:
+                pairedUser = userDevicePairingData.OrderByDescending(pairingData => pairingData.IsMissingNewDevice)
+                                                  .ThenBy(pairingData => pairingData.FewestDevicesToCompleteClosestCombinationWithDevice)
+                                                  .ThenBy(pairingData => pairingData.TotalPairedDevices)
+                                                  .ThenBy(pairingData => pairingData.TotalCombinationsCompleted)
+                                                  .FirstOrDefault()?.User;
+                break;
+        }
 
-    [LoggerMessage(eventId: 5, LogLevel.Debug, "User {userId} has changed their scheme to use a scheme '{schemeName}' for input definition '{definitionName}'.")]
-    private static partial void LogSchemeChangeDebug(ILogger logger, int userId, string definitionName, string schemeName);
+        return pairedUser;
+    }
 
-    [LoggerMessage(eventId: 6, LogLevel.Debug, "User {userId} has joined the session, creating new input tracker.")]
-    private static partial void LogUserJoinedDebug(ILogger logger, int userId);
-
-    [LoggerMessage(eventId: 7, LogLevel.Debug, "User {userId} has been removed from the session, removing input tracker.")]
-    private static partial void LogUserRemovedDebug(ILogger logger, int userId);
-
-    [LoggerMessage(eventId: 8, LogLevel.Information, "A user notification, of type '{userEventTypeName}', was sent that was not supported.")]
-    private static partial void LogUnknownUserNotificationInformation(ILogger logger, string userEventTypeName);
-
-    [LoggerMessage(eventId: 9, LogLevel.Information, "An input device, '{deviceIdentifier}', sent input but was not paird due to the policy's manual device handling")]
-    private static partial void LogUnpairdDeviceDueToPolicyInformation(ILogger logger, RuntimeDeviceIdentifier deviceIdentifier);
-
-    [LoggerMessage(eventId: 10, LogLevel.Information, "An input device, '{deviceIdentifier}, sent input but was not paired because it was not part of a support device combination.")]
-    private static partial void LogUnpairedDeviceDueToUnsupportedCombinationInformation(ILogger logger, RuntimeDeviceIdentifier deviceIdentifier);
-
-    [LoggerMessage(eventId: 11, LogLevel.Debug, "A new input device, '{deviceIdentifier}', sent input and no user was found to possess it, new user being created due to policy's settings.")]
-    private static partial void LogNewUserCreateDebug(ILogger logger, RuntimeDeviceIdentifier deviceIdentifier);
-
-    [LoggerMessage(eventId: 12, LogLevel.Debug, "An input device, '{deviceIdentifier}', sent input for user {userId} but user input has not been received yet, creating new input tracker.")]
-    private static partial void LogNewInputTrackerForUnregisteredUserDebug(ILogger logger, int userId, RuntimeDeviceIdentifier deviceIdentifier);
-
-    [LoggerMessage(eventId: 13, LogLevel.Debug, "Input processing pause state changed, tracking input: {pause}")]
-    private static partial void LogTogglePauseDebug(ILogger logger, bool pause);
-
-    [LoggerMessage(eventId: 14, LogLevel.Information, "Input was received for input type '{inputTypeName}' but it is not a supported input type, ignoring int processing.")]
-    private static partial void LogUnsupportedInputTypeInformation(ILogger logger, string inputTypeName);
-
-    [LoggerMessage(eventId: 15, LogLevel.Debug, "Input received, from device {deviceIdentifier}, for user {userId} has triggered an action '{actionName}' for input scheme {activeScheme}.")]
-    private static partial void LogInputActionTriggeredDebug(ILogger logger, int userId, RuntimeDeviceIdentifier deviceIdentifier, ActiveInputScheme activeScheme, string actionName);
-    
     #endregion
 }

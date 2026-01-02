@@ -8,7 +8,8 @@ internal class InputUser(int id, ActiveInputScheme activeScheme): IInputUser
 {
     #region Variables
 
-    private Dictionary<int, PairedDevice> _pairedDevices = [];
+    // TODO: Encapsulation Better
+    internal Dictionary<int, PairedDevice> _pairedDevices = [];
 
     #endregion
 

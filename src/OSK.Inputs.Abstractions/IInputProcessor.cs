@@ -2,6 +2,7 @@
 using OSK.Hexagonal.MetaData;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Abstractions.Notifications;
+using OSK.Functions.Outputs.Abstractions;
 
 namespace OSK.Inputs.Abstractions;
 
@@ -12,7 +13,7 @@ public interface IInputProcessor
 
     void Update(TimeSpan deltaTime);
 
-    void ProcessEvent(InputEvent inputEvent);
+    IOutput ProcessEvent(InputEvent inputEvent);
 
     void HandleDeviceNotification(DeviceStateChangedNotification notification);
 }

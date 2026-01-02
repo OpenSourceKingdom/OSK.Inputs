@@ -5,6 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
+using OSK.Functions.Outputs.Abstractions;
+using OSK.Functions.Outputs.Logging.Abstractions;
+using OSK.Functions.Outputs.Mocks;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Inputs;
@@ -13,6 +16,7 @@ using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal;
 using OSK.Inputs.Internal.Models;
 using OSK.Inputs.Internal.Services;
+using OSK.Inputs.Options;
 using OSK.Inputs.Ports;
 using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
@@ -25,7 +29,9 @@ public class InputProcessorTests
 
     private readonly Mock<IInputConfigurationProvider> _mockConfigurationProvider;
     private readonly Mock<IInputUserManager> _mockUserManager;
-    private readonly Mock<IInputNotificationPublisher> _mockNotificationPublisher; 
+    private readonly Mock<IInputNotificationPublisher> _mockNotificationPublisher;
+    private readonly Mock<IUserInputTracker> _mockUserInputTracker;
+    private readonly IOutputFactory<InputProcessor> _outputFactory;
 
     private readonly InputProcessor _processor;
 
@@ -38,14 +44,21 @@ public class InputProcessorTests
         _mockUserManager = new();
         _mockNotificationPublisher = new();
         _mockConfigurationProvider = new();
+        _mockUserInputTracker = new();
+        _outputFactory = new MockOutputFactory<InputProcessor>();
 
         var mockLogger = new Mock<ILogger<UserInputTracker>>();
         var mockProvider = new Mock<IServiceProvider>();
         mockProvider.Setup(m => m.GetService(typeof(ILogger<UserInputTracker>)))
             .Returns(mockLogger.Object);
 
-        _processor = new InputProcessor(_mockUserManager.Object, _mockNotificationPublisher.Object, _mockConfigurationProvider.Object,
-            mockProvider.Object, Mock.Of<ILogger<InputProcessor>>());
+        _processor = new InputProcessor(_mockUserManager.Object, 
+            _mockNotificationPublisher.Object, 
+            _mockConfigurationProvider.Object,
+            mockProvider.Object, 
+            Mock.Of<ILogger<InputProcessor>>(), 
+            _outputFactory,
+            (_, _, _, _) => _mockUserInputTracker.Object);
     }
 
     #endregion
@@ -130,11 +143,541 @@ public class InputProcessorTests
         _processor._pauseInputProcessing = true;
 
         // Act
-        _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
             new TestPhysicalInput(1), InputPhase.Start, []));
 
         // Asseert
-        Assert.True(true);
+        Assert.False(output.IsSuccessful);
+    }
+
+    [Fact]
+    public void ProcessEvent_HasNoUserForDevice_DeviceJoinBehaviorSetToManual_NoUsers_ReturnsNullAndNotifiesUnrecognizedDeviceEvent()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Manual
+            }));
+
+        // Setting to null to validate this method is never called - null will NRE
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns((IEnumerable<IInputUser>)null!);
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.False(output.IsSuccessful);
+        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(n => n is UnrecognizedDeviceNotification)), Times.Once);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_DeviceJoinBehaviorSetToAutomatic_DeviceNotInASupportedCombination_ReturnsNullAndNotifiesUnrecognizedDeviceEvent()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        // Setting to null to validate this method is never called - null will NRE
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns((IEnumerable<IInputUser>)null!);
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.False(output.IsSuccessful);
+        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(n => n is UnrecognizedDeviceNotification)), Times.Once);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_NoUsers_DeviceJoinBehaviorSetToAutomatic_UserManagerFailsToCreateUser_ReturnsNullAndNotifiesUnrecognizedDeviceEvent()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc", 
+                    [
+                        new InputScheme("Abc", 
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                            ], 
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([]);
+        _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
+            .Returns(_outputFactory.Fail<IInputUser>("Bad day"));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.False(output.IsSuccessful);
+        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(n => n is UnrecognizedDeviceNotification)), Times.Once);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_NoUsers_DeviceJoinBehaviorSetToAutomatic_DevicePairingFails_ReturnsNullAndNotifiesUnrecognizedDeviceEvent()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc",
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                            ],
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([]);
+        _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
+            .Returns(_outputFactory.Succeed((IInputUser)new InputUser(1, new ActiveInputScheme("Abc", "Abc"))));
+        _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
+            .Returns(_outputFactory.Fail("Bad Day"));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.False(output.IsSuccessful);
+        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(n => n is DevicePairingFailedNotification)), Times.Once);
+        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(n => n is UnrecognizedDeviceNotification)), Times.Once);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_UsersExist_PairingWithSingleUser_DoesNotHaveDevice_InputTrackerDoesNotTriggerAction_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc",
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                            ],
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        var mockUser = new Mock<IInputUser>();
+        mockUser.SetupGet(m => m.Id)
+            .Returns(1);
+        mockUser.SetupGet(m => m.PairedDevices)
+            .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([mockUser.Object]);
+        _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
+            .Returns((int userId, RuntimeDeviceIdentifier _) =>
+            {
+                Assert.Equal(mockUser.Object.Id, userId);
+                return _outputFactory.Succeed();
+            });
+
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.True(output.IsSuccessful);
+
+        _mockNotificationPublisher.Verify(m => m.Notify(It.IsAny<IInputNotification>()), Times.Never);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_UsersExist_PairingWithSingleUser_HasSimilarDevice_InputTrackerDoesNotTriggerAction_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc",
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                            ],
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        var mockUser = new Mock<IInputUser>();
+        mockUser.SetupGet(m => m.Id)
+            .Returns(1);
+        mockUser.SetupGet(m => m.PairedDevices)
+            .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([mockUser.Object]);
+        _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
+            .Returns((int userId, RuntimeDeviceIdentifier _) =>
+            {
+                Assert.Equal(mockUser.Object.Id, userId);
+                return _outputFactory.Succeed();
+            });
+
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.True(output.IsSuccessful);
+
+        _mockNotificationPublisher.Verify(m => m.Notify(It.IsAny<IInputNotification>()), Times.Never);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_UsersExist_PairingWithMultipleUsers_OneHasAndOtherDoesNotHaveSimilarDevice_InputTrackerDoesNotTriggerAction_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc",
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                            ],
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        var mockUser = new Mock<IInputUser>();
+        mockUser.SetupGet(m => m.Id)
+            .Returns(1);
+        mockUser.SetupGet(m => m.PairedDevices)
+            .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
+
+        var mockUser2 = new Mock<IInputUser>();
+        mockUser2.SetupGet(m => m.Id)
+            .Returns(2);
+        mockUser2.SetupGet(m => m.PairedDevices)
+            .Returns([]);
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([mockUser.Object, mockUser2.Object]);
+        _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
+            .Returns((int userId, RuntimeDeviceIdentifier _) =>
+            {
+                Assert.Equal(mockUser2.Object.Id, userId);
+                return _outputFactory.Succeed();
+            });
+
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(2, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.True(output.IsSuccessful);
+
+        _mockNotificationPublisher.Verify(m => m.Notify(It.IsAny<IInputNotification>()), Times.Never);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_UsersExist_PairingWithMultipleUsers_BothUsersHaveSimilarDevice_InputTrackerDoesNotTriggerAction_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc",
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                            ],
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        var mockUser = new Mock<IInputUser>();
+        mockUser.SetupGet(m => m.Id)
+            .Returns(1);
+        mockUser.SetupGet(m => m.PairedDevices)
+            .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
+
+        var mockUser2 = new Mock<IInputUser>();
+        mockUser2.SetupGet(m => m.Id)
+            .Returns(2);
+        mockUser2.SetupGet(m => m.PairedDevices)
+            .Returns([new PairedDevice(2, new RuntimeDeviceIdentifier(2, TestIdentity.Identity1))]);
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([mockUser.Object, mockUser2.Object]);
+        _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
+            .Returns((int userId, RuntimeDeviceIdentifier _) =>
+            {
+                Assert.Equal(mockUser.Object.Id, userId);
+                return _outputFactory.Succeed();
+            });
+
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(3, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.True(output.IsSuccessful);
+
+        _mockNotificationPublisher.Verify(m => m.Notify(It.IsAny<IInputNotification>()), Times.Never);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_UsersExist_PairingWithMultipleUsers_OneUserWithCompletedCombination_InputTrackerDoesNotTriggerAction_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc",
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] },
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
+                            ],
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        var mockUser = new Mock<IInputUser>();
+        mockUser.SetupGet(m => m.Id)
+            .Returns(1);
+        mockUser.SetupGet(m => m.PairedDevices)
+            .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1)), 
+                    new PairedDevice(1, new RuntimeDeviceIdentifier(2, TestIdentity.Identity2))]);
+
+        var mockUser2 = new Mock<IInputUser>();
+        mockUser2.SetupGet(m => m.Id)
+            .Returns(2);
+        mockUser2.SetupGet(m => m.PairedDevices)
+            .Returns([new PairedDevice(2, new RuntimeDeviceIdentifier(3, TestIdentity.Identity1))]);
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([mockUser.Object, mockUser2.Object]);
+        _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
+            .Returns((int userId, RuntimeDeviceIdentifier _) =>
+            {
+                Assert.Equal(mockUser2.Object.Id, userId);
+                return _outputFactory.Succeed();
+            });
+
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity2),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.True(output.IsSuccessful);
+
+        _mockNotificationPublisher.Verify(m => m.Notify(It.IsAny<IInputNotification>()), Times.Never);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_UsersExist_PairingWithMultipleUsers_DeviceInDifferentCombinationThanUsersHave_InputTrackerDoesNotTriggerAction_ReturnsErrorDueToNotProcessingInputFromRandomDevice()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc",
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] },
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
+                            ],
+                            false, false),
+
+                        new InputScheme("Def",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity3, InputMaps = [] }
+                            ],
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        var mockUser = new Mock<IInputUser>();
+        mockUser.SetupGet(m => m.Id)
+            .Returns(1);
+        mockUser.SetupGet(m => m.PairedDevices)
+            .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1)),
+                    new PairedDevice(1, new RuntimeDeviceIdentifier(2, TestIdentity.Identity2))]);
+
+        var mockUser2 = new Mock<IInputUser>();
+        mockUser2.SetupGet(m => m.Id)
+            .Returns(2);
+        mockUser2.SetupGet(m => m.PairedDevices)
+            .Returns([new PairedDevice(2, new RuntimeDeviceIdentifier(3, TestIdentity.Identity1))]);
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([mockUser.Object, mockUser2.Object]);
+        _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
+            .Returns((int userId, RuntimeDeviceIdentifier _) =>
+            {
+                Assert.Equal(mockUser2.Object.Id, userId);
+                return _outputFactory.Succeed();
+            });
+
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity3),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.True(output.IsSuccessful);
+
+        _mockNotificationPublisher.Verify(m => m.Notify(It.IsAny<IInputNotification>()), Times.Never);
+    }
+
+    [Fact]
+    public void ProcessEvent_NoUserForDevice_NoUsers_CreatesUserAndPairs_InputTrackerDoesNotTriggerAction_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc",
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                            ],
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns((IInputUser?)null);
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([]);
+        _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
+            .Returns(_outputFactory.Succeed((IInputUser)new InputUser(1, new ActiveInputScheme("Abc", "Abc"))));
+        _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
+            .Returns(_outputFactory.Succeed());
+
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.True(output.IsSuccessful);
+
+        _mockNotificationPublisher.Verify(m => m.Notify(It.IsAny<IInputNotification>()), Times.Never);
+    }
+
+    [Fact]
+    public void ProcessEvent_UserFoundForDevice_InputTrackerDoesNotTriggerAction_ReturnsSuccessfullyAndNoNotifications()
+    {
+        // Arrange
+        _mockConfigurationProvider.SetupGet(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([], [
+                new InputDefinition("Abc",
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                            ],
+                            false, false)
+                    ], [], false)
+            ], new(), new()
+            {
+                DeviceJoinBehavior = DevicePairingBehavior.Balanced
+            }));
+
+        _mockUserManager.Setup(m => m.GetUsers())
+            .Returns([]);
+        _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
+            .Returns(new InputUser(1, new ActiveInputScheme("Abc", "Abc")));
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+
+        // Act
+        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            new TestPhysicalInput(1), InputPhase.Start, []));
+
+        // Assert
+        Assert.True(output.IsSuccessful);
+
+        _mockNotificationPublisher.Verify(m => m.Notify(It.IsAny<IInputNotification>()), Times.Never);
     }
 
     #endregion
