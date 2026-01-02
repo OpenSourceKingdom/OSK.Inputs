@@ -129,13 +129,15 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
 
         var definitions = configuration.Definitions;
 
-        var invalidDefinitionNames = definitions.Select(definition => definition?.Name).Where(name => string.IsNullOrWhiteSpace(name));
+        var invalidDefinitionNames = definitions.Select(definition => definition?.Name).Where(string.IsNullOrWhiteSpace);
         if (invalidDefinitionNames.Any())
         {
             return InputConfigurationValidationResult.ForDefinition(definition => definition.Name, InputConfigurationValidation.MissingData,
                 $"There are {invalidDefinitionNames.Count()} definitions with empty names.");
         }
 
+        // Note: test difficulty - due to how definitions are read-only and provided at construction into a dictionary (i.e duplicate keys throw),
+        // it's not entirely feasible this will occur, but validation will be done to ensure if something changes that this is still caught
         var duplicateDefinitionNames = definitions.GroupBy(definition => definition.Name, StringComparer.OrdinalIgnoreCase)
             .Where(definitionGroup => definitionGroup.Count() > 1);
         if (duplicateDefinitionNames.Any())
@@ -180,6 +182,15 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
 
     private InputConfigurationValidationResult ValidateInputActions(InputDefinition definition)
     {
+        var actionsWithInvalidNames = definition.Actions.Where(action => string.IsNullOrWhiteSpace(action.Name));
+        if (actionsWithInvalidNames.Any())
+        {
+            return InputConfigurationValidationResult.ForDefinition(definition => definition.Actions, InputConfigurationValidation.MissingData,
+                $"There are {actionsWithInvalidNames.Count()} actions with empty names on input definition {definition.Name}.");
+        }
+
+        // Note: test difficulty - due to how actions are read-only and provided at construction into a dictionary (i.e duplicate keys throw),
+        // it's not entirely feasible this will occur, but validation will be done to ensure if something changes that this is still caught
         var duplicateActionNames = definition.Actions.GroupBy(action => action.Name, StringComparer.OrdinalIgnoreCase)
             .Where(actionGroup => actionGroup.Count() > 1)
             .Select(actionGroup => actionGroup.Key);
@@ -194,7 +205,12 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
             if (!action.TriggerPhases.Any())
             {
                 return InputConfigurationValidationResult.ForInputAction(action => action.TriggerPhases, InputConfigurationValidation.MissingData,
-                    $"There are no input actions for definition {definition.Name}.");
+                    $"There are no input trigger phases for action {action.Name} on input definition {definition.Name}.");
+            }
+            if (action.ActionExecutor is null)
+            {
+                return InputConfigurationValidationResult.ForInputAction(action => action.ActionExecutor, InputConfigurationValidation.MissingData,
+                    $"There is not action executor for action {action.Name} for definition {definition.Name}.");
             }
         }
 
@@ -203,6 +219,15 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
 
     private InputConfigurationValidationResult ValidateInputSchemes(InputSystemConfiguration configuration, InputDefinition definition)
     {
+        var schemesWithInvalidNames = definition.Schemes.Where(scheme => string.IsNullOrWhiteSpace(scheme.Name));
+        if (schemesWithInvalidNames.Any())
+        {
+            return InputConfigurationValidationResult.ForScheme(scheme => scheme.Name, InputConfigurationValidation.MissingData,
+                $"There are {schemesWithInvalidNames.Count()} schemes with empty names on input definition {definition.Name}.");
+        }
+
+        // Note: test difficulty - due to how schemes are read-only and provided at construction into a dictionary (i.e duplicate keys throw),
+        // it's not entirely feasible this will occur, but validation will be done to ensure if something changes that this is still caught
         var duplicateSchemeNames = definition.Schemes.GroupBy(scheme => scheme.Name, StringComparer.OrdinalIgnoreCase)
            .Where(schemeGroup => schemeGroup.Count() > 1)
            .Select(schemeGroup => schemeGroup.Key);
@@ -234,6 +259,8 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
     private InputConfigurationValidationResult ValidateInputScheme(InputSystemConfiguration configuration, InputDefinition definition,
         InputScheme scheme)
     {
+        // Note: test difficulty - due to how schemes are read-only and provided at construction into a dictionary (i.e duplicate keys throw),
+        // it's not entirely feasible this will occur, but validation will be done to ensure if something changes that this is still caught
         var duplicateDeviceMaps = scheme.DeviceMaps.GroupBy(deviceMap => deviceMap.DeviceIdentity)
             .Where(deviceIdentityGroup => deviceIdentityGroup.Count() > 1)
             .Select(deviceIdentityGroup => deviceIdentityGroup.Key);

@@ -7,7 +7,7 @@ using OSK.Inputs.Internal.Models;
 
 namespace OSK.Inputs.Internal;
 
-internal interface IUserInputTracker
+internal interface IInputUserTracker
 {
     ActiveInputScheme ActiveScheme { get; }
 

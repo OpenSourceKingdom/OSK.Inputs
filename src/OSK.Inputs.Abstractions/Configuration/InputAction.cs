@@ -22,8 +22,7 @@ public class InputAction(string actionName, ISet<InputPhase> triggerPhases, bool
 
     public ISet<InputPhase> TriggerPhases => triggerPhases;
 
-    public void Execute(InputEventContext context)
-        => actionExecutor(context);
+    public Action<InputEventContext> ActionExecutor => actionExecutor;
 
     #endregion
 }

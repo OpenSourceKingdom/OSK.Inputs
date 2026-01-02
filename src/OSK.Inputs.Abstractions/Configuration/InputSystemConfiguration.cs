@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using OSK.Inputs.Abstractions.Inputs;
 
@@ -9,8 +10,10 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
 {
     #region Variables
 
-    private readonly Dictionary<InputDeviceIdentity, InputDeviceSpecification> _deviceSpecificationLookup = deviceSpecifications.ToDictionary(descriptor => descriptor.DeviceIdentity);
-    private readonly Dictionary<string, InputDefinition> _inputDefinitionLookup = definitions.ToDictionary(definition => definition.Name);
+    private readonly Dictionary<InputDeviceIdentity, InputDeviceSpecification> _deviceSpecificationLookup 
+        = deviceSpecifications?.ToDictionary(descriptor => descriptor.DeviceIdentity) ?? [];
+    private readonly Dictionary<string, InputDefinition> _inputDefinitionLookup 
+        = definitions?.Where(definition => definition?.Name is not null).ToDictionary(definition => definition.Name, StringComparer.OrdinalIgnoreCase) ?? [];
 
     #endregion
 
@@ -21,7 +24,7 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
     public InputSystemJoinPolicy JoinPolicy => joinPolicy;
 
     public IReadOnlyCollection<InputDeviceCombination> SupportedDeviceCombinations { get; }
-        = GetUniqueCombinations(definitions);
+        = GetUniqueCombinations(definitions ?? []);
 
     public IReadOnlyCollection<InputDefinition> Definitions
         => _inputDefinitionLookup.Values;

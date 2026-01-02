@@ -12,5 +12,5 @@ public readonly struct TriggeredActionEvent(ActiveInputScheme activeScheme, Devi
     public InputEventContext ActivationContext => context;
 
     public void Execute()
-        => ActionMap.Action.Execute(ActivationContext);
+        => ActionMap.Action.ActionExecutor(ActivationContext);
 }

@@ -4,12 +4,14 @@ using System.Linq;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
-public class InputDefinition(string name, IEnumerable<InputScheme> schemes, IEnumerable<InputAction> actions, bool isDefault)
+public class InputDefinition(string name, IEnumerable<InputAction> actions, IEnumerable<InputScheme> schemes, bool isDefault)
 {
     #region Variables
 
-    private Dictionary<string, InputScheme> _schemeLookup = schemes.ToDictionary(scheme => scheme.Name, StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, InputAction> _actionLookup = actions.ToDictionary(action => action.Name, StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, InputAction> _actionLookup
+        = actions?.Where(action => action?.Name is not null).ToDictionary(action => action.Name, StringComparer.OrdinalIgnoreCase) ?? [];
+    private Dictionary<string, InputScheme> _schemeLookup 
+        = schemes?.Where(scheme => scheme?.Name is not null).ToDictionary(scheme => scheme.Name, StringComparer.OrdinalIgnoreCase) ?? [];
 
     #endregion
 
@@ -19,9 +21,9 @@ public class InputDefinition(string name, IEnumerable<InputScheme> schemes, IEnu
 
     public bool IsDefault => isDefault;
 
-    public IReadOnlyCollection<InputScheme> Schemes => _schemeLookup.Values;
-
     public IReadOnlyCollection<InputAction> Actions => _actionLookup.Values;
+
+    public IReadOnlyCollection<InputScheme> Schemes => _schemeLookup.Values;
     
     public InputAction? GetAction(string name)
         => !string.IsNullOrWhiteSpace(name) && _actionLookup.TryGetValue(name, out var action)

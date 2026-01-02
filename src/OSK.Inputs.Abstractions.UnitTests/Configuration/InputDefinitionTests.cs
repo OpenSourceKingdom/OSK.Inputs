@@ -40,7 +40,7 @@ public class InputDefinitionTests
     public void GetAction_ValidActionName_ReturnsAction()
     {
         // Arrange 
-        var definition = new InputDefinition("Hello", [], [new InputAction("Hello", new HashSet<InputPhase>(), false, _ => { })], false);
+        var definition = new InputDefinition("Hello", [new InputAction("Hello", new HashSet<InputPhase>(), false, _ => { })], [], false);
 
         // Act
         var action = definition.GetAction("Hello");
@@ -86,7 +86,7 @@ public class InputDefinitionTests
     public void GetScheme_ValidSchemeName_ReturnsAction()
     {
         // Arrange 
-        var definition = new InputDefinition("Hello", [new InputScheme("Hello", [], false, false)], [], false);
+        var definition = new InputDefinition("Hello", [], [new InputScheme("Hello", [], false, false)], false);
 
         // Act
         var action = definition.GetScheme("Hello");
@@ -183,7 +183,7 @@ public class InputDefinitionTests
     {
         // Arrange
         var builtInScheme = new InputScheme("Hello", [], false, false);
-        var definition = new InputDefinition("Hello", [builtInScheme], [], false);
+        var definition = new InputDefinition("Hello", [], [builtInScheme], false);
 
         var expectedScheme = new CustomInputScheme()
         {
@@ -231,7 +231,7 @@ public class InputDefinitionTests
     {
         // Arrange
         var originalCustomScheme = new InputScheme("Hello", [], false, true);
-        var definition = new InputDefinition("Hello", [originalCustomScheme], [], false);
+        var definition = new InputDefinition("Hello", [], [originalCustomScheme], false);
 
         var expectedScheme = new CustomInputScheme()
         {
@@ -272,7 +272,7 @@ public class InputDefinitionTests
     {
         // Arrange
         var expectedScheme = new InputScheme("Hello", [], false, false);
-        var definition = new InputDefinition("Hello", [expectedScheme], [], false);
+        var definition = new InputDefinition("Hello", [], [expectedScheme], false);
 
         // Act
         definition.ResetDefinition();
@@ -289,7 +289,7 @@ public class InputDefinitionTests
     {
         // Arrange
         var expectedScheme = new InputScheme("Hello", [], false, false);
-        var definition = new InputDefinition("Hello", [expectedScheme], [], false);
+        var definition = new InputDefinition("Hello", [], [expectedScheme], false);
 
         var customScheme = new CustomInputScheme() { Name = "What", DefinitionName = "Hello", DeviceMaps = [] };
         definition.ApplyCustomScheme(customScheme);

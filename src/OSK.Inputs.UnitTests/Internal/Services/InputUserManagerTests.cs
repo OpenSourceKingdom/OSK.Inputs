@@ -99,14 +99,14 @@ public class InputUserManagerTests
         _mockConfigurationProvider.Setup(m => m.Configuration)
             .Returns(new InputSystemConfiguration([],
                 [
-                    new InputDefinition("Abc",
+                    new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, false)
-                    ], [], false),
-                    new InputDefinition("Def",
+                    ], false),
+                    new InputDefinition("Def", [],
                     [
                         new InputScheme("Def", [], false, false)
-                    ], [], true)
+                    ], true)
                 ],
                 new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
 
@@ -134,14 +134,14 @@ public class InputUserManagerTests
         _mockConfigurationProvider.Setup(m => m.Configuration)
             .Returns(new InputSystemConfiguration([],
                 [
-                    new InputDefinition("Abc",
+                    new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, false)
-                    ], [], false),
-                    new InputDefinition("Def",
+                    ], false),
+                    new InputDefinition("Def", [],
                     [
                         new InputScheme("Def", [], false, false)
-                    ], [], false)
+                    ], false)
                 ],
                 new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
 
@@ -169,15 +169,15 @@ public class InputUserManagerTests
         _mockConfigurationProvider.Setup(m => m.Configuration)
             .Returns(new InputSystemConfiguration([],
                 [
-                    new InputDefinition("Abc",
+                    new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, false),
                         new InputScheme("Def", [], true, false)
-                    ], [], false),
-                    new InputDefinition("Def",
+                    ], false),
+                    new InputDefinition("Def", [],
                     [
                         new InputScheme("Def", [], false, false)
-                    ], [], false)
+                    ], false)
                 ],
                 new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
 
@@ -203,15 +203,15 @@ public class InputUserManagerTests
         _mockConfigurationProvider.Setup(m => m.Configuration)
             .Returns(new InputSystemConfiguration([],
                 [
-                    new InputDefinition("Abc",
+                    new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, false),
                         new InputScheme("Def", [], true, false)
-                    ], [], true),
-                    new InputDefinition("Def",
+                    ], true),
+                    new InputDefinition("Def", [],
                     [
                         new InputScheme("Def", [], false, false)
-                    ], [], false)
+                    ], false)
                 ],
                 new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
 
@@ -237,14 +237,14 @@ public class InputUserManagerTests
         _mockConfigurationProvider.Setup(m => m.Configuration)
             .Returns(new InputSystemConfiguration([],
                 [
-                    new InputDefinition("Abc",
+                    new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, false)
-                    ], [], false),
-                    new InputDefinition("Def",
+                    ], false),
+                    new InputDefinition("Def", [],
                     [
                         new InputScheme("Def", [], false, false)
-                    ], [], true)
+                    ], true)
                 ],
                 new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
 
@@ -323,10 +323,10 @@ public class InputUserManagerTests
         _mockConfigurationProvider.Setup(m => m.Configuration)
             .Returns(new InputSystemConfiguration([],
             [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                 [
                     new InputScheme("Abc", [], false, false)
-                ], [], false)
+                ], false)
             ], new(), new()));
 
         var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
@@ -716,9 +716,9 @@ public class InputUserManagerTests
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([],
             [
-                new InputDefinition("Abc", [
+                new InputDefinition("Abc", [], [
                     new InputScheme("Abc", [], false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new() { MaxUsers = 2 }));
 
         _mockSchemeRepository.Setup(m => m.GetCustomSchemesAsync(It.IsAny<CancellationToken>()))

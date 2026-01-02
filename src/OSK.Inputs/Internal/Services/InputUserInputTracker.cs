@@ -11,9 +11,9 @@ using OSK.Inputs.Internal.Models;
 
 namespace OSK.Inputs.Internal;
 
-internal partial class UserInputTracker(int userId, ActiveInputScheme scheme, InputSchemeActionMap schemeMap, 
-    InputProcessorConfiguration processorConfiguration, ILogger<UserInputTracker> logger,
-    IOutputFactory<UserInputTracker> outputFactory): IUserInputTracker
+internal partial class InputUserInputTracker(int userId, ActiveInputScheme scheme, InputSchemeActionMap schemeMap, 
+    InputProcessorConfiguration processorConfiguration, ILogger<InputUserInputTracker> logger,
+    IOutputFactory<InputUserInputTracker> outputFactory): IInputUserTracker
 {
     #region Variables
 

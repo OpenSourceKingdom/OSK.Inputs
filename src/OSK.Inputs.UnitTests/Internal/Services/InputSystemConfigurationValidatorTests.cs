@@ -4,8 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models;
+using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
 
 namespace OSK.Inputs.UnitTests.Internal.Services;
@@ -24,7 +26,537 @@ public class InputSystemConfigurationValidatorTests
         Assert.Throws<ArgumentNullException>(() => validator.Validate(null!));
     }
 
-    
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Validate_EmptyDefinitions_ReturnsMissingData(bool useEmpty)
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([], useEmpty ? [] : null!, new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.InputSystem, validation.ConfigurationType);
+        Assert.Equal(nameof(InputSystemConfiguration.Definitions), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Validate_InvalidDefinitionNames_ReturnsMissingData(string? name)
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([], 
+            [
+                new InputDefinition(name!, [], [], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        
+        // Expected type and name changes because when null, the current constructor for the configuration will filter out null values,
+        // resulting in a slightly different validation
+        Assert.Equal(name is null ? InputConfigurationType.InputSystem : InputConfigurationType.Definition, validation.ConfigurationType);
+        Assert.Equal(name is null ? nameof(InputSystemConfiguration.Definitions) : nameof(InputDefinition.Name), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Validate_DefinitionsWithoutSchemes_ReturnsMissingData(bool useEmpty)
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([],
+            [
+                new InputDefinition("abc", useEmpty ? [] : null!, [], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.Definition, validation.ConfigurationType);
+        Assert.Equal(nameof(InputDefinition.Schemes), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Validate_DefinitionsWithoutActions_ReturnsMissingData(bool useEmpty)
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([],
+            [
+                new InputDefinition("abc",
+                    useEmpty ? [] : null!,
+                    [
+                        new InputScheme("Abc", [], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.Definition, validation.ConfigurationType);
+        Assert.Equal(nameof(InputDefinition.Actions), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Theory]
+    [InlineData(null!)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void Validate_InputActionWithInvalidNames_ReturnsMissingData(string? name)
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction(name!, new HashSet<InputPhase>(), false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc", [], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.Definition, validation.ConfigurationType);
+        Assert.Equal(nameof(InputDefinition.Actions), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_InputActionWithoutTriggers_ReturnsMissingData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>(), false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc", [], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.InputAction, validation.ConfigurationType);
+        Assert.Equal(nameof(InputAction.TriggerPhases), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_InputActionWithoutExecutor_ReturnsMissingData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, null!)
+                    ],
+                    [
+                        new InputScheme("Abc", [], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.InputAction, validation.ConfigurationType);
+        Assert.Equal(nameof(InputAction.ActionExecutor), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Theory]
+    [InlineData(null!)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void Validate_InputSchemesWithInvalidNames_ReturnsMissingData(string? name)
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme(name!, [], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        // Expected type and name changes because when null, the current constructor for the configuration will filter out null values,
+        // resulting in a slightly different validation
+        Assert.Equal(name is null ? InputConfigurationType.Definition : InputConfigurationType.Scheme, validation.ConfigurationType);
+        Assert.Equal(name is null ? nameof(InputDefinition.Schemes) : nameof(InputScheme.Name), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Validate_InputSchemesMissingDeviceMaps_ReturnsMissingData(bool isEmpty)
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc", isEmpty ? [] : null!, false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        Assert.Equal(InputConfigurationType.Scheme, validation.ConfigurationType);
+        Assert.Equal(nameof(InputScheme.DeviceMaps), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_InputSchemeDeviceMapsMissingInputMaps_ReturnsMissingData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc", 
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                            ], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        Assert.Equal(InputConfigurationType.Scheme, validation.ConfigurationType);
+        Assert.Equal(nameof(InputScheme.DeviceMaps), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_DeviceMapsDeviceIdentityIsNotInConfigurationDevices_ReturnsInvalidData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ] }
+                            ], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
+        Assert.Equal(nameof(InputDeviceMap.DeviceIdentity), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_DeviceMapInputNotInDeviceSpecification_ReturnsInvalidData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([new TestDeviceSpecification(TestIdentity.Identity1, new TestPhysicalInput(2))],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ] }
+                            ], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
+        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_DeviceMapInputMapsWithDuplicateInputIds_ReturnsDuplicateData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([new TestDeviceSpecification(TestIdentity.Identity1, new TestPhysicalInput(2))],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, 
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 2 }, new InputMap() { ActionName = "Def", InputId = 2 }] }
+                            ], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
+        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Validate_DeviceMapInputMapsWithInvalidActionNames_ReturnsMissingData(string? actionName)
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([new TestDeviceSpecification(TestIdentity.Identity1, new TestPhysicalInput(1))],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = actionName!, InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
+        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_DeviceMapInputMapsWithActionNameNotInInputDefinition_ReturnsInvalidData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration([new TestDeviceSpecification(TestIdentity.Identity1, new TestPhysicalInput(1))],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
+        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_DeviceMapInputMapsWithDuplicateActionNames_ReturnsDuplicateData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1, 
+                    new TestPhysicalInput(1), new TestPhysicalInput(2))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }, new InputMap() { ActionName = "Abc", InputId = 2 }] }
+                            ], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
+        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.DuplicateData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_InputSchemeWithDuplicateActionNamesAcrossDevices_ReturnsDuplicateData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1,
+                    new TestPhysicalInput(1), new TestPhysicalInput(2)),
+                new TestDeviceSpecification(TestIdentity.Identity2,
+                    new TestPhysicalInput(1))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+
+        Assert.Equal(InputConfigurationType.Scheme, validation.ConfigurationType);
+        Assert.Equal(nameof(InputScheme.DeviceMaps), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.DuplicateData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_Valid_ReturnsSuccess()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1,
+                    new TestPhysicalInput(1), new TestPhysicalInput(2)),
+                new TestDeviceSpecification(TestIdentity.Identity2,
+                    new TestPhysicalInput(1))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { }),
+                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2,
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new(), new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.True(validation.IsValid);
+        Assert.Equal(InputConfigurationValidation.Ok, validation.Result);
+    }
 
     #endregion
 
@@ -124,10 +656,10 @@ public class InputSystemConfigurationValidatorTests
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([], 
             [
-                new InputDefinition("Abc", 
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()),
             new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
             false);
@@ -148,10 +680,10 @@ public class InputSystemConfigurationValidatorTests
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],
             [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()),
             new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
             true);
@@ -172,10 +704,10 @@ public class InputSystemConfigurationValidatorTests
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],
             [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, true)
-                    ], [], false)
+                    ], false)
             ], new(), new()),
             new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
             false);
@@ -187,10 +719,8 @@ public class InputSystemConfigurationValidatorTests
         Assert.Equal("Name", validation.TargetName);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void ValidateCustomScheme_DuplicateSchemeName_OriginalSchemeCustom_SkipDuplicateCustomSchemeGuard_InvalidDeviceMaps_ReturnsError(bool useEmpty)
+    [Fact]
+    public void ValidateCustomScheme_DuplicateSchemeName_OriginalSchemeCustom_SkipDuplicateCustomSchemeGuard_InvalidDeviceMaps_ReturnsError()
     {
         // Arrange
         var validator = new InputSystemConfigurationValidator();
@@ -198,10 +728,10 @@ public class InputSystemConfigurationValidatorTests
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],
             [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, true)
-                    ], [], false)
+                    ], false)
             ], new(), new()),
             new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
             true);

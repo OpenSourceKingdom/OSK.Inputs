@@ -20,7 +20,7 @@ internal partial class InputProcessor: IInputProcessor
     #region Variables
 
     internal bool _pauseInputProcessing;
-    private readonly Dictionary<int, IUserInputTracker> _userInputTrackerLookup = [];
+    private readonly Dictionary<int, IInputUserTracker> _userInputTrackerLookup = [];
     private readonly Dictionary<RuntimeDeviceIdentifier, int> _registeredUserDevices = [];
 
     private readonly IInputUserManager _userManager;
@@ -30,11 +30,11 @@ internal partial class InputProcessor: IInputProcessor
     private readonly ILogger<InputProcessor> _logger;
     private readonly IOutputFactory<InputProcessor> _outputFactory;
 
-    internal readonly ObjectFactory<UserInputTracker> _userInputTrackerFactory
-        = ActivatorUtilities.CreateFactory<UserInputTracker>([typeof(int), typeof(ActiveInputScheme),
+    internal readonly ObjectFactory<InputUserInputTracker> _userInputTrackerFactory
+        = ActivatorUtilities.CreateFactory<InputUserInputTracker>([typeof(int), typeof(ActiveInputScheme),
             typeof(InputSchemeActionMap), typeof(InputProcessorConfiguration)]);
 
-    private readonly Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IUserInputTracker> _newInputTrackerFactory;
+    private readonly Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> _newInputTrackerFactory;
 
     #endregion
 
@@ -59,10 +59,12 @@ internal partial class InputProcessor: IInputProcessor
     internal InputProcessor(IInputUserManager userManager, IInputNotificationPublisher notificationPublisher,
         IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger,
         IOutputFactory<InputProcessor> outputFactory,
-        Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IUserInputTracker> customTrackerFactory)
+        Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> customTrackerFactory,
+        Dictionary<int, IInputUserTracker> trackerDictionary)
         : this(userManager, notificationPublisher, configurationProvider, serviceProvider, logger, outputFactory)
     {
         _newInputTrackerFactory = customTrackerFactory ?? throw new ArgumentNullException(nameof(customTrackerFactory));
+        _userInputTrackerLookup = trackerDictionary ?? throw new ArgumentNullException(nameof(trackerDictionary));
     }
 
     #endregion
@@ -234,7 +236,7 @@ internal partial class InputProcessor: IInputProcessor
         return targetUser;
     }
 
-    private IUserInputTracker? GetInputTrackerForDevice(RuntimeDeviceIdentifier deviceIdentifier)
+    private IInputUserTracker? GetInputTrackerForDevice(RuntimeDeviceIdentifier deviceIdentifier)
     {
         if (_registeredUserDevices.TryGetValue(deviceIdentifier, out var userId))
         {
@@ -258,7 +260,7 @@ internal partial class InputProcessor: IInputProcessor
         return inputTracker;
     }
 
-    private IUserInputTracker CreateTracker(int userId, InputSystemConfiguration configuration, ActiveInputScheme activeScheme)
+    private IInputUserTracker CreateTracker(int userId, InputSystemConfiguration configuration, ActiveInputScheme activeScheme)
     {
         var (inputDefinition, inputScheme) = GetViableInputScheme(configuration, activeScheme);
         var schemeActionMap = configuration.GetSchemeMap(inputDefinition.Name, inputScheme.Name);

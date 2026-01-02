@@ -8,7 +8,8 @@ public class InputScheme(string name, IEnumerable<InputDeviceMap> deviceMaps,
 {
     #region Variables
 
-    private readonly Dictionary<InputDeviceIdentity, InputDeviceMap> _deviceMapLookup = deviceMaps.ToDictionary(map => map.DeviceIdentity);
+    private readonly Dictionary<InputDeviceIdentity, InputDeviceMap> _deviceMapLookup
+        = deviceMaps?.Where(map => map is not null).ToDictionary(map => map.DeviceIdentity) ?? [];
 
     #endregion
 

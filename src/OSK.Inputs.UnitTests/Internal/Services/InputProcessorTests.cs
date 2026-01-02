@@ -27,10 +27,12 @@ public class InputProcessorTests
 {
     #region Variables
 
+    private readonly Dictionary<int, IInputUserTracker> _trackers = [];
+
     private readonly Mock<IInputConfigurationProvider> _mockConfigurationProvider;
     private readonly Mock<IInputUserManager> _mockUserManager;
     private readonly Mock<IInputNotificationPublisher> _mockNotificationPublisher;
-    private readonly Mock<IUserInputTracker> _mockUserInputTracker;
+    private readonly Mock<IInputUserTracker> _mockUserInputTracker;
     private readonly Mock<IServiceProvider> _mockServiceProvider;
     private readonly IOutputFactory<InputProcessor> _outputFactory;
 
@@ -48,12 +50,12 @@ public class InputProcessorTests
         _mockUserInputTracker = new();
         _outputFactory = new MockOutputFactory<InputProcessor>();
 
-        var mockLogger = new Mock<ILogger<UserInputTracker>>();
+        var mockLogger = new Mock<ILogger<InputUserInputTracker>>();
         _mockServiceProvider = new Mock<IServiceProvider>();
-        _mockServiceProvider.Setup(m => m.GetService(typeof(ILogger<UserInputTracker>)))
+        _mockServiceProvider.Setup(m => m.GetService(typeof(ILogger<InputUserInputTracker>)))
             .Returns(mockLogger.Object);
-        _mockServiceProvider.Setup(m => m.GetService(typeof(IOutputFactory<UserInputTracker>)))
-            .Returns(new MockOutputFactory<UserInputTracker>());
+        _mockServiceProvider.Setup(m => m.GetService(typeof(IOutputFactory<InputUserInputTracker>)))
+            .Returns(new MockOutputFactory<InputUserInputTracker>());
 
         _processor = new InputProcessor(_mockUserManager.Object, 
             _mockNotificationPublisher.Object, 
@@ -61,7 +63,8 @@ public class InputProcessorTests
             _mockServiceProvider.Object, 
             Mock.Of<ILogger<InputProcessor>>(), 
             _outputFactory,
-            (_, _, _, _) => _mockUserInputTracker.Object);
+            (_, _, _, _) => _mockUserInputTracker.Object,
+            _trackers);
     }
 
     #endregion
@@ -126,6 +129,46 @@ public class InputProcessorTests
 
         // Assert
         Assert.Equal(toggle, _processor._pauseInputProcessing);
+    }
+
+    #endregion
+
+    #region Update
+
+    [Fact]
+    public void Update_InputProcessingPaused_DoesNotCallInputTracker()
+    {
+        // Arrange
+        var mockTracker = new Mock<IInputUserTracker>();
+        _trackers[1] = mockTracker.Object;
+
+        _processor._pauseInputProcessing = true;
+
+        // Act
+        _processor.Update(TimeSpan.FromSeconds(2));
+
+        // Assert
+        mockTracker.Verify(m => m.Update(It.IsAny<TimeSpan>()), Times.Never);
+    }
+
+
+    [Fact]
+    public void Update_InputProcessing_DoesCallsInputTracker()
+    {
+        // Arrange
+        var mockTracker = new Mock<IInputUserTracker>();
+        mockTracker.Setup(m => m.Update(It.IsAny<TimeSpan>()))
+            .Returns([]);
+
+        _trackers[1] = mockTracker.Object;
+
+        _processor._pauseInputProcessing = false;
+
+        // Act
+        _processor.Update(TimeSpan.FromSeconds(2));
+
+        // Assert
+        mockTracker.Verify(m => m.Update(It.IsAny<TimeSpan>()), Times.Once);
     }
 
     #endregion
@@ -211,14 +254,14 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc", 
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", 
                             [
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ], 
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
@@ -246,14 +289,14 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc",
                             [
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
@@ -284,14 +327,14 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc",
                             [
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
@@ -333,14 +376,14 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc",
                             [
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
@@ -382,14 +425,14 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc",
                             [
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
@@ -437,14 +480,14 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc",
                             [
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
@@ -492,7 +535,7 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc",
                             [
@@ -500,7 +543,7 @@ public class InputProcessorTests
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
                             ],
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
@@ -549,7 +592,7 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc",
                             [
@@ -563,7 +606,7 @@ public class InputProcessorTests
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity3, InputMaps = [] }
                             ],
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
@@ -612,14 +655,14 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc",
                             [
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
@@ -653,14 +696,14 @@ public class InputProcessorTests
         // Arrange
         _mockConfigurationProvider.SetupGet(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [
-                new InputDefinition("Abc",
+                new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc",
                             [
                                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
-                    ], [], false)
+                    ], false)
             ], new(), new()
             {
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced

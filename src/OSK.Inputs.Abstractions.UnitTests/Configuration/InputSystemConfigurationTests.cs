@@ -26,7 +26,7 @@ public class InputSystemConfigurationTests
         // 1. Identity1
         // 2. Identity1 + Identity2
         // 3. Redudant Identity1
-        var definition1 = new InputDefinition("abc",
+        var definition1 = new InputDefinition("abc", [],
             [
               new InputScheme("Abc", [new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false),
               new InputScheme("Def", 
@@ -35,14 +35,13 @@ public class InputSystemConfigurationTests
                  new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
                ], false, false),
               new InputScheme("GHI", [new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false)
-             ],
-            [], false);
+             ], false);
 
         // Creates a set of schemes with the following:
         // 1. Identity1
         // 2. Identity1 + Identity2
         // 3. Identity4
-        var definition2 = new InputDefinition("def",
+        var definition2 = new InputDefinition("def", [],
             [
               new InputScheme("Abc", [new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false),
                       new InputScheme("Def",
@@ -51,8 +50,7 @@ public class InputSystemConfigurationTests
                          new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
                        ], false, false),
                       new InputScheme("GHI", [new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity4, InputMaps = [] }], false, false)
-             ],
-            [], false);
+             ], false);
         var configuration = new InputSystemConfiguration([], [definition1, definition2], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act
@@ -219,7 +217,7 @@ public class InputSystemConfigurationTests
     public void GetSchemeMap_Valid_ReturnsSchemeMap()
     {
         // Arrange
-        var definition = new InputDefinition("Hello", [new InputScheme("Abc", [], false, false)], [], false);
+        var definition = new InputDefinition("Hello", [], [new InputScheme("Abc", [], false, false)], false);
         var configuration = new InputSystemConfiguration([], [definition], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act

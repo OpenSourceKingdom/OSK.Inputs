@@ -29,7 +29,7 @@ public class InputConfigurationValidationResult
 
     public static InputConfigurationValidationResult ForInputAction(Expression<Func<InputAction, object?>> propertyPath,
         InputConfigurationValidation validation, string? message = null)
-        => ForConfiguration(InputConfigurationType.Definition, propertyPath, validation, message);
+        => ForConfiguration(InputConfigurationType.InputAction, propertyPath, validation, message);
 
     public static InputConfigurationValidationResult ForScheme(Expression<Func<InputScheme, object?>> propertyPath, 
         InputConfigurationValidation validation, string? message = null)
