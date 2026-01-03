@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSK.Inputs.Abstractions", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSK.Inputs.Abstractions.UnitTests", "OSK.Inputs.Abstractions.UnitTests\OSK.Inputs.Abstractions.UnitTests.csproj", "{DCD7D81F-BE9D-4DDD-B8FF-2371BCCB4E36}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSK.Extensions.Inputs.Configuration", "OSK.Extensions.Inputs.Configuration\OSK.Extensions.Inputs.Configuration.csproj", "{37D51EF2-DFB8-4EAA-A0A1-513BB23A0C36}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSK.Extensions.Inputs.Configuration.UnitTests", "OSK.Extensions.Inputs.Configuration.UnitTests\OSK.Extensions.Inputs.Configuration.UnitTests.csproj", "{26060173-CF82-47DD-902F-F7702DCF06A9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{DCD7D81F-BE9D-4DDD-B8FF-2371BCCB4E36}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DCD7D81F-BE9D-4DDD-B8FF-2371BCCB4E36}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DCD7D81F-BE9D-4DDD-B8FF-2371BCCB4E36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37D51EF2-DFB8-4EAA-A0A1-513BB23A0C36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37D51EF2-DFB8-4EAA-A0A1-513BB23A0C36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37D51EF2-DFB8-4EAA-A0A1-513BB23A0C36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37D51EF2-DFB8-4EAA-A0A1-513BB23A0C36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26060173-CF82-47DD-902F-F7702DCF06A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26060173-CF82-47DD-902F-F7702DCF06A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26060173-CF82-47DD-902F-F7702DCF06A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26060173-CF82-47DD-902F-F7702DCF06A9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

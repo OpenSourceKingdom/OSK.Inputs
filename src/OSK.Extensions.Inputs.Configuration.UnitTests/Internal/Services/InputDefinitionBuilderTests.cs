@@ -1,0 +1,42 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using Moq;
+using OSK.Extensions.Inputs.Configuration.Internal.Services;
+using OSK.Inputs.Abstractions.Runtime;
+using OSK.Inputs.UnitTests._Helpers;
+
+namespace OSK.Extensions.Inputs.Configuration.UnitTests.Internal.Services;
+
+public class InputDefinitionBuilderTests
+{
+    #region WithActions
+
+    [Fact]
+    public void WithActions_TestRegistrationService_Valid_ReturnsBuiltInputDefinition()
+    {
+        // Arrange
+        var builder = new InputDefinitionBuilder("Abc");
+
+        builder.WithActions<TestRegistrationService>();
+
+        // Act
+        var definition = builder.Build();
+
+        // Assert
+        Assert.NotNull(definition);
+
+        Assert.Equal(2, definition.Actions.Count);
+
+        Assert.True(definition.Actions.Count(action => nameof(TestRegistrationService.ValidMethodA).Equals(action.Name)) == 1);
+        Assert.True(definition.Actions.Count(action => "SpecialAction".Equals(action.Name)) == 1);
+
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        mockServiceProvider.Setup(m => m.GetService(It.Is<Type>(type => type == typeof(TestRegistrationService))))
+            .Returns(new TestRegistrationService());
+
+        definition.Actions.First().ActionExecutor(new InputEventContext(1, null!, null!, null!, mockServiceProvider.Object));
+    }
+
+    #endregion
+}

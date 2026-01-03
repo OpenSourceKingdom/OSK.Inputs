@@ -12,8 +12,8 @@ using OSK.Inputs.Internal.Models;
 namespace OSK.Inputs.Internal;
 
 internal partial class InputUserInputTracker(int userId, ActiveInputScheme scheme, InputSchemeActionMap schemeMap, 
-    InputProcessorConfiguration processorConfiguration, ILogger<InputUserInputTracker> logger,
-    IOutputFactory<InputUserInputTracker> outputFactory): IInputUserTracker
+    InputProcessorConfiguration processorConfiguration, ILogger<InputUserInputTracker> logger, IOutputFactory<InputUserInputTracker> outputFactory,
+    IServiceProvider serviceProvider): IInputUserTracker
 {
     #region Variables
 
@@ -300,7 +300,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         => new TriggeredActionEvent(ActiveScheme,
                 actionMap,
                 new InputEventContext(userId, activation, GetPointerInformation(actionMap),
-                GetActivityInformation(state)));
+                GetActivityInformation(state), serviceProvider));
 
     #endregion
 
