@@ -2,7 +2,7 @@
 
 namespace OSK.Inputs.Internal.Models;
 
-internal class InputPowerState: DeviceInputState
+internal class InputPowerState(PhysicalInput input): PhysicalInputState(input)
 {
     public int TapCount { get; set; }
 

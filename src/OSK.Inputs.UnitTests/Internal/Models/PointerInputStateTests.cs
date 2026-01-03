@@ -15,11 +15,10 @@ public class PointerInputStateTests
     public void GetCurrentPositionAndMotionData_NoRecords_ReturnsNull()
     {
         // Arrange
-        var state = new InputPointerState(1, 10)
+        var state = new InputPointerState(1, new TestPhysicalInput(1), 10)
         {
             DeviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            Duration = TimeSpan.FromSeconds(0),
-            Input = new TestPhysicalInput(1)
+            Duration = TimeSpan.FromSeconds(0)
         };
 
         // Act
@@ -33,11 +32,10 @@ public class PointerInputStateTests
     public void GetCurrentPositionAndMotionData_OneRecord_ReturnsPositionAndZeroMotion()
     {
         // Arrange
-        var state = new InputPointerState(1, 10)
+        var state = new InputPointerState(1, new TestPhysicalInput(1), 10)
         {
             DeviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            Duration = TimeSpan.FromSeconds(0),
-            Input = new TestPhysicalInput(1)
+            Duration = TimeSpan.FromSeconds(0)
         };
         var position = new Vector2(3f, -2f);
 
@@ -59,11 +57,10 @@ public class PointerInputStateTests
     public void GetCurrentPositionAndMotionData_TwoRecords_CalculatesVelocityAndAcceleration()
     {
         // Arrange
-        var state = new InputPointerState(1, 10)
+        var state = new InputPointerState(1, new TestPhysicalInput(1), 10)
         {
             DeviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            Duration = TimeSpan.FromSeconds(0),
-            Input = new TestPhysicalInput(1)
+            Duration = TimeSpan.FromSeconds(0)
         };
         var p1 = new Vector2(0f, 0f);
         var p2 = new Vector2(4f, 0f);
@@ -98,11 +95,10 @@ public class PointerInputStateTests
     public void GetCurrentPositionAndMotionData_ThreeRecords_CalculatesVelocityAndAcceleration()
     {
         // Arrange
-        var state = new InputPointerState(1, 10)
+        var state = new InputPointerState(1, new TestPhysicalInput(1), 10)
         {
             DeviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            Duration = TimeSpan.FromSeconds(0),
-            Input = new TestPhysicalInput(1)
+            Duration = TimeSpan.FromSeconds(0)
         };
         var p1 = new Vector2(0f, 0f);
         var p2 = new Vector2(2f, 0f);

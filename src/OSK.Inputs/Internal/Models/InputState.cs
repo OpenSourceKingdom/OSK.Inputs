@@ -5,15 +5,13 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 
-internal abstract class InputState
+internal abstract class InputState(int inputId)
 {
-    public required Input Input { get; init; }
-
     public required RuntimeDeviceIdentifier DeviceIdentifier { get; init; }
 
     public required TimeSpan Duration { get; set; }
 
-    public int InputId => Input.Id;
+    public int InputId => inputId;
 
     public InputPhase Phase { get; set; }
 

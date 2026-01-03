@@ -4,7 +4,7 @@ using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Runtime;
 
-public class InputPowerEvent(RuntimeDeviceIdentifier device, Input input, InputPhase phase, InputPower[] inputPowers)
+public class InputPowerEvent(RuntimeDeviceIdentifier device, PhysicalInput input, InputPhase phase, InputPower[] inputPowers)
     : PhysicalInputEvent(device, input, phase)
 {
     public int TotalPoweredAxis => inputPowers.Length;

@@ -112,13 +112,18 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         var virtualActionMaps = actionMaps.Where(map => map.Input is VirtualInput);
         var inputActionMap = actionMaps.FirstOrDefault(map => map.Input is PhysicalInput);
 
-        var virtualInputActivationContext = ProcessVirtualInputActivation(deviceTracker, inputState, virtualActionMaps);
+        var virtualInputActivationContext = ProcessVirtualInputEvent(deviceTracker, inputState, virtualActionMaps);
         var triggeredActivation = virtualInputActivationContext is null && inputActionMap is not null 
                 && inputActionMap.Action.TriggerPhases.Contains(inputState.Phase)
             ? GetTriggeredActivation(inputState, physicalInputEvent, inputActionMap)
             : virtualInputActivationContext;
 
         inputState.MappedAction = triggeredActivation?.ActionMap;
+
+        if (triggeredActivation is not null)
+        {
+            triggeredActivation.Value.Execute();
+        }
 
         if (inputState.Phase is InputPhase.End && processorConfiguration.TapDelayTime is null)
         {
@@ -132,40 +137,38 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
     #region Helpers
 
-    private DeviceInputState? GetAndUpdateInputState(DeviceInputTracker deviceTracker, InputEvent activation)
+    private PhysicalInputState? GetAndUpdateInputState(DeviceInputTracker deviceTracker, InputEvent inputEvent)
     {
-        DeviceInputState inputState;
-        switch (activation)
+        PhysicalInputState inputState;
+        switch (inputEvent)
         {
-            case InputPointerEvent pointerActivation:
-                var pointerState = deviceTracker.GetOrCreatePointerState(pointerActivation.PointerId, () =>
+            case InputPointerEvent pointerEvent:
+                var pointerState = deviceTracker.GetOrCreatePointerState(pointerEvent.PointerId, () =>
                 {
-                    return new InputPointerState(pointerActivation.PointerId, MaxPointerRecords)
+                    return new InputPointerState(pointerEvent.PointerId, pointerEvent.Input, MaxPointerRecords)
                     {
-                        Input = pointerActivation.Input,
-                        DeviceIdentifier = pointerActivation.DeviceIdentifier,
-                        Phase = pointerActivation.Phase,
+                        DeviceIdentifier = pointerEvent.DeviceIdentifier,
+                        Phase = pointerEvent.Phase,
                         Duration = TimeSpan.Zero
                     };
                 });
-                pointerState.AddRecord(pointerActivation.Position);
+                pointerState.AddRecord(pointerEvent.Position);
 
                 inputState = pointerState;
                 break;
-            case InputPowerEvent powerActivation:
-                var inputPowerState = deviceTracker.GetOrCreatePowerState(powerActivation.Input.Id, () =>
+            case InputPowerEvent powerEvent:
+                var inputPowerState = deviceTracker.GetOrCreatePowerState(powerEvent.Input.Id, () =>
                 {
-                    return new InputPowerState()
+                    return new InputPowerState(powerEvent.Input)
                     {
-                        Input = powerActivation.Input,
-                        DeviceIdentifier = powerActivation.DeviceIdentifier,
+                        DeviceIdentifier = powerEvent.DeviceIdentifier,
                         Duration = TimeSpan.Zero,
                         InputPowers = []
                     };
                 });
 
-                inputPowerState.InputPowers = [.. powerActivation.GetInputPowers()];
-                if (inputPowerState.Phase is InputPhase.End && activation.Phase is InputPhase.Start)
+                inputPowerState.InputPowers = [.. powerEvent.GetInputPowers()];
+                if (inputPowerState.Phase is InputPhase.End && inputEvent.Phase is InputPhase.Start)
                 {
                     inputPowerState.TapCount += 1;
                     inputPowerState.Duration = TimeSpan.Zero;
@@ -174,11 +177,11 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
                 inputState = inputPowerState;
                 break;
             default:
-                LogUnknownActivationWarning(logger, activation.GetType().FullName);
+                LogUnknownActivationWarning(logger, inputEvent.GetType().FullName);
                 return null;
         }
 
-        inputState.Phase = activation.Phase;
+        inputState.Phase = inputEvent.Phase;
         inputState.InactiveDuration = inputState.Phase is InputPhase.End
             ? TimeSpan.Zero
             : null;
@@ -186,7 +189,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         return inputState;
     }
 
-    private TriggeredActionEvent? ProcessVirtualInputActivation(DeviceInputTracker deviceTracker, DeviceInputState inputState,
+    private TriggeredActionEvent? ProcessVirtualInputEvent(DeviceInputTracker deviceTracker, PhysicalInputState inputState,
         IEnumerable<DeviceInputActionMap> virtualInputActionMaps)
     {
         foreach (var virtualInputActionMap in virtualInputActionMaps)
@@ -206,7 +209,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
                             break;
                         }
 
-                        combinationPhase = CombinePhases(combinationPhase, otherInputState.Phase);
+                        combinationPhase = DetermineCombinationPhase(combinationPhase, otherInputState.Phase);
                     }
 
                     if (completedCombination)
@@ -225,7 +228,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         return null;
     }
 
-    private InputPhase CombinePhases(InputPhase phaseA, InputPhase phaseB)
+    private InputPhase DetermineCombinationPhase(InputPhase phaseA, InputPhase phaseB)
     {
         // End phase always wins
         if (phaseA is InputPhase.End || phaseB is InputPhase.End)

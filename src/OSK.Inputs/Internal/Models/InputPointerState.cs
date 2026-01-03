@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
+using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 
-internal class InputPointerState(int pointerId, int maxRecords): DeviceInputState
+internal class InputPointerState(int pointerId, PhysicalInput input, int maxRecords): PhysicalInputState(input)
 {
     #region Variables
 
