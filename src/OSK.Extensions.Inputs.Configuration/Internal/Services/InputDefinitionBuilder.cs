@@ -49,8 +49,8 @@ internal class InputDefinitionBuilder(string name) : IInputDefinitionBuilder
             throw new ArgumentNullException(nameof(actionOptions));
         }
 
-        _actions[name] = new InputAction(name, triggerPhases.ToHashSet(), actionOptions.IncludePointerInformation, executor, 
-            actionOptions.Description);
+        _actions[name] = new InputAction(name, triggerPhases.ToHashSet(), executor,
+            actionOptions.IncludePointerInformation, actionOptions.Description);
         return this;
     }
 

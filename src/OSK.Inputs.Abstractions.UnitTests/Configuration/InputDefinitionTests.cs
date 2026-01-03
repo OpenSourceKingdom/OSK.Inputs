@@ -40,7 +40,7 @@ public class InputDefinitionTests
     public void GetAction_ValidActionName_ReturnsAction()
     {
         // Arrange 
-        var definition = new InputDefinition("Hello", [new InputAction("Hello", new HashSet<InputPhase>(), false, _ => { })], [], false);
+        var definition = new InputDefinition("Hello", [new InputAction("Hello", new HashSet<InputPhase>(), _ => { })], [], false);
 
         // Act
         var action = definition.GetAction("Hello");

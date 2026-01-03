@@ -131,7 +131,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction(name!, new HashSet<InputPhase>(), false, _ => { })
+                        new InputAction(name!, new HashSet<InputPhase>(), _ => { })
                     ],
                     [
                         new InputScheme("Abc", [], false, false)
@@ -157,7 +157,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>(), false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>(), _ => { })
                     ],
                     [
                         new InputScheme("Abc", [], false, false)
@@ -183,7 +183,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, null!)
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, null!)
                     ],
                     [
                         new InputScheme("Abc", [], false, false)
@@ -212,7 +212,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme(name!, [], false, false)
@@ -243,7 +243,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc", isEmpty ? [] : null!, false, false)
@@ -270,7 +270,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc", 
@@ -300,7 +300,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc",
@@ -330,7 +330,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc",
@@ -360,7 +360,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc",
@@ -394,7 +394,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc",
@@ -425,7 +425,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc",
@@ -460,7 +460,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc",
@@ -497,7 +497,7 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc",
@@ -536,8 +536,8 @@ public class InputSystemConfigurationValidatorTests
             [
                 new InputDefinition("abc",
                     [
-                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { }),
-                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, false, _ => { })
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { }),
+                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
                     ],
                     [
                         new InputScheme("Abc",

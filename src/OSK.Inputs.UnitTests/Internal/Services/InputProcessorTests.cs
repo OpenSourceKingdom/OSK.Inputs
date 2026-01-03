@@ -56,6 +56,8 @@ public class InputProcessorTests
             .Returns(mockLogger.Object);
         _mockServiceProvider.Setup(m => m.GetService(typeof(IOutputFactory<InputUserInputTracker>)))
             .Returns(new MockOutputFactory<InputUserInputTracker>());
+        _mockServiceProvider.Setup(m => m.GetService(typeof(IServiceProvider)))
+            .Returns(_mockServiceProvider.Object);
 
         _processor = new InputProcessor(_mockUserManager.Object, 
             _mockNotificationPublisher.Object, 

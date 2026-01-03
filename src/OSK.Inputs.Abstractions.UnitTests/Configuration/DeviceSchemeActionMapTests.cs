@@ -74,7 +74,7 @@ public class DeviceSchemeActionMapTests
         => new DeviceSchemeActionMap(TestIdentity.Identity1, inputs
             .Select(input => new DeviceInputActionMap() 
             { 
-                Action = new InputAction("", new HashSet<InputPhase>(), false, _ => { }),
+                Action = new InputAction("", new HashSet<InputPhase>(), _ => { }),
                 Input = input,
                 LinkedInputIds = input is CombinationInput combinationInput
                     ? combinationInput.DeviceInputs.Select(d => d.Id).ToArray() 

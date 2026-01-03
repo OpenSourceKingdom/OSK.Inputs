@@ -5,8 +5,8 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
-public class InputAction(string actionName, ISet<InputPhase> triggerPhases, bool trackPointer, Action<InputEventContext> actionExecutor,
-    string? description = null)
+public class InputAction(string actionName, ISet<InputPhase> triggerPhases, Action<InputEventContext> actionExecutor,
+    bool includePointerDetails = false, string? description = null)
 {
     #region  Variables
 
@@ -18,7 +18,7 @@ public class InputAction(string actionName, ISet<InputPhase> triggerPhases, bool
 
     #region Api
 
-    public bool TrackPointer => trackPointer;
+    public bool IncludePointerDetails => includePointerDetails;
 
     public ISet<InputPhase> TriggerPhases => triggerPhases;
 

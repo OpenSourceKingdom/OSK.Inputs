@@ -254,7 +254,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
     private PointerDetails GetPointerInformation(DeviceInputActionMap actionMap)
     {
-        if (!actionMap.Action.TrackPointer)
+        if (!actionMap.Action.IncludePointerDetails)
         {
             return PointerDetails.Empty;
         }
