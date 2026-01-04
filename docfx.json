@@ -1,5 +1,6 @@
 {
-"metadata": [
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "metadata": [
     {
       "src": [
         {
@@ -11,18 +12,20 @@
           ]
         }
       ],
-      "dest": "codebase"
+      "output": "api"
     }
   ],
   "build": {
-      "content": [
-        {
-          "files": ["codebase/**.yml"]
-        },
-        {
-          "files": ["README.md"]
-        }
-      ],
-      "dest": "_site"
-    }
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "_site/**",
+          "artifacts/**"
+        ]
+      }
+    ]
+  }
 }
