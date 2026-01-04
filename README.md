@@ -1,6 +1,6 @@
 # OSK.Inputs
 
-# Project Focus
+## Project Focus
 
 Input management across multiple game engines can vary depending on how the editors are setup to handle the mappings and related core functions that drives input actions. This library is mostly meant to be used as the intermediary between applications and the engines that read the inputs - i.e. Unity3D, Godot, or others. As of now, the intent is not to build a completely new input reading system, it's to create a focal point to managing default and custom input schemes, multiple input templates (or definitions), and allowing a way to better present these data structures to users utilizing the application.
 
