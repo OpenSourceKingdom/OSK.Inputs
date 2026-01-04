@@ -14,8 +14,11 @@
   "build": {
     "content": [
       {
-        "files": ["**/*.{md,yml}"],
-        "exclude": ["artifacts/**", "obj/**", "_site/**"]
+        "files": ["*.md", "toc.yml"]
+      },
+      {
+        "files": ["docs/**/*.md", "docs/**/toc.yml"],
+        "src": "." 
       },
       {
         "files": ["codebase/**/*.yml", "codebase/toc.yml"]
