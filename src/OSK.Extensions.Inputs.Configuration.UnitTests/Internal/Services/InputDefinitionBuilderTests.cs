@@ -2,6 +2,7 @@
 using OSK.Extensions.Inputs.Configuration.Internal.Services;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Extensions.Inputs.Configuration.UnitTests._Helpers;
+using OSK.Extensions.Inputs.Configuration.Ports;
 
 namespace OSK.Extensions.Inputs.Configuration.UnitTests.Internal.Services;
 
@@ -13,7 +14,7 @@ public class InputDefinitionBuilderTests
     public void WithActions_TestRegistrationService_Valid_ReturnsBuiltInputDefinition()
     {
         // Arrange
-        var builder = new InputDefinitionBuilder("Abc");
+        var builder = new InputDefinitionBuilder("Abc", new Mock<IInputSystemConfigurationBuilder>().Object);
 
         builder.WithActions<TestRegistrationService>();
 
