@@ -3,6 +3,6 @@ using OSK.Inputs.Abstractions.Devices.GamePads;
 
 namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
-public class GamePadJoyStick(int id): PhysicalInput(GamePadInputs.GamePadDeviceType, id, InputType.Analog)
+public class GamePadJoyStick(int id): PhysicalInput(GamePadInputs.GamePadDeviceType, id, InputType.Analog), IGamePadInput
 {
 }

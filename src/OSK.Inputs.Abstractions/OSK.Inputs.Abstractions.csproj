@@ -3,6 +3,10 @@
 	<PropertyGroup>
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<Nullable>enable</Nullable>
+
+		<Description>A set of abstractions, models, and related data used for an input system.</Description>
+		<PackageTags>OpenSourceKingdom, OpenSource, abstract, input, device, control, controller, device, game, pad, throttle, joy, stick, map, action, key, scheme, definition</PackageTags>
+		<Title>OSK.Inputs.Abstractions</Title>
 	</PropertyGroup>
 
 	<ItemGroup>

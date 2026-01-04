@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using OSK.Extensions.Inputs.Configuration.Ports;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration.Internal.Services;
 
-internal class InputSchemeBuilder(string name) : IInputSchemeBuilder
+internal class InputSchemeBuilder(string name, IInputSystemConfigurationBuilder configurationBuilder) : IInputSchemeBuilder
 {
     #region Variables
 
     private bool _isDefault;
 
-    private readonly Dictionary<InputDeviceIdentity, Action<IInputDeviceMapBuilder>> _mapBuilderConfigurators = [];
+    private readonly Dictionary<InputDeviceIdentity, DeviceInputMap> _maps = [];
 
     #endregion
 
@@ -24,14 +25,30 @@ internal class InputSchemeBuilder(string name) : IInputSchemeBuilder
         return this;
     }
 
-    public IInputSchemeBuilder WithDevice(InputDeviceIdentity deviceIdentity, Action<IInputDeviceMapBuilder> mapBuilderConfigurator)
+    public IInputSchemeBuilder WithDevice<TDeviceSpecification, TInput>(Action<IInputDeviceMapBuilder<TDeviceSpecification, TInput>> mapBuilderConfigurator)
+        where TInput : IInput
+        where TDeviceSpecification : InputDeviceSpecification<TInput>, new()
     {
         if (mapBuilderConfigurator is null)
         {
             throw new ArgumentNullException(nameof(mapBuilderConfigurator));
         }
 
-        _mapBuilderConfigurators[deviceIdentity] = mapBuilderConfigurator;
+        var deviceSpecification = new TDeviceSpecification();
+        configurationBuilder.WithDevice(deviceSpecification);
+
+        var mapBuilder = new InputDeviceMapBuilder<TDeviceSpecification, TInput>(deviceSpecification.DeviceIdentity);
+        mapBuilderConfigurator(mapBuilder);
+
+        var map = mapBuilder.Build(); ;
+
+        var invalidInputs = map.InputMaps.Where(input => deviceSpecification.Inputs.All(expectedInput => expectedInput.Id != input.InputId));
+        if (invalidInputs.Any())
+        {
+            throw new InvalidOperationException($"The input scheme {name} was configured with one or more inputs that were not valid for the device {deviceSpecification.DeviceIdentity}, these inputs were: {string.Join(", ", invalidInputs.Select(map => $"{map.InputId} - {map.ActionName}"))}.");
+        }
+
+        _maps[deviceSpecification.DeviceIdentity] = map;
         return this;
     }
 
@@ -41,15 +58,7 @@ internal class InputSchemeBuilder(string name) : IInputSchemeBuilder
 
     internal InputScheme Build()
     {
-        var deviceMaps = _mapBuilderConfigurators.Select(deviceMapKvp =>
-        {
-            var deviceMapBuilder = new InputDeviceMapBuilder(deviceMapKvp.Key);
-            deviceMapKvp.Value(deviceMapBuilder);
-
-            return deviceMapBuilder.Build();
-        });
-
-        return new InputScheme(name, deviceMaps, _isDefault, false);
+        return new InputScheme(name, _maps.Values, _isDefault, false);
     }
 
     #endregion

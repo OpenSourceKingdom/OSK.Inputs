@@ -7,6 +7,6 @@ namespace OSK.Inputs.Abstractions.Devices.Mice;
 /// Represents a button on a mouse
 /// </summary>
 /// <param name="id">The unique id for the mouse button</param>
-public class MouseButton(int id): PhysicalInput(MouseInputs.MouseDeviceType, id, InputType.Digital)
+public class MouseButton(int id): PhysicalInput(MouseInputs.MouseDeviceType, id, InputType.Digital), IMouseInput
 {
 }

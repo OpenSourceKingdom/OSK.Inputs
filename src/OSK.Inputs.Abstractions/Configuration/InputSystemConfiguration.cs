@@ -92,7 +92,7 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
         var deviceMaps = scheme.DeviceMaps.Where(deviceMap => _deviceSpecificationLookup.TryGetValue(deviceMap.DeviceIdentity, out _))
                 .Select(deviceMap =>
                 {
-                    var actionMaps = _deviceSpecificationLookup[deviceMap.DeviceIdentity].Inputs.Select(input =>
+                    var actionMaps = _deviceSpecificationLookup[deviceMap.DeviceIdentity].GetInputs().Select(input =>
                     {
                         var inputMap = deviceMap.GetInputMap(input.Id);
                         var action = inputMap is null
@@ -149,7 +149,7 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
 
     #region Helpers
 
-    private InputActionMap GetActionMap(Input input, InputMap map, InputAction action)
+    private InputActionMap GetActionMap(IInput input, InputMap map, InputAction action)
     {
         return new InputActionMap()
         {

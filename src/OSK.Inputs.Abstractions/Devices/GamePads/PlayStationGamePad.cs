@@ -7,7 +7,7 @@ using OSK.Inputs.Abstractions.Devices.GamePads;
 
 namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
-public class PlayStationGamePad : InputDeviceSpecification
+public class PlayStationGamePad : InputDeviceSpecification<IGamePadInput>
 {
     #region Static
 
@@ -19,7 +19,7 @@ public class PlayStationGamePad : InputDeviceSpecification
 
     public override InputDeviceIdentity DeviceIdentity => PlayStation;
 
-    public override IReadOnlyCollection<Input> Inputs { get; } = [
+    public override IGamePadInput[] Inputs { get; } = [
         GamePadInputs.ButtonSouth, // Cross
         GamePadInputs.ButtonEast,  // Circle
         GamePadInputs.ButtonWest,  // Square

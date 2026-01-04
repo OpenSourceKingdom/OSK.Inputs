@@ -10,14 +10,15 @@ namespace OSK.Inputs.Abstractions.Configuration;
 public class InputProcessorConfiguration
 {
     /// <summary>
-    /// The amount of time an input phase can be over before it is considered completely over.
-    /// i.e. if an interaction starts and ends and starts within this time frame it is considered a 'tap'
-    /// rather than a completely new event
+    /// The amount of time the input phase may remain inactive before the interaction
+    /// is considered fully ended. If the input is reactivated within this time window,
+    /// it is treated as a continuation of the same interaction rather than a new one.
     /// </summary>
-    public TimeSpan? TapDelayTime { get; init; }
+    public TimeSpan? TapReactivationTime { get; init; }
 
     /// <summary>
-    /// The amount of time an input phase can be 'Start'ed before the input system interpets the phase as <see cref="InputPhase.Active"/>
+    /// The minimum amount of time an input must remain in the <see cref="InputPhase.Start"/>
+    /// phase before transitioning to <see cref="InputPhase.Active"/>.
     /// </summary>
-    public TimeSpan? StartPhaseDelayBeforeActive { get; init; }
+    public TimeSpan? ActiveTimeThreshold { get; init; }
 }

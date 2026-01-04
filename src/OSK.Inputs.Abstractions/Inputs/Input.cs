@@ -8,7 +8,7 @@ namespace OSK.Inputs.Abstractions.Inputs;
 /// <param name="deviceType">The owner device type</param>
 /// <param name="id">A unique id for the input</param>
 /// <param name="inputType">The type of input this represents</param>
-public abstract class Input(string deviceType, int id, InputType inputType): IEquatable<Input>
+public abstract class Input(string deviceType, int id, InputType inputType): IInput, IEquatable<Input>
 {
     #region Variables
 

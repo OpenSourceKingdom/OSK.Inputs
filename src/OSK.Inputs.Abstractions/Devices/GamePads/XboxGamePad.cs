@@ -7,7 +7,7 @@ using OSK.Inputs.Abstractions.Devices.GamePads;
 
 namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
-public class XboxGamePad : InputDeviceSpecification
+public class XboxGamePad : InputDeviceSpecification<IGamePadInput>
 {
     #region Static
 
@@ -19,7 +19,7 @@ public class XboxGamePad : InputDeviceSpecification
 
     public override InputDeviceIdentity DeviceIdentity => Xbox;
 
-    public override IReadOnlyCollection<Input> Inputs { get; } = [
+    public override IGamePadInput[] Inputs { get; } = [
         GamePadInputs.ButtonSouth, // A
         GamePadInputs.ButtonEast,  // B
         GamePadInputs.ButtonWest,  // X

@@ -17,7 +17,7 @@ public class InputActionMap
     /// <summary>
     /// The specific input this map references
     /// </summary>
-    public required Input Input { get; init; }
+    public required IInput Input { get; init; }
 
     /// <summary>
     /// The specific action this map references

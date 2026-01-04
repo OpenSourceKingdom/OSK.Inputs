@@ -1,7 +1,6 @@
 ﻿using Moq;
 using OSK.Extensions.Inputs.Configuration.Internal.Services;
 using OSK.Inputs.Abstractions.Runtime;
-using OSK.Inputs.UnitTests._Helpers;
 using OSK.Extensions.Inputs.Configuration.UnitTests._Helpers;
 
 namespace OSK.Extensions.Inputs.Configuration.UnitTests.Internal.Services;

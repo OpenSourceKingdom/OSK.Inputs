@@ -517,6 +517,204 @@ public class InputSystemConfigurationValidatorTests
     }
 
     [Fact]
+    public void Validate_NullInputProcessConfiguration_ReturnsMissingData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1,
+                    new TestPhysicalInput(1), new TestPhysicalInput(2)),
+                new TestDeviceSpecification(TestIdentity.Identity2,
+                    new TestPhysicalInput(1))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { }),
+                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2,
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], null!, new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.InputSystem, validation.ConfigurationType);
+        Assert.Equal(nameof(InputSystemConfiguration.ProcessorConfiguration), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_InputProcessConfigurationTapDelayLessThan0_ReturnsInvalidData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1,
+                    new TestPhysicalInput(1), new TestPhysicalInput(2)),
+                new TestDeviceSpecification(TestIdentity.Identity2,
+                    new TestPhysicalInput(1))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { }),
+                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2,
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new() { TapReactivationTime = TimeSpan.FromSeconds(-1) }, new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.InputProcessor, validation.ConfigurationType);
+        Assert.Equal(nameof(InputProcessorConfiguration.TapReactivationTime), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_InputProcessConfigurationStartPhaseBeforeActiveLessThan0_ReturnsInvalidData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1,
+                    new TestPhysicalInput(1), new TestPhysicalInput(2)),
+                new TestDeviceSpecification(TestIdentity.Identity2,
+                    new TestPhysicalInput(1))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { }),
+                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2,
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(-1) }, new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.InputProcessor, validation.ConfigurationType);
+        Assert.Equal(nameof(InputProcessorConfiguration.ActiveTimeThreshold), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_NullJoinPolicy_ReturnsMissingData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1,
+                    new TestPhysicalInput(1), new TestPhysicalInput(2)),
+                new TestDeviceSpecification(TestIdentity.Identity2,
+                    new TestPhysicalInput(1))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { }),
+                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2,
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(1) }, null!);
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.InputSystem, validation.ConfigurationType);
+        Assert.Equal(nameof(InputSystemConfiguration.JoinPolicy), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Validate_JoinPolicyHasUsersAtOrLessThan0_ReturnsInvalidData(int userCount)
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1,
+                    new TestPhysicalInput(1), new TestPhysicalInput(2)),
+                new TestDeviceSpecification(TestIdentity.Identity2,
+                    new TestPhysicalInput(1))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { }),
+                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2,
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(1) }, 
+            new() { MaxUsers = userCount });
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.JoinPolicy, validation.ConfigurationType);
+        Assert.Equal(nameof(InputSystemJoinPolicy.MaxUsers), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
+    }
+
+    [Fact]
     public void Validate_Valid_ReturnsSuccess()
     {
         // Arrange
@@ -543,7 +741,7 @@ public class InputSystemConfigurationValidatorTests
                                     InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
                             ], false, false)
                     ], false)
-            ], new(), new());
+            ], new(), new() { MaxUsers = 1 });
 
         // Act
         var validation = validator.Validate(configuration);

@@ -36,7 +36,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
     public IEnumerable<TriggeredActionEvent> Update(TimeSpan deltaTime)
     {
-        var removalDelay = processorConfiguration.TapDelayTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
+        var removalDelay = processorConfiguration.TapReactivationTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
 
         var triggeredActions = new List<TriggeredActionEvent>();
         foreach (var deviceTracker in _deviceInputTrackerLookup.Values)
@@ -52,17 +52,21 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
                     }
                     continue;
                 }
-                
+
+                inputState.Duration += deltaTime;
+
                 TriggeredActionEvent? triggeredAction;
                 var reprocess = false;
                 switch (inputState.Phase)
                 {
                     case InputPhase.Start:
-                        inputState.Phase = InputPhase.Active;
-                        reprocess = true;
+                        if (inputState.Duration >= processorConfiguration.ActiveTimeThreshold.GetValueOrDefault(TimeSpan.Zero))
+                        {
+                            inputState.Phase = InputPhase.Active;
+                            reprocess = true;
+                        }
                         break;
                     case InputPhase.Active:
-                        inputState.Duration += deltaTime;
                         break;
                 }
 
@@ -128,7 +132,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
             triggeredActivation.Value.Execute();
         }
 
-        if (inputState.Phase is InputPhase.End && processorConfiguration.TapDelayTime is null)
+        if (inputState.Phase is InputPhase.End && processorConfiguration.TapReactivationTime is null)
         {
             deviceTracker.RemoveState(inputState);
         }

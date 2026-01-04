@@ -7,5 +7,5 @@ public class TestDeviceSpecification(InputDeviceIdentity deviceIdentity, params 
 {
     public override InputDeviceIdentity DeviceIdentity => deviceIdentity;
 
-    public override IReadOnlyCollection<Input> Inputs => inputs;
+    public override IReadOnlyCollection<IInput> GetInputs() => inputs;
 }

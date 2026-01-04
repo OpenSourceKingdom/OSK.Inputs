@@ -32,13 +32,14 @@ internal class InputSystemConfigurationBuilder : IInputSystemConfigurationBuilde
 
         var processorOptions = new InputProcessingOptions()
         {
-            TapDelayTime = TimeSpan.FromSeconds(1)
+            TapReactivationTime = TimeSpan.FromSeconds(1),
+            ActiveTimeThreshold = TimeSpan.FromSeconds(1)
         };
         _processorConfigurator?.Invoke(processorOptions);
 
         var definitions = _definitionBuilderConfigurators.Select(definitionKvp =>
         {
-            var definitionBuilder = new InputDefinitionBuilder(definitionKvp.Key);
+            var definitionBuilder = new InputDefinitionBuilder(definitionKvp.Key, this);
             definitionKvp.Value(definitionBuilder);
 
             return definitionBuilder.Build();
@@ -47,8 +48,8 @@ internal class InputSystemConfigurationBuilder : IInputSystemConfigurationBuilde
         return new InputSystemConfiguration(_deviceSpecifications.Values, definitions,
             new InputProcessorConfiguration()
             {
-                TapDelayTime = processorOptions.TapDelayTime,
-                StartPhaseDelayBeforeActive = processorOptions.StartPhaseDelayBeforeActive,
+                TapReactivationTime = processorOptions.TapReactivationTime,
+                ActiveTimeThreshold = processorOptions.ActiveTimeThreshold,
             },
             new InputSystemJoinPolicy()
             {

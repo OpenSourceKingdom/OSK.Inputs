@@ -4,7 +4,7 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<Nullable>enable</Nullable>
 
-		<Description>Core logic for handling input from a variety of devices that can include keyboard, mouse, game pads, and more. Helps to facilitate responses from game input.</Description>
+		<Description>Core logic for handling input from a variety of devices that can include keyboard, mouse, game pads, and more. Helps to facilitate triggering actions from game or similar input.</Description>
 		<PackageTags>OpenSourceKingdom, OpenSource, input, device, control, controller, device, game, pad, throttle, joy, stick, map, action, key, scheme, definition</PackageTags>
 		<Title>OSK.Inputs</Title>
 	</PropertyGroup>

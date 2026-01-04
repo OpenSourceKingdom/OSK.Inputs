@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using OSK.Extensions.Inputs.Configuration.Ports;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration.Internal.Services;
 
-internal class InputDeviceMapBuilder(InputDeviceIdentity deviceIdentity) : IInputDeviceMapBuilder
+internal class InputDeviceMapBuilder<TDeviceSpecification, TInput>(InputDeviceIdentity deviceIdentity) 
+    : IInputDeviceMapBuilder<TDeviceSpecification, TInput>
+    where TInput: IInput
+    where TDeviceSpecification: InputDeviceSpecification<TInput>, new()
 {
     #region Variables
 
@@ -16,14 +20,9 @@ internal class InputDeviceMapBuilder(InputDeviceIdentity deviceIdentity) : IInpu
 
     #region IInputDeviceMapBuilder
 
-    public IInputDeviceMapBuilder WithInputMap(int inputId, string actionName)
+    public IInputDeviceMapBuilder<TDeviceSpecification, TInput> WithInputMap(TInput input, string actionName)
     {
-        if (string.IsNullOrWhiteSpace(actionName))
-        {
-            throw new ArgumentNullException(nameof(actionName));
-        }
-
-        _inputMaps[inputId] = actionName;
+        _inputMaps[input.Id] = actionName;
         return this;
     }
 

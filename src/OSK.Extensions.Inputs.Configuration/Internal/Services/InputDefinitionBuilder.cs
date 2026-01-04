@@ -9,7 +9,7 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Extensions.Inputs.Configuration.Internal.Services;
 
-internal class InputDefinitionBuilder(string name) : IInputDefinitionBuilder
+internal class InputDefinitionBuilder(string name, IInputSystemConfigurationBuilder configurationBuilder) : IInputDefinitionBuilder
 {
     #region Variables
 
@@ -75,7 +75,7 @@ internal class InputDefinitionBuilder(string name) : IInputDefinitionBuilder
     {
         var schemes = _schemeBuilders.Select(schemeKvp =>
         {
-            var schemeBuilder = new InputSchemeBuilder(schemeKvp.Key);
+            var schemeBuilder = new InputSchemeBuilder(schemeKvp.Key, configurationBuilder);
             schemeKvp.Value(schemeBuilder);
 
             return schemeBuilder.Build();

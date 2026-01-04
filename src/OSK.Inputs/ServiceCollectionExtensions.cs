@@ -14,6 +14,11 @@ public static class ServiceCollectionExtensions
 {
     extension(IServiceCollection services)
     {
+        /// <summary>
+        /// Adds the core services for the input system and processing to the service collection
+        /// </summary>
+        /// <returns>The service collection for chaining</returns>
+        /// <exception cref="InputSystemValidationException">Thrown if the input system configuration provided by the source was invalid</exception>
         public IServiceCollection AddInputs()
         {
             services.AddLoggingFunctionOutputs();
@@ -43,6 +48,18 @@ public static class ServiceCollectionExtensions
             });
 
             return services; 
+        }
+
+        /// <summary>
+        /// Adds an <see cref="IInputSchemeRepository"/> that uses an in memory backend, so scheme preferences will not be kept in persistence storage.
+        /// This scheme repository does not support custom schemes.
+        /// </summary>
+        /// <returns>The service collection for chaining</returns>
+        public IServiceCollection AddInMemorySchemeRepository()
+        {
+            services.AddSingleton<IInputSchemeRepository, InMemorySchemeRepository>();
+
+            return services;
         }
     }
 }

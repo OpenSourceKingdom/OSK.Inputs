@@ -11,10 +11,12 @@ public abstract class InputDeviceSpecification
     /// <summary>
     /// The specific device identity this specification refers to
     /// </summary>
-    public abstract InputDeviceIdentity DeviceIdentity { get; }   
+    public abstract InputDeviceIdentity DeviceIdentity { get; }
+
 
     /// <summary>
-    /// The collection of <see cref="Input"/>s the device uses
+    /// Gets the collection of inputs for the device
     /// </summary>
-    public abstract IReadOnlyCollection<Input> Inputs { get; }
+    /// <returns>The collection of inputs</returns>
+    public abstract IReadOnlyCollection<IInput> GetInputs();
 }

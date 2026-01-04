@@ -91,7 +91,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
                 "Join Policy must exist.");
         }
 
-        if (configuration.JoinPolicy.MaxUsers < 0)
+        if (configuration.JoinPolicy.MaxUsers <= 0)
         {
             return InputConfigurationValidationResult.ForJoinPolicy(policy => policy.MaxUsers, InputConfigurationValidation.InvalidData,
                 "Max Users must be greater than 0.");
@@ -108,10 +108,16 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
                 "Processor configuration must exist.");
         }
 
-        if (configuration.ProcessorConfiguration.TapDelayTime.GetValueOrDefault() < TimeSpan.Zero)
+        if (configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault() < TimeSpan.Zero)
         {
-            return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.TapDelayTime, InputConfigurationValidation.InvalidData,
+            return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.TapReactivationTime, InputConfigurationValidation.InvalidData,
                 "Tap delay time can not be less than 0.");
+        }
+
+        if (configuration.ProcessorConfiguration.ActiveTimeThreshold.GetValueOrDefault() < TimeSpan.Zero)
+        {
+            return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.ActiveTimeThreshold, InputConfigurationValidation.InvalidData,
+                "Start Phase Delay Before Active can not be less than 0.");
         }
 
         return InputConfigurationValidationResult.Success();
@@ -309,7 +315,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
                 $"t defintion {definition.Name} uses a device identity that is not configured for the input system, the device is: {deviceMap.DeviceIdentity}.");
         }
 
-        var validInputIdLookup = deviceSpecification.Inputs.ToDictionary(input => input.Id);
+        var validInputIdLookup = deviceSpecification.GetInputs().ToDictionary(input => input.Id);
         var invalidInputIds = deviceMap.InputMaps.Where(map => !validInputIdLookup.TryGetValue(map.InputId, out _))
             .Select(map => map.InputId);
         if (invalidInputIds.Any())
