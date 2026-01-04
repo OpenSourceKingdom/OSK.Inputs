@@ -15,8 +15,7 @@ The ultimate goal is to create a single source for managing inputs and their inp
 ---
 
 ## 📖 Documentation
-For further information about the library, usage, etc., please visit the **[Docs Page]
-(https://github.com/OpenSourceKingdom/OSK.Inputs)** (or check the `/docs` folder).
+For further information about the library, usage, etc., please visit the **[Docs Page](https://opensourcekingdom.github.io/OSK.Inputs/)** (or check the `/docs` folder).
 
 # Contributions and Issues
 Any and all contributions are appreciated! Please be sure to follow the branch naming convention OSK-{issue number}-{deliminated}-{branch}-{name} as current workflows rely on it for automatic issue closure. Please submit issues for discussion and tracking using the github issue tracker.
