@@ -5,35 +5,22 @@
       "src": [
         {
           "files": ["src/**/*.csproj"],
-          "exclude": [
-            "src/**/*.UnitTests.csproj",
-            "**/bin/**",
-            "**/obj/**"
-          ]
+          "exclude": ["src/**/*.UnitTests.csproj", "**/bin/**", "**/obj/**"]
         }
       ],
-      "output": "api" 
+      "output": "codebase"
     }
   ],
   "build": {
     "content": [
       {
-        "files": [
-          "*.md",
-          "toc.yml",
-          "docs/**/*.md",
-          "docs/**/toc.yml"
-        ],
-        "exclude": [
-          "obj/**",
-          "_site/**",
-          "artifacts/**"
-        ]
+        "files": ["**/*.{md,yml}"],
+        "exclude": ["artifacts/**", "obj/**", "_site/**"]
       },
       {
-        "files": ["api/**/*.yml", "api/toc.yml"]
+        "files": ["codebase/**/*.yml", "codebase/toc.yml"]
       }
     ],
-    "dest": "_site"
+    "output": "_site"
   }
 }
