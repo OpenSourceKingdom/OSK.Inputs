@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OSK.Inputs.Abstractions.Configuration;
+﻿using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models;
@@ -275,7 +270,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc", 
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -305,7 +300,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -317,7 +312,7 @@ public class InputSystemConfigurationValidatorTests
         Assert.False(validation.IsValid);
 
         Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
-        Assert.Equal(nameof(InputDeviceMap.DeviceIdentity), validation.TargetName);
+        Assert.Equal(nameof(DeviceInputMap.DeviceIdentity), validation.TargetName);
         Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
     }
 
@@ -335,7 +330,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -347,7 +342,7 @@ public class InputSystemConfigurationValidatorTests
         Assert.False(validation.IsValid);
 
         Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
-        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(nameof(DeviceInputMap.InputMaps), validation.TargetName);
         Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
     }
 
@@ -365,7 +360,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, 
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, 
                                     InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 2 }, new InputMap() { ActionName = "Def", InputId = 2 }] }
                             ], false, false)
                     ], false)
@@ -378,7 +373,7 @@ public class InputSystemConfigurationValidatorTests
         Assert.False(validation.IsValid);
 
         Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
-        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(nameof(DeviceInputMap.InputMaps), validation.TargetName);
         Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
     }
 
@@ -399,7 +394,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
                                     InputMaps = [ new InputMap() { ActionName = actionName!, InputId = 1 }] }
                             ], false, false)
                     ], false)
@@ -412,7 +407,7 @@ public class InputSystemConfigurationValidatorTests
         Assert.False(validation.IsValid);
 
         Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
-        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(nameof(DeviceInputMap.InputMaps), validation.TargetName);
         Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
     }
 
@@ -430,7 +425,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
                                     InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
                             ], false, false)
                     ], false)
@@ -443,7 +438,7 @@ public class InputSystemConfigurationValidatorTests
         Assert.False(validation.IsValid);
 
         Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
-        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(nameof(DeviceInputMap.InputMaps), validation.TargetName);
         Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
     }
 
@@ -465,7 +460,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
                                     InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }, new InputMap() { ActionName = "Abc", InputId = 2 }] }
                             ], false, false)
                     ], false)
@@ -478,7 +473,7 @@ public class InputSystemConfigurationValidatorTests
         Assert.False(validation.IsValid);
 
         Assert.Equal(InputConfigurationType.DeviceMap, validation.ConfigurationType);
-        Assert.Equal(nameof(InputDeviceMap.InputMaps), validation.TargetName);
+        Assert.Equal(nameof(DeviceInputMap.InputMaps), validation.TargetName);
         Assert.Equal(InputConfigurationValidation.DuplicateData, validation.Result);
     }
 
@@ -502,9 +497,9 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
                                     InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2,
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2,
                                     InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] }
                             ], false, false)
                     ], false)
@@ -542,9 +537,9 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1,
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1,
                                     InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2,
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2,
                                     InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
                             ], false, false)
                     ], false)

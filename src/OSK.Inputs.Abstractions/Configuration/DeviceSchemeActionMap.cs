@@ -4,36 +4,54 @@ using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
-public class DeviceSchemeActionMap(InputDeviceIdentity deviceIdentity, IEnumerable<DeviceInputActionMap> deviceActionMaps)
+/// <summary>
+/// Provides a mapping for a specific input scheme device and the related input definition actions
+/// </summary>
+/// <param name="deviceIdentity">The device this map refers to</param>
+/// <param name="actionMaps">The collections of action maps for the device inputs</param>
+public class DeviceSchemeActionMap(InputDeviceIdentity deviceIdentity, IEnumerable<InputActionMap> actionMaps)
 {
     #region Variables
 
-    private readonly Dictionary<int, DeviceInputActionMap> _deviceInputMaps = deviceActionMaps.ToDictionary(inputMap => inputMap.InputId);
+    private readonly Dictionary<int, InputActionMap> _deviceInputMaps = actionMaps.Where(map => map.Input is PhysicalInput)
+                                                                                          .ToDictionary(inputMap => inputMap.InputId);
 
-    private readonly Dictionary<int, int[]> _deviceVirtualInputLookup
-        = deviceActionMaps
-                .Where(map => map.Input is VirtualInput)
-                .SelectMany(map => map.LinkedInputIds.Select(linkedId => new { InputId = linkedId, VirtualInputId = map.InputId }))
+    private readonly Dictionary<int, InputActionMap[]> _deviceVirtualInputLookup
+        = actionMaps.Where(map => map.Input is VirtualInput)
+                .SelectMany(map => map.LinkedInputIds.Select(linkedId => new { InputId = linkedId, ActionMap = map }))
                 .GroupBy(inputLink => inputLink.InputId)
-                .ToDictionary(inputLinkGroup => inputLinkGroup.Key, inputLinkGroup => (int[])[.. inputLinkGroup.Select(link => link.VirtualInputId).Distinct()]);
+                .ToDictionary(inputVirtualGroup => inputVirtualGroup.Key, inputVirtualGroup => inputVirtualGroup.Select(v => v.ActionMap).ToArray());
 
     #endregion
 
     #region Api
 
+    /// <summary>
+    /// The device this map refers to
+    /// </summary>
     public InputDeviceIdentity DeviceIdentity => deviceIdentity;
 
-    public IEnumerable<DeviceInputActionMap> GetActionMaps(int id)
+    /// <summary>
+    /// Gets the action maps for a specific input on the device
+    /// </summary>
+    /// <param name="id">The unique id for the input on the device</param>
+    /// <returns>
+    /// The list of action maps associated to the input with the given id, which can include virtual inputs, 
+    /// or empty if the id is not for a configured input
+    /// </returns>
+    public IEnumerable<InputActionMap> GetActionMaps(int id)
     {
-        if (!_deviceVirtualInputLookup.TryGetValue(id, out var linkedVirtualInputIds))
+        if (_deviceVirtualInputLookup.TryGetValue(id, out var actionMaps))
         {
-            linkedVirtualInputIds = [];
+            foreach (var actionMap in actionMaps)
+            {
+                yield return actionMap;
+            }
         }
 
-        var inputIdsToLookup = new HashSet<int>(linkedVirtualInputIds.Append(id));
-        foreach (var inputId in inputIdsToLookup.Where(id => _deviceInputMaps.TryGetValue(id, out _)))
+        if (_deviceInputMaps.TryGetValue(id, out var physicalActionMap))
         {
-            yield return _deviceInputMaps[inputId];
+            yield return physicalActionMap;
         }
     }
 

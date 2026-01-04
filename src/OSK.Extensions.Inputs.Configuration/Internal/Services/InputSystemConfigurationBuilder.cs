@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using OSK.Extensions.Inputs.Configuration.Options;
 using OSK.Extensions.Inputs.Configuration.Ports;
 using OSK.Inputs.Abstractions.Configuration;
@@ -48,7 +47,8 @@ internal class InputSystemConfigurationBuilder : IInputSystemConfigurationBuilde
         return new InputSystemConfiguration(_deviceSpecifications.Values, definitions,
             new InputProcessorConfiguration()
             {
-                TapDelayTime = processorOptions.TapDelayTime
+                TapDelayTime = processorOptions.TapDelayTime,
+                StartPhaseDelayBeforeActive = processorOptions.StartPhaseDelayBeforeActive,
             },
             new InputSystemJoinPolicy()
             {

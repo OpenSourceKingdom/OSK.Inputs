@@ -26,7 +26,7 @@ public class DeviceSchemeActionMapTests
     public void GetActionMaps_OnlyVirtualInput_ReturnsActionMapForInputInCombination()
     {
         // Arrange
-        var combinationInput = new CombinationInput(1, new TestInput(1));
+        var combinationInput = new CombinationInput("Abc", 1, new TestInput(1));
         var map = CreateActionMap(combinationInput);
 
         // Act
@@ -55,7 +55,7 @@ public class DeviceSchemeActionMapTests
     public void GetActions_MixedInputs_ReturnsExpectedActionMaps()
     {
         // Arrange
-        var combinationInput = new CombinationInput(1, new TestInput(2), new TestInput(3));
+        var combinationInput = new CombinationInput("Abc", 1, new TestInput(2), new TestInput(3));
         var map = CreateActionMap(combinationInput, new TestInput(2), new TestInput(4));
 
         // Act
@@ -71,8 +71,8 @@ public class DeviceSchemeActionMapTests
     #region Helpers
 
     private DeviceSchemeActionMap CreateActionMap(params Input[] inputs)
-        => new DeviceSchemeActionMap(TestIdentity.Identity1, inputs
-            .Select(input => new DeviceInputActionMap() 
+        => new(TestIdentity.Identity1, inputs
+            .Select(input => new InputActionMap() 
             { 
                 Action = new InputAction("", new HashSet<InputPhase>(), _ => { }),
                 Input = input,

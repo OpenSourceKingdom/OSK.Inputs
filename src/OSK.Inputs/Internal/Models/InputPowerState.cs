@@ -6,5 +6,5 @@ internal class InputPowerState(PhysicalInput input): PhysicalInputState(input)
 {
     public int TapCount { get; set; }
 
-    public required InputPower[] InputPowers { get; set; }
+    public required InputIntensity[] InputPowers { get; set; }
 }

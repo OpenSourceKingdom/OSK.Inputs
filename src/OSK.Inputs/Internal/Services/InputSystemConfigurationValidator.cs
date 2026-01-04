@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Models;
 using OSK.Inputs.Ports;
@@ -301,7 +299,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
     }
 
     private InputConfigurationValidationResult ValidateDeviceMap(InputSystemConfiguration configuration, InputDefinition definition, 
-        InputScheme scheme, InputDeviceMap deviceMap)
+        InputScheme scheme, DeviceInputMap deviceMap)
     {
         var deviceSpecification = configuration.GetDeviceSpecification(deviceMap.DeviceIdentity);
         if (deviceSpecification is null)

@@ -28,13 +28,13 @@ public class InputSystemConfigurationTests
         // 3. Redudant Identity1
         var definition1 = new InputDefinition("abc", [],
             [
-              new InputScheme("Abc", [new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false),
+              new InputScheme("Abc", [new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false),
               new InputScheme("Def", 
                [
-                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }, 
-                 new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
+                 new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }, 
+                 new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
                ], false, false),
-              new InputScheme("GHI", [new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false)
+              new InputScheme("GHI", [new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false)
              ], false);
 
         // Creates a set of schemes with the following:
@@ -43,13 +43,13 @@ public class InputSystemConfigurationTests
         // 3. Identity4
         var definition2 = new InputDefinition("def", [],
             [
-              new InputScheme("Abc", [new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false),
+              new InputScheme("Abc", [new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false),
                       new InputScheme("Def",
                        [
-                         new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] },
-                         new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
+                         new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] },
+                         new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
                        ], false, false),
-                      new InputScheme("GHI", [new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity4, InputMaps = [] }], false, false)
+                      new InputScheme("GHI", [new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity4, InputMaps = [] }], false, false)
              ], false);
         var configuration = new InputSystemConfiguration([], [definition1, definition2], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 

@@ -60,7 +60,7 @@ public class InputDefinition(string name, IEnumerable<InputAction> actions, IEnu
 
         if (!_schemeLookup.TryGetValue(scheme.Name, out var currentScheme) || currentScheme.IsCustom)
         {
-            _schemeLookup[scheme.Name] = new InputScheme(scheme.Name, scheme.DeviceMaps, false, true);
+            _schemeLookup[scheme.Name] = scheme.ToInputScheme();
         }
     }
 

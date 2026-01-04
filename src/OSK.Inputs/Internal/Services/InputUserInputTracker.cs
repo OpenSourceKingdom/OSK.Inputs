@@ -8,8 +8,10 @@ using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal.Models;
+using OSK.Inputs.Internal.Services;
+using OSK.Inputs.Internal;
 
-namespace OSK.Inputs.Internal;
+namespace OSK.Inputs.Internal.Services;
 
 internal partial class InputUserInputTracker(int userId, ActiveInputScheme scheme, InputSchemeActionMap schemeMap, 
     InputProcessorConfiguration processorConfiguration, ILogger<InputUserInputTracker> logger, IOutputFactory<InputUserInputTracker> outputFactory,
@@ -112,6 +114,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         var virtualActionMaps = actionMaps.Where(map => map.Input is VirtualInput);
         var inputActionMap = actionMaps.FirstOrDefault(map => map.Input is PhysicalInput);
 
+
         var virtualInputActivationContext = ProcessVirtualInputEvent(deviceTracker, inputState, virtualActionMaps);
         var triggeredActivation = virtualInputActivationContext is null && inputActionMap is not null 
                 && inputActionMap.Action.TriggerPhases.Contains(inputState.Phase)
@@ -167,7 +170,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
                     };
                 });
 
-                inputPowerState.InputPowers = [.. powerEvent.GetInputPowers()];
+                inputPowerState.InputPowers = [.. powerEvent.InputIntensities];
                 if (inputPowerState.Phase is InputPhase.End && inputEvent.Phase is InputPhase.Start)
                 {
                     inputPowerState.TapCount += 1;
@@ -190,7 +193,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
     }
 
     private TriggeredActionEvent? ProcessVirtualInputEvent(DeviceInputTracker deviceTracker, PhysicalInputState inputState,
-        IEnumerable<DeviceInputActionMap> virtualInputActionMaps)
+        IEnumerable<InputActionMap> virtualInputActionMaps)
     {
         foreach (var virtualInputActionMap in virtualInputActionMaps)
         {
@@ -220,7 +223,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
                     break;
                 default:
-                    LogUnknownVirtualInputWarning(logger, virtualInputActionMap.Input.Name, virtualInputActionMap.Input.GetType().FullName);
+                    LogUnknownVirtualInputWarning(logger, deviceTracker.SchemeMap.DeviceIdentity, virtualInputActionMap.Input.Id, virtualInputActionMap.Input.GetType().FullName);
                     break;
             }
         }
@@ -255,7 +258,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         };
     }
 
-    private PointerDetails GetPointerInformation(DeviceInputActionMap actionMap)
+    private PointerDetails GetPointerInformation(InputActionMap actionMap)
     {
         if (!actionMap.Action.IncludePointerDetails)
         {
@@ -299,9 +302,8 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         }
     }
 
-    private TriggeredActionEvent GetTriggeredActivation(InputState state, InputEvent activation, DeviceInputActionMap actionMap)
-        => new TriggeredActionEvent(ActiveScheme,
-                actionMap,
+    private TriggeredActionEvent GetTriggeredActivation(InputState state, InputEvent activation, InputActionMap actionMap)
+        => new(ActiveScheme, actionMap,
                 new InputEventContext(userId, activation, GetPointerInformation(actionMap),
                 GetActivityInformation(state), serviceProvider));
 
@@ -312,8 +314,8 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
     [LoggerMessage(eventId: 1, LogLevel.Warning, "Input Activation was of an unknown type and could not be processed: {activationTypeName}")]
     private static partial void LogUnknownActivationWarning(ILogger logger, string activationTypeName);
 
-    [LoggerMessage(eventId: 2, LogLevel.Warning, "An attempt was made to process a virtual input named '{virtualInputName}', but it was unrecognized type '{virtualInputType}' and could not be processed.")]
-    private static partial void LogUnknownVirtualInputWarning(ILogger logger, string virtualInputName, string virtualInputType);
+    [LoggerMessage(eventId: 2, LogLevel.Warning, "An attempt was made to process a virtual input with id '{virtualInputId}' on device '{deviceIdentity}', but it was unrecognized type '{virtualInputType}' and could not be processed.")]
+    private static partial void LogUnknownVirtualInputWarning(ILogger logger, InputDeviceIdentity deviceIdentity, int virtualInputId, string virtualInputType);
 
     #endregion
 }

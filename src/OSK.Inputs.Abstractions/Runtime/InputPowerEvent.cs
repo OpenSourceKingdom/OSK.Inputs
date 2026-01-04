@@ -1,19 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Runtime;
 
-public class InputPowerEvent(RuntimeDeviceIdentifier device, PhysicalInput input, InputPhase phase, InputPower[] inputPowers)
+/// <summary>
+/// Represents an input that provides a power to the input system. This most likely will either be <see cref="InputType.Analog"/>
+/// or <see cref="InputType.Digital"/> type of inputs
+/// </summary>
+/// <param name="device">The device the input belongs to</param>
+/// <param name="input">The input that triggered the event</param>
+/// <param name="phase">The phase of the input</param>
+/// <param name="inputIntensities">The collection of <see cref="InputIntensity"/> across all axes.</param>
+public class InputPowerEvent(RuntimeDeviceIdentifier device, PhysicalInput input, InputPhase phase, InputIntensity[] inputIntensities)
     : PhysicalInputEvent(device, input, phase)
 {
-    public int TotalPoweredAxis => inputPowers.Length;
+    #region Variables
 
-    public IEnumerable<InputPower> GetInputPowers() => inputPowers;
+    public IEnumerable<InputIntensity> InputIntensities => inputIntensities;
 
-    public InputPower this[int index]
-        => 
-        index < 0 || index >= inputPowers.Length
-            ? throw new IndexOutOfRangeException(nameof(index))
-            : inputPowers[index];
+    #endregion
 }

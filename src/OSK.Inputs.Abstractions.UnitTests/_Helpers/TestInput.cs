@@ -2,6 +2,6 @@
 
 namespace OSK.Inputs.Abstractions.UnitTests._Helpers;
 
-public class TestInput(int id): PhysicalInput(TestIdentity.Identity1, id, "Test", InputType.Digital)
+public class TestInput(int id): PhysicalInput("Test", id, InputType.Digital)
 {
 }

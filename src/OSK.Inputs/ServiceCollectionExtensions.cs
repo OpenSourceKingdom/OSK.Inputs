@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OSK.Functions.Outputs.Logging;
-using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Exceptions;
 using OSK.Inputs.Internal;

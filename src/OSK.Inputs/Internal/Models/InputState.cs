@@ -15,7 +15,7 @@ internal abstract class InputState(int inputId)
 
     public InputPhase Phase { get; set; }
 
-    public DeviceInputActionMap? MappedAction {  get; set; }
+    public InputActionMap? MappedAction {  get; set; }
 
     public TimeSpan? InactiveDuration { get; set; }
 }

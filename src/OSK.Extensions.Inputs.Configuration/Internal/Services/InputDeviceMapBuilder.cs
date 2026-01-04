@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using OSK.Extensions.Inputs.Configuration.Ports;
 using OSK.Inputs.Abstractions.Configuration;
 
@@ -32,7 +31,7 @@ internal class InputDeviceMapBuilder(InputDeviceIdentity deviceIdentity) : IInpu
 
     #region Helpers
 
-    internal InputDeviceMap Build()
+    internal DeviceInputMap Build()
         => new()
         {
             DeviceIdentity = deviceIdentity,

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using OSK.Inputs.Abstractions.Configuration;
 
 namespace OSK.Extensions.Inputs.Configuration.Ports;

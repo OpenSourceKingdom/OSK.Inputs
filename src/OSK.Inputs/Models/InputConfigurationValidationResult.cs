@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Text;
 using OSK.Inputs.Abstractions.Configuration;
 
 namespace OSK.Inputs.Models;
@@ -11,7 +9,7 @@ public class InputConfigurationValidationResult
     #region Static
 
     public static InputConfigurationValidationResult Success()
-        => new InputConfigurationValidationResult() 
+        => new() 
         { 
             ConfigurationType = InputConfigurationType.InputSystem, 
             TargetName = "Configuration",
@@ -35,7 +33,7 @@ public class InputConfigurationValidationResult
         InputConfigurationValidation validation, string? message = null)
         => ForConfiguration(InputConfigurationType.Scheme, propertyPath, validation, message);
 
-    public static InputConfigurationValidationResult ForDeviceMap(Expression<Func<InputDeviceMap, object?>> propertyPath,
+    public static InputConfigurationValidationResult ForDeviceMap(Expression<Func<DeviceInputMap, object?>> propertyPath,
         InputConfigurationValidation validation, string? message = null)
         => ForConfiguration(InputConfigurationType.DeviceMap, propertyPath, validation, message);
 
@@ -49,7 +47,7 @@ public class InputConfigurationValidationResult
 
     private static InputConfigurationValidationResult ForConfiguration<T>(InputConfigurationType configurationType,
         Expression<Func<T, object?>> expression, InputConfigurationValidation validation, string? message = null)
-        => new InputConfigurationValidationResult()
+        => new()
         {
             ConfigurationType = configurationType,
             TargetName = GetName(expression),

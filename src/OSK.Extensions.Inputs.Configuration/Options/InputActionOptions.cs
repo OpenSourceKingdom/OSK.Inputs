@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OSK.Extensions.Inputs.Configuration.Options;
+﻿namespace OSK.Extensions.Inputs.Configuration.Options;
 
 public class InputActionOptions
 {

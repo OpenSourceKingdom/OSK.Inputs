@@ -25,7 +25,7 @@ public class InputSchemeTests
     public void GetDeviceMap_ValidDeviceIdentity_ReturnsExpectedMap()
     {
         // Arrange
-        var expectedMap = new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] };
+        var expectedMap = new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] };
         var scheme = new InputScheme("Hello", [expectedMap], false, false);
 
         // Act

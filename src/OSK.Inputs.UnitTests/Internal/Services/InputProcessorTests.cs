@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Moq;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
@@ -260,7 +255,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc", 
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ], 
                             false, false)
                     ], false)
@@ -295,7 +290,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -333,7 +328,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -382,7 +377,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -431,7 +426,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -486,7 +481,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -541,8 +536,8 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] },
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] },
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -598,14 +593,14 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] },
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] },
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
                             ],
                             false, false),
 
                         new InputScheme("Def",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity3, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity3, InputMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -661,7 +656,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -702,7 +697,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new InputDeviceMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }
                             ],
                             false, false)
                     ], false)

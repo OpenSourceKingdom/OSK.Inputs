@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OSK.Extensions.Inputs.Configuration.Ports;
+﻿namespace OSK.Extensions.Inputs.Configuration.Ports;
 
 public interface IInputDeviceMapBuilder
 {

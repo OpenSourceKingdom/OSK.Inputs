@@ -3,11 +3,11 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 
-public readonly struct TriggeredActionEvent(ActiveInputScheme activeScheme, DeviceInputActionMap actionMap, InputEventContext context)
+public readonly struct TriggeredActionEvent(ActiveInputScheme activeScheme, InputActionMap actionMap, InputEventContext context)
 {
     public ActiveInputScheme Scheme => activeScheme;
 
-    public DeviceInputActionMap ActionMap => actionMap;
+    public InputActionMap ActionMap => actionMap;
 
     public InputEventContext ActivationContext => context;
 

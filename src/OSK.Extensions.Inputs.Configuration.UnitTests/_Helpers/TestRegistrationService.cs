@@ -1,7 +1,8 @@
 ﻿using OSK.Extensions.Inputs.Configuration.Attributes;
 using OSK.Inputs.Abstractions.Runtime;
+using OSK.Inputs.UnitTests._Helpers;
 
-namespace OSK.Inputs.UnitTests._Helpers;
+namespace OSK.Extensions.Inputs.Configuration.UnitTests._Helpers;
 
 public class TestRegistrationService
 {

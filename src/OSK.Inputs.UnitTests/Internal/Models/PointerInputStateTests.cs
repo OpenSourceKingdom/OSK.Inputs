@@ -1,5 +1,4 @@
-﻿using System;
-using System.Numerics;
+﻿using System.Numerics;
 using OSK.Inputs.Internal.Models;
 using OSK.Inputs.Abstractions.Runtime;
 using Xunit;

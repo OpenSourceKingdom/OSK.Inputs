@@ -9,9 +9,9 @@ using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Notifications;
 using OSK.Inputs.Abstractions.Runtime;
-using OSK.Inputs.Internal.Models;
 using OSK.Inputs.Options;
 using OSK.Inputs.Ports;
+using OSK.Inputs.Internal.Services;
 
 namespace OSK.Inputs.Internal.Services;
 

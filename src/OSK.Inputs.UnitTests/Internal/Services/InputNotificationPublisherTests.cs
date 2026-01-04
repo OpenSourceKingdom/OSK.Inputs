@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Moq;
+﻿using Moq;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Notifications;
 using OSK.Inputs.Abstractions.Runtime;
-using OSK.Inputs.Internal;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
