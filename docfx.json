@@ -36,6 +36,7 @@
       "_enableSearch": true,
       "pdf": false
     },
+    "postProcessors": ["ExtractSearchIndex"],
     "output": "_site"
   }
 }
