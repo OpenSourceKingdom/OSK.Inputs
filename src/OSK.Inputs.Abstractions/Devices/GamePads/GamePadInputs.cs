@@ -1,7 +1,4 @@
-﻿using OSK.Inputs.Abstractions.Configuration;
-using OSK.Inputs.Abstractions.Devices.GamePads;
-
-namespace OSK.Inputs.Abstractions.Devices.GamePads;
+﻿namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
 /// <summary>
 /// Defines all of the gamepad inputs available for the input system
