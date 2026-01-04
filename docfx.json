@@ -1,0 +1,33 @@
+{
+"metadata": [
+    {
+      "src": [
+        {
+          "files": ["src/**/*.csproj"],
+          "exclude": [
+            "src/**/*.Tests.csproj",
+            "src/**/*.UnitTests.csproj",
+            "**/bin/**",
+            "**/obj/**"
+          ]
+        }
+      ],
+      "dest": "codebase"
+    }
+  ],
+  "build": {
+      "content": [
+        {
+          "files": ["codebase/**.yml"]
+        },
+        {
+          "files": ["docs/**.md", "index.md"]
+        },
+        {
+          "files": ["README.md"],
+          "dest": "." 
+        }
+      ],
+      "dest": "_site"
+    }
+}

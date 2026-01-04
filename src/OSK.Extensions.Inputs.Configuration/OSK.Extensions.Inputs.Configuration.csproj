@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<Nullable>enable</Nullable>
+
+		<Description>Provides various configuration builders and helpers to create an input system configuration for dependency injection or from factory methods</Description>
+		<PackageTags>OpenSourceKingdom, OpenSource, configuration, extension, input, device, control, controller, device, game, pad, throttle, joy, stick, map, action, key, scheme, definition</PackageTags>
+		<Title>OSK.Extensions.Inputs.Configuration</Title>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.1" />
+		<PackageReference Include="OSK.Expressions.Invoker" Version="1.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\OSK.Inputs.Abstractions\OSK.Inputs.Abstractions.csproj" />
+	</ItemGroup>
+
+</Project>
