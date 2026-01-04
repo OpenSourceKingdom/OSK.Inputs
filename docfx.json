@@ -12,19 +12,28 @@
           ]
         }
       ],
-      "output": "codebase"
+      "output": "api" 
     }
   ],
   "build": {
     "content": [
       {
         "files": [
-          "**/*.{md,yml}"
+          "*.md",
+          "toc.yml",
+          "docs/**/*.md",
+          "docs/**/toc.yml"
         ],
         "exclude": [
+          "obj/**",
+          "_site/**",
           "artifacts/**"
         ]
+      },
+      {
+        "files": ["api/**/*.yml", "api/toc.yml"]
       }
-    ]
+    ],
+    "dest": "_site"
   }
 }
