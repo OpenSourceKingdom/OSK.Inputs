@@ -1,7 +1,7 @@
 - name: Home
   href: index.md
 - name: Documentation
-  href: docs/toc.yml
+  href: docs
 - name: Codebase
   href: codebase/
 - name: GitHub
