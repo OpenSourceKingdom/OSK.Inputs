@@ -1,2 +1,2 @@
-- name: Legacy
-  href: legacy.md
+- name: Deprecation
+  href: deprecation.md

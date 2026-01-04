@@ -1,5 +1,4 @@
+- name: 1.x (Current)
+  href: 1.x/toc.yml
 - name: 0.x (Legacy)
   href: 0.x/toc.yml
-- name: 1.x (Current)
-  active: true
-  href: 1.x/toc.yml
