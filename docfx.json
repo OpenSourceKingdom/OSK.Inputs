@@ -14,11 +14,9 @@
   "build": {
     "content": [
       {
-        "files": ["*.md", "toc.yml"]
-      },
-      {
-        "files": ["docs/**/*.md", "docs/**/toc.yml"],
-        "src": "." 
+        "files": [
+          "**/*.{md,yml}"
+        ]
       },
       {
         "files": ["codebase/**/*.yml", "codebase/toc.yml"]
