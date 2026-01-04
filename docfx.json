@@ -24,8 +24,7 @@
           "files": ["docs/**.md", "index.md"]
         },
         {
-          "files": ["README.md"],
-          "dest": "index.md"
+          "files": ["README.md"]
         }
       ],
       "dest": "_site"
