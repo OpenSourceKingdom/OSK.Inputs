@@ -4,7 +4,6 @@ using OSK.Functions.Outputs.Mocks;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.Runtime;
-using OSK.Inputs.Internal;
 using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
 using OSK.Inputs.Internal.Services;

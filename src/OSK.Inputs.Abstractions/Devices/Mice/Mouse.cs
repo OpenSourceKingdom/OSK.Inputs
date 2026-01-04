@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using OSK.Inputs.Abstractions.Configuration;
-using OSK.Inputs.Abstractions.Inputs;
-using OSK.Inputs.Abstractions.Devices.Mice;
+﻿using OSK.Inputs.Abstractions.Configuration;
 
 namespace OSK.Inputs.Abstractions.Devices.Mice;
 

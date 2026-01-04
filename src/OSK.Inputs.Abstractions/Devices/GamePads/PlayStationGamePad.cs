@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using OSK.Inputs.Abstractions.Configuration;
-using OSK.Inputs.Abstractions.Inputs;
-using OSK.Inputs.Abstractions.Devices.GamePads;
+﻿using OSK.Inputs.Abstractions.Configuration;
 
 namespace OSK.Inputs.Abstractions.Devices.GamePads;
 

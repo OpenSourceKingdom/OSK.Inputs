@@ -1,6 +1,4 @@
-﻿using OSK.Inputs.Abstractions.Devices.Keyboards;
-
-namespace OSK.Inputs.Abstractions.Devices.Keyboards;
+﻿namespace OSK.Inputs.Abstractions.Devices.Keyboards;
 
 /// <summary>
 /// Defines all of the keyboard inputs available for the input system

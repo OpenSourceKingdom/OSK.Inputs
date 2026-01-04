@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OSK.Inputs.Abstractions.Inputs;
+﻿namespace OSK.Inputs.Abstractions.Inputs;
 
 public interface IInput
 {

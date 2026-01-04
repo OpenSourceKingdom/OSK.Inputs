@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Threading;
-using OSK.Inputs.Abstractions.Configuration;
-using OSK.Inputs.Abstractions.Inputs;
-using OSK.Inputs.Abstractions.Devices.Keyboards;
+﻿using OSK.Inputs.Abstractions.Configuration;
 
 namespace OSK.Inputs.Abstractions.Devices.Keyboards;
 

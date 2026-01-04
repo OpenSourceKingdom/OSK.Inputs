@@ -1,5 +1,4 @@
 ﻿using OSK.Inputs.Abstractions.Inputs;
-using OSK.Inputs.Abstractions.Devices.Mice;
 
 namespace OSK.Inputs.Abstractions.Devices.Mice;
 

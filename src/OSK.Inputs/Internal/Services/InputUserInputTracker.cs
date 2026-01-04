@@ -8,8 +8,6 @@ using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal.Models;
-using OSK.Inputs.Internal.Services;
-using OSK.Inputs.Internal;
 
 namespace OSK.Inputs.Internal.Services;
 

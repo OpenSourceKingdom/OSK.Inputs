@@ -1,6 +1,4 @@
-﻿using OSK.Inputs.Abstractions.Devices.Mice;
-
-namespace OSK.Inputs.Abstractions.Devices.Mice;
+﻿namespace OSK.Inputs.Abstractions.Devices.Mice;
 
 /// <summary>
 /// Defines all of the keyboard inputs available for the input system

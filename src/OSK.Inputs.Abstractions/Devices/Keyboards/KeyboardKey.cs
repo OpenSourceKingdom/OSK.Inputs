@@ -1,5 +1,4 @@
 ﻿using OSK.Inputs.Abstractions.Inputs;
-using OSK.Inputs.Abstractions.Devices.Keyboards;
 
 namespace OSK.Inputs.Abstractions.Devices.Keyboards;
 
