@@ -28,7 +28,7 @@
     ],
     "template": [
       "default",
-      "material/material"
+      "modern"
     ],
     "globalMetadata": {
       "_appLogoPath": "images/logo.png",
