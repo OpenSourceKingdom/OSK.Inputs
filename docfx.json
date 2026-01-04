@@ -17,11 +17,25 @@
         "files": [
           "**/*.{md,yml}"
         ]
-      },
-      {
-        "files": ["codebase/**/*.yml", "codebase/toc.yml"]
       }
     ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "template": [
+      "default",
+      "material/material"
+    ],
+    "globalMetadata": {
+      "_appLogoPath": "images/logo.png",
+      "_disableContribution": true,
+      "_enableSearch": true,
+      "pdf": false
+    },
     "output": "_site"
   }
 }

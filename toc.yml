@@ -1,6 +1,6 @@
 - name: Home
   href: README.md
 - name: Documentation
-  href: docs/versions/toc.yml
+  href: docs/
 - name: Codebase
   href: codebase/
