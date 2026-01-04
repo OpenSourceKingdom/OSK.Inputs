@@ -1,32 +1,42 @@
 {
-"metadata": [
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "metadata": [
     {
       "src": [
         {
           "files": ["src/**/*.csproj"],
-          "exclude": [
-            "src/**/*.Tests.csproj",
-            "src/**/*.UnitTests.csproj",
-            "**/bin/**",
-            "**/obj/**"
-          ]
+          "exclude": ["src/**/*.UnitTests.csproj", "**/bin/**", "**/obj/**"]
         }
       ],
-      "dest": "codebase"
+      "output": "codebase"
     }
   ],
   "build": {
-      "content": [
-        {
-          "files": ["codebase/**.yml"]
-        },
-        {
-          "files": ["docs/**.md", "index.md"]
-        },
-        {
-          "files": ["README.md"]
-        }
-      ],
-      "dest": "_site"
-    }
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "template": [
+      "default",
+      "modern"
+    ],
+    "globalMetadata": {
+      "_appLogoPath": "images/logo.png",
+      "_disableContribution": true,
+      "_enableSearch": true,
+      "pdf": false
+    },
+    "postProcessors": ["ExtractSearchIndex"],
+    "output": "_site"
+  }
 }
