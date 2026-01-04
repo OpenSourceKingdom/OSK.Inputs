@@ -12,7 +12,7 @@
           ]
         }
       ],
-      "output": "api"
+      "output": "codebase"
     }
   ],
   "build": {
@@ -22,7 +22,6 @@
           "**/*.{md,yml}"
         ],
         "exclude": [
-          "_site/**",
           "artifacts/**"
         ]
       }

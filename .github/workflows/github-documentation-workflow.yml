@@ -28,10 +28,6 @@ jobs:
         with:
           dotnet-version: 10.x
 
-      - name: Restore dependencies
-        run: >-
-          dotnet restore ./src/${{ github.event.repository.name }}.sln
-
       - name: Install Docfx
         run: dotnet tool install -g docfx
 
