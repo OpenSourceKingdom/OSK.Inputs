@@ -1,11 +1,11 @@
-﻿using OSK.Inputs.Abstractions.Configuration;
+﻿using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.UnitTests._Helpers;
 
 public class TestIdentity
 {
-    public static InputDeviceIdentity Identity1 = new("Test 1", "test");
-    public static InputDeviceIdentity Identity2 = new("Test 2", "test");
-    public static InputDeviceIdentity Identity3 = new("Test 3", "test");
-    public static InputDeviceIdentity Identity4 = new("Test 4", "test");
+    public static InputDeviceFamily Identity1 = new("Test 1", InputDeviceType.Generic);
+    public static InputDeviceFamily Identity2 = new("Test 2", InputDeviceType.Generic);
+    public static InputDeviceFamily Identity3 = new("Test 3", InputDeviceType.Generic);
+    public static InputDeviceFamily Identity4 = new("Test 4", InputDeviceType.Generic);
 }

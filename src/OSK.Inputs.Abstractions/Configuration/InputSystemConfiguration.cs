@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Configuration;
@@ -18,8 +19,8 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
 {
     #region Variables
 
-    private readonly Dictionary<InputDeviceIdentity, InputDeviceSpecification> _deviceSpecificationLookup 
-        = deviceSpecifications?.ToDictionary(descriptor => descriptor.DeviceIdentity) ?? [];
+    private readonly Dictionary<InputDeviceFamily, InputDeviceSpecification> _deviceSpecificationLookup 
+        = deviceSpecifications?.ToDictionary(specification => specification.DeviceFamily) ?? [];
     private readonly Dictionary<string, InputDefinition> _inputDefinitionLookup 
         = definitions?.Where(definition => definition?.Name is not null).ToDictionary(definition => definition.Name, StringComparer.OrdinalIgnoreCase) ?? [];
 
@@ -52,10 +53,10 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
     /// <summary>
     /// Attempts to get a device specification by the device identity
     /// </summary>
-    /// <param name="deviceIdentity">The identity of the device to get a specification for</param>
+    /// <param name="deviceFamily">The identity of the device to get a specification for</param>
     /// <returns>The specific specification for the device identity if it is supported, otherwise null</returns>
-    public InputDeviceSpecification? GetDeviceSpecification(InputDeviceIdentity deviceIdentity)
-        => _deviceSpecificationLookup.TryGetValue(deviceIdentity, out var specification)
+    public InputDeviceSpecification? GetDeviceSpecification(InputDeviceFamily deviceFamily)
+        => _deviceSpecificationLookup.TryGetValue(deviceFamily, out var specification)
             ? specification
             : null;
     
@@ -89,10 +90,10 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
             return null;
         }
 
-        var deviceMaps = scheme.DeviceMaps.Where(deviceMap => _deviceSpecificationLookup.TryGetValue(deviceMap.DeviceIdentity, out _))
+        var deviceMaps = scheme.DeviceMaps.Where(deviceMap => _deviceSpecificationLookup.TryGetValue(deviceMap.DeviceFamily, out _))
                 .Select(deviceMap =>
                 {
-                    var actionMaps = _deviceSpecificationLookup[deviceMap.DeviceIdentity].GetInputs().Select(input =>
+                    var actionMaps = _deviceSpecificationLookup[deviceMap.DeviceFamily].GetInputs().Select(input =>
                     {
                         var inputMap = deviceMap.GetInputMap(input.Id);
                         var action = inputMap is null
@@ -104,7 +105,7 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
                             : GetActionMap(input, inputMap.Value, action);
                     }).Where(inputMap => inputMap is not null).Cast<InputActionMap>() ?? [];
 
-                    return new DeviceSchemeActionMap(deviceMap.DeviceIdentity, actionMaps);
+                    return new DeviceSchemeActionMap(deviceMap.DeviceFamily, actionMaps);
                 });
 
         return new InputSchemeActionMap(deviceMaps);
@@ -155,7 +156,7 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
         {
             Input = input,
             Action = action,
-            LinkedInputIds = input is CombinationInput combinationInput
+            LinkedInputIds = input is DeviceCombinationInput combinationInput
                 ? [.. combinationInput.DeviceInputs.Select(i => i.Id)]
                 : []
         };
@@ -174,8 +175,8 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
             .Where(scheme => !scheme.IsCustom)
             .Select(scheme => new
             {
-                ControllerName = string.Join(".", scheme.DeviceMaps.Select(map => map.DeviceIdentity)),
-                Devices = scheme.DeviceMaps.Select(map => map.DeviceIdentity)
+                ControllerName = string.Join(".", scheme.DeviceMaps.Select(map => map.DeviceFamily)),
+                Devices = scheme.DeviceMaps.Select(map => map.DeviceFamily)
             })
             .GroupBy(controllerScheme => controllerScheme.ControllerName);
 
@@ -191,7 +192,7 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
             var displayName = deviceList.Length switch
             {
                 0 => string.Empty,
-                1 => deviceList[0].DeviceFamily,
+                1 => deviceList[0].Name,
                 2 => $"{deviceList[0]} and {deviceList[1]}",
                 _ => $"{string.Join(", ", deviceList.Take(deviceList.Length - 1))}, and {deviceList[^1]}"
             };

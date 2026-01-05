@@ -1,11 +1,11 @@
-﻿using OSK.Inputs.Abstractions.Configuration;
+﻿using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.UnitTests._Helpers;
 
-public class TestDeviceSpecification(InputDeviceIdentity deviceIdentity, params Input[] inputs) : InputDeviceSpecification
+public class TestDeviceSpecification(InputDeviceFamily deviceFamily, params Input[] inputs) : InputDeviceSpecification
 {
-    public override InputDeviceIdentity DeviceIdentity => deviceIdentity;
+    public override InputDeviceFamily DeviceFamily => deviceFamily;
 
     public override IReadOnlyCollection<IInput> GetInputs() => inputs;
 }

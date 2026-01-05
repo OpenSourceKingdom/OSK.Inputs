@@ -1,59 +1,111 @@
-﻿using OSK.Inputs.Abstractions.Configuration;
+﻿namespace OSK.Inputs.Abstractions.Devices.Keyboards;
 
-namespace OSK.Inputs.Abstractions.Devices.Keyboards;
-
-public class AnsiKeyboard : InputDeviceSpecification<IKeyboardInput>
+public class AnsiKeyboard : KeyboardDeviceSpecification
 {
     #region Variables
 
-    public static InputDeviceIdentity Ansi = new("AnsiKeyboard", KeyboardInputs.KeyboardDeviceType);
+    public static InputDeviceFamily Ansi = new("AnsiKeyboard", InputDeviceType.Keyboard);
 
     #endregion
 
-    #region InputDeviceSpecification Overrides
+    #region KeyboardDeviceSpecification Overrides
 
-    public override InputDeviceIdentity DeviceIdentity => Ansi;
+    public override InputDeviceFamily DeviceFamily => Ansi;
 
-    public override IKeyboardInput[] Inputs { get; } = [
-        // Standard Row 1
-        KeyboardInputs.BackTick, KeyboardInputs.Tilde,
-        KeyboardInputs.Zero, KeyboardInputs.One, KeyboardInputs.Two, KeyboardInputs.Three,
-        KeyboardInputs.Four, KeyboardInputs.Five, KeyboardInputs.Six, KeyboardInputs.Seven,
-        KeyboardInputs.Eight, KeyboardInputs.Nine,
-        KeyboardInputs.ExclamationPoint, KeyboardInputs.At, KeyboardInputs.Pound,
-        KeyboardInputs.Dollar, KeyboardInputs.Percent, KeyboardInputs.Caret,
-        KeyboardInputs.Ampersand, KeyboardInputs.Asterisk, KeyboardInputs.LeftParanthesis,
-        KeyboardInputs.RightParanthesis,
+    protected override KeyboardInput[] StandardKeys { get; } = [
+        // Special / Non-ASCII
+        KeyboardInput.UpArrow,
+        KeyboardInput.RightArrow,
+        KeyboardInput.LeftArrow,
+        KeyboardInput.DownArrow,
+        KeyboardInput.CapsLock,
+        KeyboardInput.Control,
+        KeyboardInput.Alt,
+        KeyboardInput.F10,
+        KeyboardInput.F11,
+        KeyboardInput.F12,
+        KeyboardInput.End,
+        KeyboardInput.Home,
 
-        // Punctuation & Brackets
-        KeyboardInputs.Minus, KeyboardInputs.Underscore, KeyboardInputs.Equal, KeyboardInputs.Plus,
-        KeyboardInputs.LeftBracket, KeyboardInputs.LeftCurlyBrace, KeyboardInputs.RightBracket, KeyboardInputs.RightCurlyBrace,
-        KeyboardInputs.BackSlash, KeyboardInputs.Pipe,
-        KeyboardInputs.SemiColon, KeyboardInputs.Colon, KeyboardInputs.SingleQuote, KeyboardInputs.DoubleQuote,
-        KeyboardInputs.Comma, KeyboardInputs.LessThan, KeyboardInputs.Period, KeyboardInputs.GreaterThan,
-        KeyboardInputs.ForwardSlash, KeyboardInputs.QuestionMark,
+        // Standard ASCII Control & Symbols
+        KeyboardInput.BackSpace,
+        KeyboardInput.Tab,
+        KeyboardInput.Enter,
+        KeyboardInput.Shift,
+        KeyboardInput.Escape,
+        KeyboardInput.Space,
+        KeyboardInput.Delete,
 
-        // Core Keys
-        KeyboardInputs.BackSpace, KeyboardInputs.Tab, KeyboardInputs.Caps,
-        KeyboardInputs.Enter, KeyboardInputs.Space, KeyboardInputs.Escape,
-
-        // Modifiers
-        KeyboardInputs.Shift, KeyboardInputs.Ctrl, KeyboardInputs.Alt,
+        // Numeric Row
+        KeyboardInput.Zero,
+        KeyboardInput.One,
+        KeyboardInput.Two,
+        KeyboardInput.Three,
+        KeyboardInput.Four,
+        KeyboardInput.Five,
+        KeyboardInput.Six,
+        KeyboardInput.Seven,
+        KeyboardInput.Eight,
+        KeyboardInput.Nine,
 
         // Alphabet
-        KeyboardInputs.A, KeyboardInputs.B, KeyboardInputs.C, KeyboardInputs.D, KeyboardInputs.E,
-        KeyboardInputs.F, KeyboardInputs.G, KeyboardInputs.H, KeyboardInputs.I, KeyboardInputs.J,
-        KeyboardInputs.K, KeyboardInputs.L, KeyboardInputs.M, KeyboardInputs.N, KeyboardInputs.O,
-        KeyboardInputs.P, KeyboardInputs.Q, KeyboardInputs.R, KeyboardInputs.S, KeyboardInputs.T,
-        KeyboardInputs.U, KeyboardInputs.V, KeyboardInputs.W, KeyboardInputs.X, KeyboardInputs.Y,
-        KeyboardInputs.Z,
+        KeyboardInput.A, KeyboardInput.B, KeyboardInput.C,
+        KeyboardInput.D, KeyboardInput.E, KeyboardInput.F,
+        KeyboardInput.G, KeyboardInput.H, KeyboardInput.I,
+        KeyboardInput.J, KeyboardInput.K, KeyboardInput.L,
+        KeyboardInput.M, KeyboardInput.N, KeyboardInput.O,
+        KeyboardInput.P, KeyboardInput.Q, KeyboardInput.R,
+        KeyboardInput.S, KeyboardInput.T, KeyboardInput.U,
+        KeyboardInput.V, KeyboardInput.W, KeyboardInput.X,
+        KeyboardInput.Y, KeyboardInput.Z,
 
-        // Function & Navigation
-        KeyboardInputs.F1, KeyboardInputs.F2, KeyboardInputs.F3, KeyboardInputs.F4, KeyboardInputs.F5,
-        KeyboardInputs.F6, KeyboardInputs.F7, KeyboardInputs.F8, KeyboardInputs.F9, KeyboardInputs.F10,
-        KeyboardInputs.F11, KeyboardInputs.F12,
-        KeyboardInputs.UpArrow, KeyboardInputs.LeftArrow, KeyboardInputs.DownArrow, KeyboardInputs.RightArrow,
-        KeyboardInputs.Home, KeyboardInputs.Delete, KeyboardInputs.End
+        // Punctuation & Brackets
+        KeyboardInput.Minus,
+        KeyboardInput.Equal,
+        KeyboardInput.LeftBracket,
+        KeyboardInput.RightBracket,
+        KeyboardInput.BackSlash,
+        KeyboardInput.SemiColon,
+        KeyboardInput.SingleQuote,
+        KeyboardInput.Comma,
+        KeyboardInput.Period,
+        KeyboardInput.ForwardSlash,
+        KeyboardInput.BackTick,
+
+        // Function Keys
+        KeyboardInput.F1,
+        KeyboardInput.F2,
+        KeyboardInput.F3,
+        KeyboardInput.F4,
+        KeyboardInput.F5,
+        KeyboardInput.F6,
+        KeyboardInput.F7,
+        KeyboardInput.F8,
+        KeyboardInput.F9
+    ];
+
+    protected override KeyboardCombination[] Combinations { get; } = [
+        new(KeyboardInput.Tilde, KeyboardInput.Shift, KeyboardInput.BackTick),
+        new(KeyboardInput.ExclamationPoint, KeyboardInput.Shift, KeyboardInput.One),
+        new(KeyboardInput.At, KeyboardInput.Shift, KeyboardInput.Two),
+        new(KeyboardInput.Pound, KeyboardInput.Shift, KeyboardInput.Three),
+        new(KeyboardInput.Dollar, KeyboardInput.Shift, KeyboardInput.Four),
+        new(KeyboardInput.Percent, KeyboardInput.Shift, KeyboardInput.Five),
+        new(KeyboardInput.Caret, KeyboardInput.Shift, KeyboardInput.Six),
+        new(KeyboardInput.Ampersand, KeyboardInput.Shift, KeyboardInput.Seven),
+        new(KeyboardInput.Asterisk, KeyboardInput.Shift, KeyboardInput.Eight),
+        new(KeyboardInput.LeftParanthesis, KeyboardInput.Shift, KeyboardInput.Nine),
+        new(KeyboardInput.RightParanthesis, KeyboardInput.Shift, KeyboardInput.Zero),
+        new(KeyboardInput.Underscore, KeyboardInput.Shift, KeyboardInput.Minus),
+        new(KeyboardInput.Plus, KeyboardInput.Shift, KeyboardInput.Equal),
+        new(KeyboardInput.LeftCurlyBrace, KeyboardInput.Shift, KeyboardInput.LeftBracket),
+        new(KeyboardInput.RightCurlyBrace, KeyboardInput.Shift, KeyboardInput.RightBracket),
+        new(KeyboardInput.Colon, KeyboardInput.Shift, KeyboardInput.SemiColon),
+        new(KeyboardInput.DoubleQuote, KeyboardInput.Shift, KeyboardInput.SingleQuote),
+        new(KeyboardInput.LessThan, KeyboardInput.Shift, KeyboardInput.Comma),
+        new(KeyboardInput.GreaterThan, KeyboardInput.Shift, KeyboardInput.Period),
+        new(KeyboardInput.QuestionMark, KeyboardInput.Shift, KeyboardInput.ForwardSlash),
+        new(KeyboardInput.Pipe, KeyboardInput.Shift, KeyboardInput.BackSlash)
     ];
 
     #endregion

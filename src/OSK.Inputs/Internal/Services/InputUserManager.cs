@@ -150,7 +150,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
     {
         if (!_users.TryGetValue(userId, out var user))
         {
-            return outputFactory.NotFound($"Unable to pair device {device.DeviceId}, {device.Identity.DeviceFamily}, because there is no user with id {userId}.");
+            return outputFactory.NotFound($"Unable to pair device {device.DeviceId}, {device.Identity.Name}, because there is no user with id {userId}.");
         }
 
         var pairedUser = GetInputUserForDevice(device.DeviceId);
@@ -158,7 +158,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         {
             return pairedUser.Id == userId
                 ? outputFactory.Succeed()
-                : outputFactory.Fail($"Unable to pair device {device.DeviceId}, {device.Identity.DeviceFamily}, to user {userId} because it is already paired to {pairedUser.Id}.");
+                : outputFactory.Fail($"Unable to pair device {device.DeviceId}, {device.Identity.Name}, to user {userId} because it is already paired to {pairedUser.Id}.");
         }
 
         user.AddDevice(device);

@@ -1,5 +1,5 @@
 ﻿using System.Numerics;
-using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.Runtime;
 
@@ -7,10 +7,10 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// A specific pointer on a device and the related information for it
 /// </summary>
 /// <param name="id">The id for the pointer given by the input system</param>
-/// <param name="deviceIdentity">The device the pointer is associated to (Table, PC, etc.)</param>
+/// <param name="deviceFamily">The device the pointer is associated to (Table, PC, etc.)</param>
 /// <param name="position">The position on the screen the pointer is currently located</param>
 /// <param name="motion">The <see cref="PointerMotion"/> information related to this pointer</param>
-public readonly struct PointerData(int id, InputDeviceIdentity deviceIdentity, Vector2 position, PointerMotion motion)
+public readonly struct PointerData(int id, InputDeviceFamily deviceFamily, Vector2 position, PointerMotion motion)
 {
     #region Variables
 
@@ -22,7 +22,7 @@ public readonly struct PointerData(int id, InputDeviceIdentity deviceIdentity, V
     /// <summary>
     /// The device this pointer belongs to
     /// </summary>
-    public InputDeviceIdentity DeviceIdentity => deviceIdentity;
+    public InputDeviceFamily DeviceFamily => deviceFamily;
 
     /// <summary>
     /// The position for the pointer

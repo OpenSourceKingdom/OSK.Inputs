@@ -1,5 +1,5 @@
 ﻿using System;
-using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration.Ports;
@@ -17,7 +17,7 @@ public interface IInputSchemeBuilder
     /// <param name="mapBuilderConfigurator">The action configurator</param>
     /// <returns>The builder for chaining</returns>
     IInputSchemeBuilder WithDevice<TDeviceSpecification, TInput>(Action<IInputDeviceMapBuilder<TDeviceSpecification, TInput>> mapBuilderConfigurator)
-        where TInput : IInput
+        where TInput : Enum
         where TDeviceSpecification : InputDeviceSpecification<TInput>, new();
 
     /// <summary>

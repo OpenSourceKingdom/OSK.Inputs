@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Configuration;
@@ -7,13 +8,13 @@ namespace OSK.Inputs.Abstractions.Configuration;
 /// <summary>
 /// Provides a mapping for a specific input scheme device and the related input definition actions
 /// </summary>
-/// <param name="deviceIdentity">The device this map refers to</param>
+/// <param name="deviceFamily">The device this map refers to</param>
 /// <param name="actionMaps">The collections of action maps for the device inputs</param>
-public class DeviceSchemeActionMap(InputDeviceIdentity deviceIdentity, IEnumerable<InputActionMap> actionMaps)
+public class DeviceSchemeActionMap(InputDeviceFamily deviceFamily, IEnumerable<InputActionMap> actionMaps)
 {
     #region Variables
 
-    private readonly Dictionary<int, InputActionMap> _deviceInputMaps = actionMaps.Where(map => map.Input is PhysicalInput)
+    private readonly Dictionary<int, InputActionMap> _deviceInputMaps = actionMaps.Where(map => map.Input is IDeviceInput)
                                                                                           .ToDictionary(inputMap => inputMap.InputId);
 
     private readonly Dictionary<int, InputActionMap[]> _deviceVirtualInputLookup
@@ -29,7 +30,7 @@ public class DeviceSchemeActionMap(InputDeviceIdentity deviceIdentity, IEnumerab
     /// <summary>
     /// The device this map refers to
     /// </summary>
-    public InputDeviceIdentity DeviceIdentity => deviceIdentity;
+    public InputDeviceFamily DeviceFamily => deviceFamily;
 
     /// <summary>
     /// Gets the action maps for a specific input on the device

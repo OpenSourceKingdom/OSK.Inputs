@@ -1,40 +1,38 @@
-﻿using OSK.Inputs.Abstractions.Configuration;
+﻿namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
-namespace OSK.Inputs.Abstractions.Devices.GamePads;
-
-public class XboxGamePad : InputDeviceSpecification<IGamePadInput>
+public class XboxGamePad : GamePadDeviceSpecification
 {
     #region Static
 
-    public static InputDeviceIdentity Xbox = new("Xbox", GamePadInputs.GamePadDeviceType);
+    public static InputDeviceFamily Xbox = new("Xbox", InputDeviceType.GamePad);
 
     #endregion
 
     #region InputDeviceSpecification Overrides
 
-    public override InputDeviceIdentity DeviceIdentity => Xbox;
+    public override InputDeviceFamily DeviceFamily => Xbox;
 
-    public override IGamePadInput[] Inputs { get; } = [
-        GamePadInputs.ButtonSouth, // A
-        GamePadInputs.ButtonEast,  // B
-        GamePadInputs.ButtonWest,  // X
-        GamePadInputs.ButtonNorth, // Y
-        GamePadInputs.Menu,        // Menu / Start
-        GamePadInputs.Options,     // View / Back
-        GamePadInputs.Home,        // Xbox Guide Button
-        GamePadInputs.Share,       // Share Button (Series X|S)
-        GamePadInputs.DpadUp,
-        GamePadInputs.DpadDown,
-        GamePadInputs.DpadLeft,
-        GamePadInputs.DpadRight,
-        GamePadInputs.LeftBumper,
-        GamePadInputs.RightBumper,
-        GamePadInputs.LeftTrigger,
-        GamePadInputs.RightTrigger,
-        GamePadInputs.LeftJoyStick,
-        GamePadInputs.LeftJoyStickClick,
-        GamePadInputs.RightJoyStick,
-        GamePadInputs.RightJoyStickClick
+    protected override GamePadInput[] Inputs { get; } = [
+        GamePadInput.ButtonSouth, // A
+        GamePadInput.ButtonEast,  // B
+        GamePadInput.ButtonWest,  // X
+        GamePadInput.ButtonNorth, // Y
+        GamePadInput.Menu,        // Menu / Start
+        GamePadInput.Options,     // View / Back
+        GamePadInput.Home,        // Xbox Guide Button
+        GamePadInput.Share,       // Share Button (Series X|S)
+        GamePadInput.DpadUp,
+        GamePadInput.DpadDown,
+        GamePadInput.DpadLeft,
+        GamePadInput.DpadRight,
+        GamePadInput.LeftBumper,
+        GamePadInput.RightBumper,
+        GamePadInput.LeftTrigger,
+        GamePadInput.RightTrigger,
+        GamePadInput.LeftJoyStick,
+        GamePadInput.LeftJoyStickClick,
+        GamePadInput.RightJoyStick,
+        GamePadInput.RightJoyStickClick
     ];
 
     #endregion

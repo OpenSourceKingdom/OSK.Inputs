@@ -2,6 +2,6 @@
 
 namespace OSK.Inputs.Abstractions.Devices.Mice;
 
-public interface IMouseInput: IInput
+public interface IMouseInput: IDeviceInput
 {
 }

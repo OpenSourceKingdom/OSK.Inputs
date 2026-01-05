@@ -1,4 +1,5 @@
 ﻿using System;
+using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.Inputs;
 
@@ -7,8 +8,7 @@ namespace OSK.Inputs.Abstractions.Inputs;
 /// </summary>
 /// <param name="deviceType">The owner device type</param>
 /// <param name="id">A unique id for the input</param>
-/// <param name="inputType">The type of input this represents</param>
-public abstract class Input(string deviceType, int id, InputType inputType): IInput, IEquatable<Input>
+public abstract class Input(InputDeviceType deviceType, int id): IInput, IEquatable<IInput>
 {
     #region Variables
 
@@ -18,25 +18,17 @@ public abstract class Input(string deviceType, int id, InputType inputType): IIn
     public int Id => id;
 
     /// <summary>
-    /// The owner device type.
-    /// 
-    /// <br />
-    /// Note: This may be empty
+    /// The type of devices this input belongs to.
     /// </summary>
-    public string DeviceType => deviceType;
-
-    /// <summary>
-    /// The specific type of input this represents
-    /// </summary>
-    public InputType InputType => inputType;
+    public InputDeviceType DeviceType => deviceType;
 
     #endregion
 
     #region IEquatable
 
-    public bool Equals(Input other)
+    public bool Equals(IInput? other)
     {
-        return other is not null && other.DeviceType.Equals(DeviceType, StringComparison.OrdinalIgnoreCase) && other.Id == Id;
+        return other is not null && other.DeviceType == other.DeviceType && other.Id == Id;
     }
 
     #endregion

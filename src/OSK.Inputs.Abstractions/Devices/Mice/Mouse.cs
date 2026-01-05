@@ -1,27 +1,25 @@
-﻿using OSK.Inputs.Abstractions.Configuration;
-
-namespace OSK.Inputs.Abstractions.Devices.Mice;
+﻿namespace OSK.Inputs.Abstractions.Devices.Mice;
 
 /// <summary>
 /// Defines a specification for mice
 /// </summary>
-public class Mouse: InputDeviceSpecification<IMouseInput>
+public class Mouse: MouseDeviceSpecification
 {
     #region Variables
 
     /// <summary>
     /// Represents an identity for a mouse
     /// </summary>
-    public static InputDeviceIdentity StandardMouse = new("Mouse", MouseInputs.MouseDeviceType);
+    public static InputDeviceFamily StandardMice = new("Mouse", InputDeviceType.Mice);
 
     #endregion
 
     #region InputDeviceSpecification Overrides
 
-    public override InputDeviceIdentity DeviceIdentity => StandardMouse;
+    public override InputDeviceFamily DeviceFamily => StandardMice;
 
-    public override IMouseInput[] Inputs { get; } 
-        = [ MouseInputs.LeftClick, MouseInputs.RightClick, MouseInputs.ScrollWheelClick, MouseInputs.ScrollWheel, MouseInputs.MouseMovement ];
+    protected override MouseInput[] Inputs { get; } 
+        = [ MouseInput.LeftClick, MouseInput.RightClick, MouseInput.ScrollWheelClick, MouseInput.ScrollWheel, MouseInput.MouseMovement ];
 
     #endregion
 }

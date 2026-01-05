@@ -5,7 +5,7 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 
-internal class InputPointerState(int pointerId, PhysicalInput input, int maxRecords): PhysicalInputState(input)
+internal class InputPointerState(int pointerId, IDeviceInput input, int maxRecords): DeviceInputState(input)
 {
     #region Variables
 

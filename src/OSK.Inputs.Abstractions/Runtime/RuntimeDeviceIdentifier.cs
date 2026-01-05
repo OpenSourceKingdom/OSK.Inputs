@@ -1,4 +1,4 @@
-﻿using OSK.Inputs.Abstractions.Configuration;
+﻿using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.Runtime;
 
@@ -7,7 +7,7 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// to it
 /// </summary>
 /// <param name="DeviceId">The game system id for the device</param>
-/// <param name="Identity">The specific <see cref="InputDeviceIdentity"/> associated with the id</param>
-public readonly record struct RuntimeDeviceIdentifier(int DeviceId, InputDeviceIdentity Identity)
+/// <param name="Identity">The specific <see cref="InputDeviceFamily"/> associated with the id</param>
+public readonly record struct RuntimeDeviceIdentifier(int DeviceId, InputDeviceFamily Identity)
 {
 }
