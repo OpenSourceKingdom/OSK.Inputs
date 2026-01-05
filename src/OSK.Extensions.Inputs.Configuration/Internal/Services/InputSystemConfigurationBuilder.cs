@@ -4,6 +4,7 @@ using System.Linq;
 using OSK.Extensions.Inputs.Configuration.Options;
 using OSK.Extensions.Inputs.Configuration.Ports;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Extensions.Inputs.Configuration.Internal.Services;
 
@@ -11,7 +12,7 @@ internal class InputSystemConfigurationBuilder : IInputSystemConfigurationBuilde
 {
     #region Variables
 
-    private Dictionary<InputDeviceIdentity, InputDeviceSpecification> _deviceSpecifications = [];
+    private Dictionary<InputDeviceFamily, InputDeviceSpecification> _deviceSpecifications = [];
     private Dictionary<string, Action<IInputDefinitionBuilder>> _definitionBuilderConfigurators = [];
     private Action<InputSystemJoinPolicyOptions>? _policyConfigurator;
     private Action<InputProcessingOptions>? _processorConfigurator;
@@ -66,7 +67,7 @@ internal class InputSystemConfigurationBuilder : IInputSystemConfigurationBuilde
             throw new ArgumentNullException(nameof(specification));
         }
 
-        _deviceSpecifications[specification.DeviceIdentity] = specification;
+        _deviceSpecifications[specification.DeviceFamily] = specification;
         return this;
     }
 

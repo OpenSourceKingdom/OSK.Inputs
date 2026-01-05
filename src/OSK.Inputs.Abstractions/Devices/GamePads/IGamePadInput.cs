@@ -2,6 +2,6 @@
 
 namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
-public interface IGamePadInput: IInput
+public interface IGamePadInput: IDeviceInput
 {
 }

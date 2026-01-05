@@ -1,10 +1,11 @@
-﻿namespace OSK.Inputs.Abstractions.Inputs;
+﻿using System;
+using OSK.Inputs.Abstractions.Devices;
 
-public interface IInput
+namespace OSK.Inputs.Abstractions.Inputs;
+
+public interface IInput: IEquatable<IInput>
 {
     public int Id { get; }
 
-    string DeviceType { get; }
-
-    InputType InputType { get; }
+    InputDeviceType DeviceType { get; }
 }

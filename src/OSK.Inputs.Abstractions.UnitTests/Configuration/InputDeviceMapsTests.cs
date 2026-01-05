@@ -11,7 +11,7 @@ public class InputDeviceMapsTests
     public void GetInputMap_EmptyInputs_ReturnsNull()
     {
         // Arrange
-        var map = new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] };
+        var map = new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] };
 
         // Arrange
         var input = map.GetInputMap(1);
@@ -26,7 +26,7 @@ public class InputDeviceMapsTests
     public void GetInputMap_HasInputs_InvalidInputId_ReturnsNull(int id)
     {
         // Arrange
-        var map = new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "abc", InputId = 123 }] };
+        var map = new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "abc", InputId = 123 }] };
 
         // Arrange
         var input = map.GetInputMap(id);
@@ -39,7 +39,7 @@ public class InputDeviceMapsTests
     public void GetInputMap_HasInputs_ValidInputId_ReturnsSuccessfully()
     {
         // Arrange
-        var map = new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [new InputMap() { ActionName = "abc", InputId = 123 }] };
+        var map = new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [new InputMap() { ActionName = "abc", InputId = 123 }] };
 
         // Arrange
         var input = map.GetInputMap(123);

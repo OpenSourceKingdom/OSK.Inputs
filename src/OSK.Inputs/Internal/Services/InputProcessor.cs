@@ -7,6 +7,7 @@ using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Notifications;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Options;
@@ -97,7 +98,7 @@ internal partial class InputProcessor: IInputProcessor
         {
             return _outputFactory.Fail("Input processing paused");
         }
-        if (inputEvent is not PhysicalInputEvent physicalInputEvent)
+        if (inputEvent is not DeviceInputEvent physicalInputEvent)
         {
             LogUnsupportedInputTypeInformation(_logger, inputEvent.GetType().FullName);
             return _outputFactory.Fail($"Input type '{inputEvent.Input.GetType().FullName}' is not supported.");
@@ -272,7 +273,7 @@ internal partial class InputProcessor: IInputProcessor
     }
 
     private IInputUser? GetUserForDevicePairing(IEnumerable<InputDeviceCombination> supportedDeviceCombinations,
-        IEnumerable<IInputUser> users, DevicePairingBehavior pairingBehavior, InputDeviceIdentity newDeviceIdentity)
+        IEnumerable<IInputUser> users, DevicePairingBehavior pairingBehavior, InputDeviceFamily newdeviceFamily)
     {
         if (!users.Any())
         {
@@ -280,11 +281,11 @@ internal partial class InputProcessor: IInputProcessor
         }
 
         var deviceCombinationLookup = supportedDeviceCombinations.SelectMany(combination
-            => combination.DeviceIdentities.Select(identity => new { DeviceIdentity = identity, Combination = combination }))
-            .GroupBy(deviceIdentityCombinations => deviceIdentityCombinations.DeviceIdentity)
-            .ToDictionary(deviceIdentityCombinationGroup => deviceIdentityCombinationGroup.Key,
-                deviceIdentityCombinationGroup 
-                    => deviceIdentityCombinationGroup.Select(identityCombinationPair => identityCombinationPair.Combination)
+            => combination.DeviceIdentities.Select(identity => new { DeviceFamily = identity, Combination = combination }))
+            .GroupBy(deviceFamilyCombinations => deviceFamilyCombinations.DeviceFamily)
+            .ToDictionary(deviceFamilyCombinationGroup => deviceFamilyCombinationGroup.Key,
+                deviceFamilyCombinationGroup 
+                    => deviceFamilyCombinationGroup.Select(identityCombinationPair => identityCombinationPair.Combination)
                                                      .Distinct()
                                                      .ToArray());
 
@@ -292,10 +293,10 @@ internal partial class InputProcessor: IInputProcessor
         {
             var pairedDeviceSet = user.PairedDevices.Select(pairedDevice => pairedDevice.DeviceIdentifier.Identity).ToHashSet();
             var completedCombinations = supportedDeviceCombinations.Count(combination => combination.DeviceIdentities.All(identity => pairedDeviceSet.Contains(identity)));
-            var missingNewDevice = !pairedDeviceSet.Contains(newDeviceIdentity);
+            var missingNewDevice = !pairedDeviceSet.Contains(newdeviceFamily);
             var fewestDevicesToCompleteClosestCombinationWithDevice = missingNewDevice
                 ? supportedDeviceCombinations
-                    .Where(combination => combination.Contains(newDeviceIdentity))
+                    .Where(combination => combination.Contains(newdeviceFamily))
                     .Select(combination => combination.DeviceIdentities.Count(identity => !pairedDeviceSet.Contains(identity)))
                     .Min()
                 : 100;

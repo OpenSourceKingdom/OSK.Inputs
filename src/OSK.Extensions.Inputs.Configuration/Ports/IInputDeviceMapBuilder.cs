@@ -1,4 +1,5 @@
-﻿using OSK.Inputs.Abstractions.Configuration;
+﻿using System;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration.Ports;
@@ -9,7 +10,7 @@ namespace OSK.Extensions.Inputs.Configuration.Ports;
 /// <typeparam name="TDeviceSpecification">The specification the builder is configuring with</typeparam>
 /// <typeparam name="TInput">The input the specification uses</typeparam>
 public interface IInputDeviceMapBuilder<TDeviceSpecification, TInput>
-    where TInput: IInput
+    where TInput: Enum
     where TDeviceSpecification: InputDeviceSpecification<TInput>, new()
 {
     /// <summary>

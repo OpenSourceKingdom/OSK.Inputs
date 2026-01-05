@@ -3,8 +3,8 @@
 namespace OSK.Inputs.Abstractions.Runtime;
 
 /// <summary>
-/// Represents a virtual input that was triggered by the input system. This differs from a <see cref="PhysicalInputEvent"/>
-/// which comes from a <see cref="PhysicalInput"/>. The virtual inputs are managed by the software and are triggered on behalf
+/// Represents a virtual input that was triggered by the input system. This differs from a <see cref="DeviceInputEvent"/>
+/// which comes from a <see cref="IDeviceInput"/>. The virtual inputs are managed by the software and are triggered on behalf
 /// of the user.
 /// </summary>
 /// <param name="virtualInput">The virtual input that was triggered</param>

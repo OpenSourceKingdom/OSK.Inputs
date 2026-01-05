@@ -8,14 +8,14 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// </summary>
 /// <param name="input">The input that triggered this event</param>
 /// <param name="phase">The phase of the input</param>
-public abstract class InputEvent(Input input, InputPhase phase)
+public abstract class InputEvent(IInput input, InputPhase phase)
 {
     #region Variables
 
     /// <summary>
     /// The input that triggered this event
     /// </summary>
-    public Input Input => input;
+    public IInput Input => input;
 
     /// <summary>
     /// The phase of the input

@@ -1,25 +1,25 @@
 ﻿using System;
 using System.Linq.Expressions;
 using OSK.Extensions.Inputs.Configuration.Ports;
-using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration;
 
 public static class InputDeviceMapBuilderExtensions
 {
-    public static IInputDeviceMapBuilder<TDevice, TInput> WithInput<TDevice, TInput, TService>(
-        this IInputDeviceMapBuilder<TDevice, TInput> builder, TInput input, Expression<Func<TService, object?>> methodPath)
-        where TInput : IInput
-        where TDevice : InputDeviceSpecification<TInput>, new()
+    public static IInputDeviceMapBuilder<TDeviceSpecification, TInput> WithInput<TDeviceSpecification, TInput, TService>(
+        this IInputDeviceMapBuilder<TDeviceSpecification, TInput> builder, TInput input, Expression<Func<TService, object?>> methodPath)
+        where TInput : Enum
+        where TDeviceSpecification : InputDeviceSpecification<TInput>, new()
     {
         return builder.WithInputMap(input, GetMethodName(methodPath));
     }
 
-    public static IInputDeviceMapBuilder<TDevice, TInput> WithInput<TDevice, TInput>(
-        this IInputDeviceMapBuilder<TDevice, TInput> builder, TInput input, string actionKey)
-        where TInput : IInput
-        where TDevice : InputDeviceSpecification<TInput>, new()
+    public static IInputDeviceMapBuilder<TDeviceSpecification, TInput> WithInput<TDeviceSpecification, TInput>(
+        this IInputDeviceMapBuilder<TDeviceSpecification, TInput> builder, TInput input, string actionKey)
+        where TInput : Enum
+        where TDeviceSpecification : InputDeviceSpecification<TInput>, new()
     {
         return builder.WithInputMap(input, actionKey);
     }

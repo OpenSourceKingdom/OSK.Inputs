@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal.Models;
@@ -19,9 +20,9 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
     private const int MaxPointerRecords = 3;
 
-    private readonly Dictionary<InputDeviceIdentity, DeviceInputTracker> _deviceInputTrackerLookup
+    private readonly Dictionary<InputDeviceFamily, DeviceInputTracker> _deviceInputTrackerLookup
         = schemeMap.DeviceSchemeMaps.ToDictionary(
-            deviceScheme => deviceScheme.DeviceIdentity, 
+            deviceScheme => deviceScheme.DeviceFamily, 
             deviceScheme => new DeviceInputTracker(deviceScheme));
 
     #endregion
@@ -92,7 +93,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
     public IOutput<TriggeredActionEvent?> Track(InputEvent inputEvent)
     {
-        if (inputEvent is not PhysicalInputEvent physicalInputEvent)
+        if (inputEvent is not DeviceInputEvent physicalInputEvent)
         {
             return outputFactory.Fail<TriggeredActionEvent?>("The input event was not a physical input event");
         }
@@ -114,7 +115,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         }
 
         var virtualActionMaps = actionMaps.Where(map => map.Input is VirtualInput);
-        var inputActionMap = actionMaps.FirstOrDefault(map => map.Input is PhysicalInput);
+        var inputActionMap = actionMaps.FirstOrDefault(map => map.Input is IDeviceInput);
 
 
         var virtualInputActivationContext = ProcessVirtualInputEvent(deviceTracker, inputState, virtualActionMaps);
@@ -142,9 +143,9 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
     #region Helpers
 
-    private PhysicalInputState? GetAndUpdateInputState(DeviceInputTracker deviceTracker, InputEvent inputEvent)
+    private DeviceInputState? GetAndUpdateInputState(DeviceInputTracker deviceTracker, InputEvent inputEvent)
     {
-        PhysicalInputState inputState;
+        DeviceInputState inputState;
         switch (inputEvent)
         {
             case InputPointerEvent pointerEvent:
@@ -194,14 +195,14 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         return inputState;
     }
 
-    private TriggeredActionEvent? ProcessVirtualInputEvent(DeviceInputTracker deviceTracker, PhysicalInputState inputState,
+    private TriggeredActionEvent? ProcessVirtualInputEvent(DeviceInputTracker deviceTracker, DeviceInputState inputState,
         IEnumerable<InputActionMap> virtualInputActionMaps)
     {
         foreach (var virtualInputActionMap in virtualInputActionMaps)
         {
             switch (virtualInputActionMap.Input)
             {
-                case CombinationInput combinationInput:
+                case DeviceCombinationInput combinationInput:
                     var combinationPhase = inputState.Phase;
                     var completedCombination = true;
 
@@ -225,7 +226,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
                     break;
                 default:
-                    LogUnknownVirtualInputWarning(logger, deviceTracker.SchemeMap.DeviceIdentity, virtualInputActionMap.Input.Id, virtualInputActionMap.Input.GetType().FullName);
+                    LogUnknownVirtualInputWarning(logger, deviceTracker.SchemeMap.DeviceFamily, virtualInputActionMap.Input.Id, virtualInputActionMap.Input.GetType().FullName);
                     break;
             }
         }
@@ -277,7 +278,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
                     return null;
                 }
 
-                return (PointerData?) new PointerData(pointerState.PointerId, deviceState.SchemeMap.DeviceIdentity,
+                return (PointerData?) new PointerData(pointerState.PointerId, deviceState.SchemeMap.DeviceFamily,
                     pointerPositionMotionData.Value.Item1, pointerPositionMotionData.Value.Item2);
             }))
             .Where(pointerData => pointerData is not null)
@@ -316,8 +317,8 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
     [LoggerMessage(eventId: 1, LogLevel.Warning, "Input Activation was of an unknown type and could not be processed: {activationTypeName}")]
     private static partial void LogUnknownActivationWarning(ILogger logger, string activationTypeName);
 
-    [LoggerMessage(eventId: 2, LogLevel.Warning, "An attempt was made to process a virtual input with id '{virtualInputId}' on device '{deviceIdentity}', but it was unrecognized type '{virtualInputType}' and could not be processed.")]
-    private static partial void LogUnknownVirtualInputWarning(ILogger logger, InputDeviceIdentity deviceIdentity, int virtualInputId, string virtualInputType);
+    [LoggerMessage(eventId: 2, LogLevel.Warning, "An attempt was made to process a virtual input with id '{virtualInputId}' on device '{deviceFamily}', but it was unrecognized type '{virtualInputType}' and could not be processed.")]
+    private static partial void LogUnknownVirtualInputWarning(ILogger logger, InputDeviceFamily deviceFamily, int virtualInputId, string virtualInputType);
 
     #endregion
 }

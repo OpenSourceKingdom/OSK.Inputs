@@ -1,42 +1,40 @@
-﻿using OSK.Inputs.Abstractions.Configuration;
+﻿namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
-namespace OSK.Inputs.Abstractions.Devices.GamePads;
-
-public class PlayStationGamePad : InputDeviceSpecification<IGamePadInput>
+public class PlayStationGamePad : GamePadDeviceSpecification
 {
     #region Static
 
-    public static InputDeviceIdentity PlayStation = new("PLayStation", GamePadInputs.GamePadDeviceType);
+    public static InputDeviceFamily PlayStation = new("PlayStation", InputDeviceType.GamePad);
 
     #endregion
 
     #region InputDeviceSpecification Overrides
 
-    public override InputDeviceIdentity DeviceIdentity => PlayStation;
+    public override InputDeviceFamily DeviceFamily => PlayStation;
 
-    public override IGamePadInput[] Inputs { get; } = [
-        GamePadInputs.ButtonSouth, // Cross
-        GamePadInputs.ButtonEast,  // Circle
-        GamePadInputs.ButtonWest,  // Square
-        GamePadInputs.ButtonNorth, // Triangle
-        GamePadInputs.Menu,        // Options
-        GamePadInputs.Options,     // Create / Share
-        GamePadInputs.Home,        // PS Button
-        GamePadInputs.Share,       // Touchpad Click (Often mapped to a unique ID)
-        GamePadInputs.DpadUp,
-        GamePadInputs.DpadDown,
-        GamePadInputs.DpadLeft,
-        GamePadInputs.DpadRight,
-        GamePadInputs.LeftBumper,  // L1
-        GamePadInputs.RightBumper, // R1
-        GamePadInputs.LeftTrigger, // L2
-        GamePadInputs.RightTrigger, // R2
-        GamePadInputs.LeftJoyStick,
-        GamePadInputs.LeftJoyStickClick, // L3
-        GamePadInputs.RightJoyStick,
-        GamePadInputs.RightJoyStickClick, // R3
-        GamePadInputs.TouchPad,
-        GamePadInputs.TouchPadClick
+    protected override GamePadInput[] Inputs { get; } = [
+        GamePadInput.ButtonSouth, // Cross
+        GamePadInput.ButtonEast,  // Circle
+        GamePadInput.ButtonWest,  // Square
+        GamePadInput.ButtonNorth, // Triangle
+        GamePadInput.Menu,        // Options
+        GamePadInput.Options,     // Create / Share
+        GamePadInput.Home,        // PS Button
+        GamePadInput.Share,       // Touchpad Click (Often mapped to a unique ID)
+        GamePadInput.DpadUp,
+        GamePadInput.DpadDown,
+        GamePadInput.DpadLeft,
+        GamePadInput.DpadRight,
+        GamePadInput.LeftBumper,  // L1
+        GamePadInput.RightBumper, // R1
+        GamePadInput.LeftTrigger, // L2
+        GamePadInput.RightTrigger, // R2
+        GamePadInput.LeftJoyStick,
+        GamePadInput.LeftJoyStickClick, // L3
+        GamePadInput.RightJoyStick,
+        GamePadInput.RightJoyStickClick, // R3
+        GamePadInput.TouchPad,
+        GamePadInput.TouchPadClick
     ];
 
     #endregion

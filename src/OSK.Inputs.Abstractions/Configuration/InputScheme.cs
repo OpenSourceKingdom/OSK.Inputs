@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
@@ -8,8 +9,8 @@ public class InputScheme(string name, IEnumerable<DeviceInputMap> deviceMaps,
 {
     #region Variables
 
-    private readonly Dictionary<InputDeviceIdentity, DeviceInputMap> _deviceMapLookup
-        = deviceMaps?.Where(map => map is not null).ToDictionary(map => map.DeviceIdentity) ?? [];
+    private readonly Dictionary<InputDeviceFamily, DeviceInputMap> _deviceMapLookup
+        = deviceMaps?.Where(map => map is not null).ToDictionary(map => map.DeviceFamily) ?? [];
 
     #endregion
 
@@ -38,10 +39,10 @@ public class InputScheme(string name, IEnumerable<DeviceInputMap> deviceMaps,
     /// <summary>
     /// Attempts to get a device map for a device identity
     /// </summary>
-    /// <param name="deviceIdentity">The identity for a device to get maps for</param>
+    /// <param name="deviceFamily">The identity for a device to get maps for</param>
     /// <returns>The device map if one is configured, otherwise null</returns>
-    public DeviceInputMap? GetDeviceMap(InputDeviceIdentity deviceIdentity)
-        => _deviceMapLookup.TryGetValue(deviceIdentity, out var map)
+    public DeviceInputMap? GetDeviceMap(InputDeviceFamily deviceFamily)
+        => _deviceMapLookup.TryGetValue(deviceFamily, out var map)
             ? map
             : null;
 

@@ -28,13 +28,13 @@ public class InputSystemConfigurationTests
         // 3. Redudant Identity1
         var definition1 = new InputDefinition("abc", [],
             [
-              new InputScheme("Abc", [new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false),
+              new InputScheme("Abc", [new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }], false, false),
               new InputScheme("Def", 
                [
-                 new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }, 
-                 new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
+                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }, 
+                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [] }
                ], false, false),
-              new InputScheme("GHI", [new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false)
+              new InputScheme("GHI", [new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }], false, false)
              ], false);
 
         // Creates a set of schemes with the following:
@@ -43,13 +43,13 @@ public class InputSystemConfigurationTests
         // 3. Identity4
         var definition2 = new InputDefinition("def", [],
             [
-              new InputScheme("Abc", [new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] }], false, false),
+              new InputScheme("Abc", [new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }], false, false),
                       new InputScheme("Def",
                        [
-                         new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] },
-                         new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity2, InputMaps = [] }
+                         new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] },
+                         new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [] }
                        ], false, false),
-                      new InputScheme("GHI", [new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity4, InputMaps = [] }], false, false)
+                      new InputScheme("GHI", [new DeviceInputMap() { DeviceFamily = TestIdentity.Identity4, InputMaps = [] }], false, false)
              ], false);
         var configuration = new InputSystemConfiguration([], [definition1, definition2], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
@@ -73,7 +73,7 @@ public class InputSystemConfigurationTests
     #region GetDeviceSpecification
 
     [Fact]
-    public void GetDeviceSpecification_DeviceIdentityDoesNotExist_ReturnsNull()
+    public void GetDeviceSpecification_deviceFamilyDoesNotExist_ReturnsNull()
     {
         // Arrange
         var configuration = new InputSystemConfiguration([], [], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
@@ -87,7 +87,7 @@ public class InputSystemConfigurationTests
 
 
     [Fact]
-    public void GetDeviceSpecification_DeviceIdentityExists_ReturnsSpecification()
+    public void GetDeviceSpecification_deviceFamilyExists_ReturnsSpecification()
     {
         // Arrange
         var expectedSpecification = new TestDeviceSpecification();

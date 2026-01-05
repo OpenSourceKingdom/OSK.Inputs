@@ -4,8 +4,8 @@ namespace OSK.Inputs.Abstractions.Inputs;
 
 /// <summary>
 /// Represents a specific axes of interaction for a given input. For example, 2D pointer motion interacts with 
-/// an X and a Y direction, which is 2 axes of interaction. <see cref="InputType.Digital"/> inputs only have a single axes
-/// they can interact with, whereas <see cref="InputType.Analog"/> inputs also interact with an X and a Y direction.
+/// an X and a Y direction, which is 2 axes of interaction. Button inputs would possess one axis, whereas inputs
+/// like a joystick could possess two axis in the -1 to 1 range
 /// 
 /// The axes that can be interacted with on a particular input will depend on the device and input in question.
 /// </summary>

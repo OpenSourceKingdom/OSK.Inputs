@@ -8,7 +8,7 @@ public class InputSchemeTests
     #region GetDeviceMap
 
     [Fact]
-    public void GetDeviceMap_DeviceIdentityDoesNotExist_ReturnsNull()
+    public void GetDeviceMap_deviceFamilyDoesNotExist_ReturnsNull()
     {
         // Arrange
         var scheme = new InputScheme("Hello", [], false, false);
@@ -22,10 +22,10 @@ public class InputSchemeTests
 
 
     [Fact]
-    public void GetDeviceMap_ValidDeviceIdentity_ReturnsExpectedMap()
+    public void GetDeviceMap_ValiddeviceFamily_ReturnsExpectedMap()
     {
         // Arrange
-        var expectedMap = new DeviceInputMap() { DeviceIdentity = TestIdentity.Identity1, InputMaps = [] };
+        var expectedMap = new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] };
         var scheme = new InputScheme("Hello", [expectedMap], false, false);
 
         // Act

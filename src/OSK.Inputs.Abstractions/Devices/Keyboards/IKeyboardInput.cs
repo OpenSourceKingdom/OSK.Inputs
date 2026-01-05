@@ -2,6 +2,6 @@
 
 namespace OSK.Inputs.Abstractions.Devices.Keyboards;
 
-public interface IKeyboardInput: IInput
+public interface IKeyboardInput: IDeviceInput
 {
 }

@@ -265,9 +265,9 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
     {
         // Note: test difficulty - due to how schemes are read-only and provided at construction into a dictionary (i.e duplicate keys throw),
         // it's not entirely feasible this will occur, but validation will be done to ensure if something changes that this is still caught
-        var duplicateDeviceMaps = scheme.DeviceMaps.GroupBy(deviceMap => deviceMap.DeviceIdentity)
-            .Where(deviceIdentityGroup => deviceIdentityGroup.Count() > 1)
-            .Select(deviceIdentityGroup => deviceIdentityGroup.Key);
+        var duplicateDeviceMaps = scheme.DeviceMaps.GroupBy(deviceMap => deviceMap.DeviceFamily)
+            .Where(deviceFamilyGroup => deviceFamilyGroup.Count() > 1)
+            .Select(deviceFamilyGroup => deviceFamilyGroup.Key);
         if (duplicateDeviceMaps.Any())
         {
             return InputConfigurationValidationResult.ForScheme(scheme => scheme.DeviceMaps, InputConfigurationValidation.DuplicateData,
@@ -275,7 +275,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
         }
 
         var deviceMapsMissingInputMaps = scheme.DeviceMaps.Where(deviceMap => deviceMap.InputMaps is null || !deviceMap.InputMaps.Any())
-            .Select(deviceMap => deviceMap.DeviceIdentity);
+            .Select(deviceMap => deviceMap.DeviceFamily);
         if (deviceMapsMissingInputMaps.Any())
         {
             return InputConfigurationValidationResult.ForScheme(scheme => scheme.DeviceMaps, InputConfigurationValidation.MissingData,
@@ -307,12 +307,12 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
     private InputConfigurationValidationResult ValidateDeviceMap(InputSystemConfiguration configuration, InputDefinition definition, 
         InputScheme scheme, DeviceInputMap deviceMap)
     {
-        var deviceSpecification = configuration.GetDeviceSpecification(deviceMap.DeviceIdentity);
+        var deviceSpecification = configuration.GetDeviceSpecification(deviceMap.DeviceFamily);
         if (deviceSpecification is null)
         {
-            return InputConfigurationValidationResult.ForDeviceMap(map => map.DeviceIdentity, InputConfigurationValidation.InvalidData,
+            return InputConfigurationValidationResult.ForDeviceMap(map => map.DeviceFamily, InputConfigurationValidation.InvalidData,
                 $"The input scheme {scheme.Name} on inp" +
-                $"t defintion {definition.Name} uses a device identity that is not configured for the input system, the device is: {deviceMap.DeviceIdentity}.");
+                $"t defintion {definition.Name} uses a device identity that is not configured for the input system, the device is: {deviceMap.DeviceFamily}.");
         }
 
         var validInputIdLookup = deviceSpecification.GetInputs().ToDictionary(input => input.Id);
@@ -321,7 +321,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
         if (invalidInputIds.Any())
         {
             return InputConfigurationValidationResult.ForDeviceMap(map => map.InputMaps, InputConfigurationValidation.InvalidData,
-                $"There are {invalidInputIds.Count()} input maps that use input ids that don't exist for the device map {deviceMap.DeviceIdentity} with scheme {scheme.Name} on input definition {definition.Name}, the invalid ids are: {string.Join(",", invalidInputIds.Distinct())}.");
+                $"There are {invalidInputIds.Count()} input maps that use input ids that don't exist for the device map {deviceMap.DeviceFamily} with scheme {scheme.Name} on input definition {definition.Name}, the invalid ids are: {string.Join(",", invalidInputIds.Distinct())}.");
         }
 
         var duplicateInputIds = deviceMap.InputMaps.GroupBy(map => map.InputId)
@@ -330,7 +330,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
         if (duplicateInputIds.Any()) 
         {
             return InputConfigurationValidationResult.ForDeviceMap(map => map.InputMaps, InputConfigurationValidation.DuplicateData,
-                $"There are {duplicateInputIds.Count()} input ids for the device map {deviceMap.DeviceIdentity} with scheme {scheme.Name} on input definition {definition.Name}, the duplicate ids are: {string.Join(", ", duplicateInputIds)}.");
+                $"There are {duplicateInputIds.Count()} input ids for the device map {deviceMap.DeviceFamily} with scheme {scheme.Name} on input definition {definition.Name}, the duplicate ids are: {string.Join(", ", duplicateInputIds)}.");
         }
 
         var inputsMissingActionNames = deviceMap.InputMaps.Where(map => string.IsNullOrWhiteSpace(map.ActionName))
@@ -338,14 +338,14 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
         if (inputsMissingActionNames.Any()) 
         {
             return InputConfigurationValidationResult.ForDeviceMap(map => map.InputMaps, InputConfigurationValidation.MissingData,
-                $"There are {inputsMissingActionNames.Count()} input maps missing action names for device map {deviceMap.DeviceIdentity} with scheme {scheme.Name} on input definition {definition.Name}, the input map ids are: {string.Join(", ", inputsMissingActionNames)}.");
+                $"There are {inputsMissingActionNames.Count()} input maps missing action names for device map {deviceMap.DeviceFamily} with scheme {scheme.Name} on input definition {definition.Name}, the input map ids are: {string.Join(", ", inputsMissingActionNames)}.");
         }
 
         var invalidActionNames = deviceMap.InputMaps.Where(map => definition.GetAction(map.ActionName) is null);
         if (invalidActionNames.Any()) 
         {
             return InputConfigurationValidationResult.ForDeviceMap(map => map.InputMaps, InputConfigurationValidation.InvalidData,
-                $"There are {invalidActionNames.Count()} input maps with action names that don't exist for device map {deviceMap.DeviceIdentity} with scheme {scheme.Name} on input definition {definition.Name}, the invalid action names are: {string.Join(", ", invalidActionNames.Select(map => map.ActionName).Distinct())}.");
+                $"There are {invalidActionNames.Count()} input maps with action names that don't exist for device map {deviceMap.DeviceFamily} with scheme {scheme.Name} on input definition {definition.Name}, the invalid action names are: {string.Join(", ", invalidActionNames.Select(map => map.ActionName).Distinct())}.");
         }
 
         var duplicateActionNames = deviceMap.InputMaps.GroupBy(map => map.ActionName)
@@ -354,7 +354,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
         if (duplicateActionNames.Any())
         {
             return InputConfigurationValidationResult.ForDeviceMap(map => map.InputMaps, InputConfigurationValidation.DuplicateData,
-                $"There are {duplicateActionNames.Count()} duplicate action names for device map {deviceMap.DeviceIdentity} with scheme {scheme.Name} on input defintion {definition.Name}, the action names are: {string.Join(", ", duplicateActionNames)}.");
+                $"There are {duplicateActionNames.Count()} duplicate action names for device map {deviceMap.DeviceFamily} with scheme {scheme.Name} on input defintion {definition.Name}, the action names are: {string.Join(", ", duplicateActionNames)}.");
         }
 
         return InputConfigurationValidationResult.Success();

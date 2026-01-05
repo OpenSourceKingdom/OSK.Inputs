@@ -1,6 +1,7 @@
 ﻿using System;
 using OSK.Extensions.Inputs.Configuration.Options;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Extensions.Inputs.Configuration.Ports;
 

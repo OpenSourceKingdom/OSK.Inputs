@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Services;
@@ -8,8 +8,8 @@ internal partial class InputProcessor
 {
     #region Logging
 
-    [LoggerMessage(eventId: 1, LogLevel.Warning, "An input was received for a device named '{deviceIdentity}' but no user was found to be paired to it, thus the input will be ignored.")]
-    private static partial void LogNoInputUserForDeviceWarning(ILogger logger, InputDeviceIdentity deviceIdentity);
+    [LoggerMessage(eventId: 1, LogLevel.Warning, "An input was received for a device named '{deviceFamily}' but no user was found to be paired to it, thus the input will be ignored.")]
+    private static partial void LogNoInputUserForDeviceWarning(ILogger logger, InputDeviceFamily deviceFamily);
 
     [LoggerMessage(eventId: 3, LogLevel.Warning, "An attempt was made to use an active scheme with input definition '{desiredDefinitionName}' but it did not exist, defaulting to '{defaultDefinitionName}'.")]
     private static partial void LogInvalidDefinitionUsageWarning(ILogger logger, string desiredDefinitionName, string defaultDefinitionName);

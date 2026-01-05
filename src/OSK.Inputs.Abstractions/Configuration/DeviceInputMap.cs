@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
@@ -18,7 +19,7 @@ public class DeviceInputMap
     /// <summary>
     /// The device this device map is for
     /// </summary>
-    public required InputDeviceIdentity DeviceIdentity { get; init; }
+    public required InputDeviceFamily DeviceFamily { get; init; }
 
     /// <summary>
     /// The collection of input maps this device map supports
