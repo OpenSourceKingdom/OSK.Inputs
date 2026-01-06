@@ -2,11 +2,11 @@
 
 namespace OSK.Inputs.Internal.Services;
 
-internal partial class InputConfigurationProvider(InputSystemConfiguration configuration): IInputConfigurationProvider
+internal partial class InputConfigurationProvider: IInputConfigurationProvider
 {
     #region IInputSystemConfigurationProvider
 
-    public InputSystemConfiguration Configuration => configuration;
+    public required InputSystemConfiguration Configuration { get; set; }
 
     #endregion
 }

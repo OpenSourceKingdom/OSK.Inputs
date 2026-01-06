@@ -8,6 +8,7 @@ using OSK.Inputs.Ports;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Notifications;
 using OSK.Inputs.Models;
+using OSK.Inputs.Exceptions;
 
 namespace OSK.Inputs.Internal.Services;
 
@@ -39,9 +40,21 @@ internal class InputSystem(IInputConfigurationProvider configurationProvider, II
         notificationPublisher.Notify(new InputProcessingStateChangedNotification(!pause));
     }
 
-    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    public async Task<IOutput> InitializeAsync(InputSystemConfiguration configuration, CancellationToken cancellationToken = default)
     {
-        await UserManager.LoadUserConfigurationAsync(cancellationToken);
+        if (configuration is null)
+        {
+            throw new ArgumentNullException(nameof(configuration));
+        }
+
+        var validationResult = validator.Validate(configuration);
+        if (!validationResult.IsValid)
+        {
+            throw new InputSystemValidationException($"The provided input configuration was invalid. Message: {validationResult}");
+        }
+
+        configurationProvider.Configuration = configuration;
+        return await UserManager.LoadUserConfigurationAsync(cancellationToken);
     }
 
     public async Task<IOutput> DeleteCustomSchemeAsync(string definitionName, string schemeName, CancellationToken cancellationToken = default)

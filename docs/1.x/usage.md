@@ -6,11 +6,9 @@ There are two paths of development for this library, either as an application co
 
 A consumer of the library will only need to perform two core processes to utilize the input system: configuring the input system and adding the `OSK.Inputs` library to the dependency chain. There is an optional ability to inject an application `IInputSchemeRepository` which can be used to handle application specific needs, like saving or loading custom schemes for the user.
 
-A configuration file must be valid in order for it to be used as unexpected configuration may result in the input system not working as intended with user input interactions or application actions not being triggered. It's for this reason that calling an `IInputSystem` will result in the validation of the input system's configuration file that is provided. The `IInputSystem` should be managed by an ***integration*** path, the consumer for a project that has an implementation should only need to worry about adding the `IInputSystemConfigurationSource` as needed for the application. This source provider is meant to give a pathway for both dependency injection or game editors to inject the configuration at runtime. 
+A configuration file must be valid in order for it to be used as unexpected configuration may result in the input system not working as intended with user input interactions or application actions not being triggered. It's for this reason that calling an `IInputSystem` to initialize will result in the validation of the input system's configuration file that is provided.
 
-There are two main ways supported by this library for creating configuration, for pure dependency injection you can use the `AddInputSystemConfigurationContainerSource` service extensions in the `OSK.Extensions.Inputs.Configuration` project. This provides a means of injecting the dependencies in the DI chain without needing editor support. To better handle editor support, a factory implementation is available that will provide similar access to the builder objects to create the configuration. It is then able to returned by the editor as a custom configration source directly. 
-
-In either case, you will need to add the configuration source as part of the dependency chain so the input system will see it when attempting to get the configuration at runtime.
+ The `IInputSystem` should be managed by an ***integration*** path, the consumer for a project that has an implementation should only need to worry about initializing the needed input system configuration. Fo
 
 ***Note: If a game engine or other application does not have an implementation available for use, please consider adding one and sharing it. You can add a reference to it on the Application Support page.***
 

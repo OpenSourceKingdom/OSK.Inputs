@@ -4,7 +4,6 @@ using System.Linq;
 using OSK.Extensions.Inputs.Configuration.Ports;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Devices;
-using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration.Internal.Services;
 

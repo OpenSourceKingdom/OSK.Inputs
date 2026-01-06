@@ -2,7 +2,6 @@
 using System.Linq.Expressions;
 using OSK.Extensions.Inputs.Configuration.Ports;
 using OSK.Inputs.Abstractions.Devices;
-using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration;
 
