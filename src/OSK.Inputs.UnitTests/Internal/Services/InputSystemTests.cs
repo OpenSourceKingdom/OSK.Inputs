@@ -5,6 +5,7 @@ using OSK.Functions.Outputs.Mocks;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Notifications;
+using OSK.Inputs.Exceptions;
 using OSK.Inputs.Internal;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models;
@@ -105,10 +106,35 @@ public class InputSystemTests
     #region InitializeAsync
 
     [Fact]
-    public async Task InitializeAsync_CallsUserManagerToLoadData()
+    public async Task InitializeAsync_NullConfiguration_ThrowsArgumentNullException()
     {
-        // Arrange/Act
-        await _inputSystem.InitializeAsync();
+        // Arrange/Act/Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await _inputSystem.InitializeAsync(null!));
+    }
+
+    [Fact]
+    public async Task InitializeAsync_InvalidConfiguration_ThrowsInputSystemValidationException()
+    {
+        // Arrange
+        _mockValidator.Setup(m => m.Validate(It.IsAny<InputSystemConfiguration>()))
+            .Returns(InputConfigurationValidationResult.ForDefinition(d => d.IsDefault, InputConfigurationValidation.InvalidData));
+
+        // /Act
+        await Assert.ThrowsAsync<InputSystemValidationException>(() => _inputSystem.InitializeAsync(new InputSystemConfiguration([], [], new(), new())));
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ValidConfiguration_CallsUserManagerToLoadData_ReturnsSuccessfully()
+    {
+        // Arrange
+        _mockValidator.Setup(m => m.Validate(It.IsAny<InputSystemConfiguration>()))
+            .Returns(InputConfigurationValidationResult.Success);
+
+        _mockUserManager.Setup(m => m.LoadUserConfigurationAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_outputFactory.Succeed());
+
+        // /Act
+        await _inputSystem.InitializeAsync(new InputSystemConfiguration([], [], new(), new()));
 
         // Assert
         _mockUserManager.Verify(m => m.LoadUserConfigurationAsync(It.IsAny<CancellationToken>()), Times.Once);

@@ -73,6 +73,11 @@ public class InputConfigurationValidationResult
 
     #region Helpers
 
+    public override string ToString()
+    {
+        return $"Validation Error with {ConfigurationType} Configuration for target: {TargetName}. Validation Result: {Result}{Environment.NewLine}Message: {Message}";
+    }
+
     private static string GetName<T>(Expression<Func<T, object?>> expression)
     {
         if (expression.Body is MemberExpression memberExpression)

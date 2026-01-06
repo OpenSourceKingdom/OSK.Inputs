@@ -4,5 +4,5 @@ namespace OSK.Inputs.Internal;
 
 internal interface IInputConfigurationProvider
 {
-    InputSystemConfiguration Configuration { get; }
+    InputSystemConfiguration Configuration { get; set; }
 }

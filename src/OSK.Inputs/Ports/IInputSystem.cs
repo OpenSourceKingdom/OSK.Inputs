@@ -48,9 +48,10 @@ public interface IInputSystem
     /// <summary>
     /// Initializes the input system
     /// </summary>
+    /// <param name="configuration">The configuration to apply to the manager</param>
     /// <param name="cancellationToken">A token to cancel the operation</param>
-    /// <returns>A task for the operation</returns>
-    Task InitializeAsync(CancellationToken cancellationToken = default);
+    /// <returns>An output that describes whether the configuration was fully initialized with the input system</returns>
+    Task<IOutput> InitializeAsync(InputSystemConfiguration configuration, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Attempts to delete the specified custom scheme from the input system

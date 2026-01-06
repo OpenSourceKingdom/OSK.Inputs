@@ -30,20 +30,7 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<IInputSystemNotifier>(provider
             => provider.GetRequiredService<IInputNotificationPublisher>());
 
-        services.TryAddSingleton<IInputConfigurationProvider>(serviceProvider =>
-        {
-            var configurationSource = serviceProvider.GetRequiredService<IInputSystemConfigurationSource>();
-            var validator = serviceProvider.GetRequiredService<IInputSystemConfigurationValidator>();
-
-            var configuration = configurationSource.GetConfiguration();
-            var validation = validator.Validate(configuration);
-            if (!validation.IsValid)
-            {
-                throw new InputSystemValidationException($"The input system configuration had a validation error. Configuration Type: {validation.ConfigurationType} Target: {validation.TargetName} Message: {validation.Message}");
-            }
-
-            return new InputConfigurationProvider(configuration);
-        });
+        services.TryAddSingleton<IInputConfigurationProvider, InputConfigurationProvider>();
 
         return services;
     }
