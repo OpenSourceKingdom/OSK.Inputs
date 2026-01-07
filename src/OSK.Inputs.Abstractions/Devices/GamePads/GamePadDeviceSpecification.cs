@@ -4,7 +4,7 @@ using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
-public abstract class GamePadDeviceSpecification : InputDeviceSpecification
+public abstract class GamePadDeviceSpecification : InputDeviceSpecification<GamePadInput>
 {
     #region InputDeviceSpecification Overrides
 

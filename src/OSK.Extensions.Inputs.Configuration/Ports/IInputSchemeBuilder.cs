@@ -12,12 +12,10 @@ public interface IInputSchemeBuilder
     /// Adds a device map for a given specification and an actionc configurator
     /// </summary>
     /// <typeparam name="TDeviceSpecification">The device to make a map for</typeparam>
-    /// <typeparam name="TInput">The type of input the device uses</typeparam>
     /// <param name="mapBuilderConfigurator">The action configurator</param>
     /// <returns>The builder for chaining</returns>
-    IInputSchemeBuilder WithDevice<TDeviceSpecification, TInput>(Action<IInputDeviceMapBuilder<TDeviceSpecification, TInput>> mapBuilderConfigurator)
-        where TInput : Enum
-        where TDeviceSpecification : InputDeviceSpecification<TInput>, new();
+    IInputSchemeBuilder WithDevice<TDeviceSpecification>(Action<IInputDeviceMapBuilder> mapBuilderConfigurator)
+        where TDeviceSpecification : InputDeviceSpecification, new();
 
     /// <summary>
     /// Makes the scheme a default scheme

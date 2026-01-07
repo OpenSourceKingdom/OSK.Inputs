@@ -1,22 +1,15 @@
-﻿using System;
-using OSK.Inputs.Abstractions.Devices;
-
-namespace OSK.Extensions.Inputs.Configuration.Ports;
+﻿namespace OSK.Extensions.Inputs.Configuration.Ports;
 
 /// <summary>
-/// A builder that helps to more fluently create configuration for device maps, using a typed specification for input guarding
+/// A builder that helps to more fluently create configuration for device maps
 /// </summary>
-/// <typeparam name="TDeviceSpecification">The specification the builder is configuring with</typeparam>
-/// <typeparam name="TInput">The input the specification uses</typeparam>
-public interface IInputDeviceMapBuilder<TDeviceSpecification, TInput>
-    where TInput: Enum
-    where TDeviceSpecification: InputDeviceSpecification<TInput>, new()
+public interface IInputDeviceMapBuilder
 {
     /// <summary>
     /// Adds an input map
     /// </summary>
-    /// <param name="input">The input to add</param>
+    /// <param name="inputId">The id of the input to add that is on the associated devive</param>
     /// <param name="actionName">The action the input maps to</param>
     /// <returns>The builder for chaining</returns>
-    IInputDeviceMapBuilder<TDeviceSpecification, TInput> WithInputMap(TInput input, string actionName);
+    IInputDeviceMapBuilder WithInputMap(int inputId, string actionName);
 }
