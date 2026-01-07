@@ -13,24 +13,32 @@ namespace OSK.Extensions.Inputs.Configuration;
 
 public static class InputDefinitionBuilderExtensions
 {
-    /// <summary>
     /// Creates a list of actions given a service of type <typeparamref name="TService"/>.
-    /// 
+    /// <inheritdoc cref="WithActions(IInputDefinitionBuilder, Type)"/>
+    public static IInputDefinitionBuilder WithActions<TService>(this IInputDefinitionBuilder builder)
+        where TService : class
+        => builder.WithActions(typeof(TService));
+
+    /// <summary>
     /// The extension searches for methods based on their return type being void and taking
     /// a single parameter for <see cref="InputEventContext"/>. Names must be unique, so
     /// overloads are not guaranteed to work. If changing the name of the method or enabling extra
     /// features, like pointer details, is needed, you will need to use the <see cref="InputActionAttribute"/>
     /// to define these options.
-    /// </summary>
-    /// <typeparam name="TService">
-    /// The service object that will be used to get the methods for. This service needs to be registered on the DI chain that the input system uses.
-    /// </typeparam>
     /// <param name="builder">The builder to configure</param>
+    /// </summary>
+    /// <param name="serviceType">
+    /// The service object that will be used to get the methods for. This service needs to be registered on the DI chain that the input system uses.
+    /// </param>
     /// <returns>The builder for chaining</returns>
-    public static IInputDefinitionBuilder WithActions<TService>(this IInputDefinitionBuilder builder)
-        where TService : class
+    public static IInputDefinitionBuilder WithActions(this IInputDefinitionBuilder builder, Type serviceType)
     {
-        var methodsToRegister = typeof(TService).GetMethods().Where(method =>
+        if (serviceType is null)
+        {
+            throw new ArgumentNullException(nameof(serviceType));
+        }
+
+        var methodsToRegister = serviceType.GetMethods().Where(method =>
         {
             var methodParameters = method.GetParameters();
             return methodParameters.Length is 1 && methodParameters[0].ParameterType == typeof(InputEventContext)
@@ -43,10 +51,10 @@ public static class InputDefinitionBuilderExtensions
             var inputActionName = string.IsNullOrWhiteSpace(inputActionAttribute?.ActionName)
                 ? method.Name
                 : inputActionAttribute.ActionName;
-            var invoker = InvokerFactory.CreateInvoker<TService>(method);
+            var invoker = InvokerFactory.CreateInvoker(serviceType, method);
 
             builder.WithAction(inputActionName,
-                inputEventContext => invoker.FastInvoke(inputEventContext.Services.GetRequiredService<TService>(), [inputEventContext]),
+                inputEventContext => invoker.FastInvoke(inputEventContext.Services.GetRequiredService(serviceType), [inputEventContext]),
                 inputActionAttribute?.TriggerPhases ?? [InputPhase.Start],
                 new InputActionOptions()
                 {
