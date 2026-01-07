@@ -7,12 +7,11 @@ using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Extensions.Inputs.Configuration.Internal.Services;
 
-internal class InputDeviceMapBuilder<TDeviceSpecification, TInput>(InputDeviceFamily deviceFamily) 
-    : IInputDeviceMapBuilder<TDeviceSpecification, TInput>
-    where TInput: Enum
-    where TDeviceSpecification: InputDeviceSpecification<TInput>, new()
+internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecification): IInputDeviceMapBuilder
 {
     #region Variables
+
+    private readonly HashSet<int> _validInputIds = [.. deviceSpecification.GetInputs().Select(input => input.Id)];
 
     private readonly Dictionary<int, string> _inputMaps = [];
 
@@ -20,9 +19,14 @@ internal class InputDeviceMapBuilder<TDeviceSpecification, TInput>(InputDeviceFa
 
     #region IInputDeviceMapBuilder
 
-    public IInputDeviceMapBuilder<TDeviceSpecification, TInput> WithInputMap(TInput input, string actionName)
+    public IInputDeviceMapBuilder WithInputMap(int inputId, string actionName)
     {
-        _inputMaps[Convert.ToInt32(input)] = actionName;
+        if (!_validInputIds.Contains(inputId))
+        {
+            throw new InvalidOperationException($"Unable to assign input {inputId} to a device map with {deviceSpecification.DeviceFamily} because it is not valid for the device.");
+        }
+
+        _inputMaps[inputId] = actionName;
         return this;
     }
 
@@ -33,7 +37,7 @@ internal class InputDeviceMapBuilder<TDeviceSpecification, TInput>(InputDeviceFa
     internal DeviceInputMap Build()
         => new()
         {
-            DeviceFamily = deviceFamily,
+            DeviceFamily = deviceSpecification.DeviceFamily,
             InputMaps = [.. _inputMaps.Select(kvp => new InputMap() { InputId = kvp.Key, ActionName = kvp.Value })]
         };
 

@@ -25,9 +25,8 @@ internal class InputSchemeBuilder(string name, IInputSystemConfigurationBuilder 
         return this;
     }
 
-    public IInputSchemeBuilder WithDevice<TDeviceSpecification, TInput>(Action<IInputDeviceMapBuilder<TDeviceSpecification, TInput>> mapBuilderConfigurator)
-        where TInput : Enum
-        where TDeviceSpecification : InputDeviceSpecification<TInput>, new()
+    public IInputSchemeBuilder WithDevice<TDeviceSpecification>(Action<IInputDeviceMapBuilder> mapBuilderConfigurator)
+        where TDeviceSpecification : InputDeviceSpecification, new()
     {
         if (mapBuilderConfigurator is null)
         {
@@ -37,7 +36,7 @@ internal class InputSchemeBuilder(string name, IInputSystemConfigurationBuilder 
         var deviceSpecification = new TDeviceSpecification();
         configurationBuilder.WithDevice(deviceSpecification);
 
-        var mapBuilder = new InputDeviceMapBuilder<TDeviceSpecification, TInput>(deviceSpecification.DeviceFamily);
+        var mapBuilder = new InputDeviceMapBuilder(deviceSpecification);
         mapBuilderConfigurator(mapBuilder);
 
         var map = mapBuilder.Build(); ;
