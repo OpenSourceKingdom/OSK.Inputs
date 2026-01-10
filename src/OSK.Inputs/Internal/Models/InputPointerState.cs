@@ -5,7 +5,7 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 
-internal class InputPointerState(int pointerId, IDeviceInput input, int maxRecords): DeviceInputState(input)
+internal class InputPointerState(int pointerId, IDeviceInput input, int maxRecords, float squaredPointerThreshold): DeviceInputState(input)
 {
     #region Variables
 
@@ -50,6 +50,11 @@ internal class InputPointerState(int pointerId, IDeviceInput input, int maxRecor
 
     public void AddRecord(Vector2 position)
     {
+        if (_pointerRecords.TryPeek(out var lastLocation) && (lastLocation.Position - position).LengthSquared() < squaredPointerThreshold)
+        {
+            return;
+        }
+
         _pointerRecords.Enqueue(new PointerLocationRecord(position, Duration));
         if (_pointerRecords.Count > maxRecords)
         {

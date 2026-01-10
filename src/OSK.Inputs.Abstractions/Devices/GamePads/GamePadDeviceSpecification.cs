@@ -9,7 +9,12 @@ public abstract class GamePadDeviceSpecification : InputDeviceSpecification<Game
     #region InputDeviceSpecification Overrides
 
     public override IReadOnlyCollection<IInput> GetInputs()
-        => [.. Inputs.Select(i => new GamePadDeviceInput(i))];
+        => [.. Inputs.Select(i => (IInput)(i switch 
+        {
+            GamePadInput.LeftTrigger or GamePadInput.RightTrigger 
+            or GamePadInput.LeftJoyStick or GamePadInput.RightJoyStick => new AnalogInput(InputDeviceType.GamePad, (int)i),
+            _ => new DigitalInput(InputDeviceType.GamePad, (int)i),
+        }))];
 
     #endregion
 

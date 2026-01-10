@@ -27,4 +27,9 @@ public class InputProcessorConfiguration
     /// extremely small power inputs from 'triggering' the input without a user's intention
     /// </summary>
     public float? DeadzoneTolerance { get; init; }
+
+    /// <summary>
+    /// The amount of movement a pointer (mouse, touch, etc.) must move to be considered an actual movement of intent by a user
+    /// </summary>
+    public float? PointerMovementThreshold { get; init; }
 }

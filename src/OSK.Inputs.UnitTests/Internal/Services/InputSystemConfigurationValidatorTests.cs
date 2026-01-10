@@ -556,7 +556,7 @@ public class InputSystemConfigurationValidatorTests
     }
 
     [Fact]
-    public void Validate_InputProcessConfigurationTapDelayLessThan0_ReturnsInvalidData()
+    public void Validate_InputProcessConfigurationTapReactivationTimeLessThan0_ReturnsInvalidData()
     {
         // Arrange
         var validator = new InputSystemConfigurationValidator();
@@ -595,7 +595,7 @@ public class InputSystemConfigurationValidatorTests
     }
 
     [Fact]
-    public void Validate_InputProcessConfigurationStartPhaseBeforeActiveLessThan0_ReturnsInvalidData()
+    public void Validate_InputProcessConfigurationActiveTimeThresholdLessThan0_ReturnsInvalidData()
     {
         // Arrange
         var validator = new InputSystemConfigurationValidator();
@@ -630,6 +630,84 @@ public class InputSystemConfigurationValidatorTests
         Assert.False(validation.IsValid);
         Assert.Equal(InputConfigurationType.InputProcessor, validation.ConfigurationType);
         Assert.Equal(nameof(InputProcessorConfiguration.ActiveTimeThreshold), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_InputProcessConfiguratioDeadzoneToleranceLessThan0_ReturnsInvalidData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1,
+                    new TestPhysicalInput(1), new TestPhysicalInput(2)),
+                new TestDeviceSpecification(TestIdentity.Identity2,
+                    new TestPhysicalInput(1))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { }),
+                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(1), DeadzoneTolerance = -1 }, new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.InputProcessor, validation.ConfigurationType);
+        Assert.Equal(nameof(InputProcessorConfiguration.DeadzoneTolerance), validation.TargetName);
+        Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
+    }
+
+    [Fact]
+    public void Validate_InputProcessConfiguratioPointerMovementThresholdLessThan0_ReturnsInvalidData()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+        var configuration = new InputSystemConfiguration(
+            [
+                new TestDeviceSpecification(TestIdentity.Identity1,
+                    new TestPhysicalInput(1), new TestPhysicalInput(2)),
+                new TestDeviceSpecification(TestIdentity.Identity2,
+                    new TestPhysicalInput(1))
+            ],
+            [
+                new InputDefinition("abc",
+                    [
+                        new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Start }, _ => { }),
+                        new InputAction("Def", new HashSet<InputPhase>() { InputPhase.Start }, _ => { })
+                    ],
+                    [
+                        new InputScheme("Abc",
+                            [
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                            ], false, false)
+                    ], false)
+            ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(1), DeadzoneTolerance = 0, PointerMovementThreshold = -1 }, new());
+
+        // Act
+        var validation = validator.Validate(configuration);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationType.InputProcessor, validation.ConfigurationType);
+        Assert.Equal(nameof(InputProcessorConfiguration.PointerMovementThreshold), validation.TargetName);
         Assert.Equal(InputConfigurationValidation.InvalidData, validation.Result);
     }
 

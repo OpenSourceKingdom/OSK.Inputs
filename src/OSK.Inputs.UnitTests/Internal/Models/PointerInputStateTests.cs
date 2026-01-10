@@ -14,7 +14,7 @@ public class PointerInputStateTests
     public void GetCurrentPositionAndMotionData_NoRecords_ReturnsNull()
     {
         // Arrange
-        var state = new InputPointerState(1, new TestPhysicalInput(1), 10)
+        var state = new InputPointerState(1, new TestPhysicalInput(1), 10, .1f)
         {
             DeviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
             Duration = TimeSpan.FromSeconds(0)
@@ -31,7 +31,7 @@ public class PointerInputStateTests
     public void GetCurrentPositionAndMotionData_OneRecord_ReturnsPositionAndZeroMotion()
     {
         // Arrange
-        var state = new InputPointerState(1, new TestPhysicalInput(1), 10)
+        var state = new InputPointerState(1, new TestPhysicalInput(1), 10, .1f)
         {
             DeviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
             Duration = TimeSpan.FromSeconds(0)
@@ -56,7 +56,7 @@ public class PointerInputStateTests
     public void GetCurrentPositionAndMotionData_TwoRecords_CalculatesVelocityAndAcceleration()
     {
         // Arrange
-        var state = new InputPointerState(1, new TestPhysicalInput(1), 10)
+        var state = new InputPointerState(1, new TestPhysicalInput(1), 10, .1f)
         {
             DeviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
             Duration = TimeSpan.FromSeconds(0)
@@ -94,7 +94,7 @@ public class PointerInputStateTests
     public void GetCurrentPositionAndMotionData_ThreeRecords_CalculatesVelocityAndAcceleration()
     {
         // Arrange
-        var state = new InputPointerState(1, new TestPhysicalInput(1), 10)
+        var state = new InputPointerState(1, new TestPhysicalInput(1), 10, .1f)
         {
             DeviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
             Duration = TimeSpan.FromSeconds(0)

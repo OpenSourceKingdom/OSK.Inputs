@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OSK.Inputs.Abstractions.Devices.GamePads;
+﻿namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
 public class NintendoGamePad: GamePadDeviceSpecification
 {

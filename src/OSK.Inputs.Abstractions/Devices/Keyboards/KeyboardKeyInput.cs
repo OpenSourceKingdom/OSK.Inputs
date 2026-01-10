@@ -2,6 +2,6 @@
 
 namespace OSK.Inputs.Abstractions.Devices.Keyboards;
 
-public class KeyboardKeyInput(KeyboardInput input) : Input(InputDeviceType.Keyboard, (int)input), IKeyboardInput
+public class KeyboardKeyInput(KeyboardInput input) : DigitalInput(InputDeviceType.Keyboard, (int)input)
 {
 }

@@ -107,17 +107,25 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
             return InputConfigurationValidationResult.ForInputSystem(inputSystem => inputSystem.ProcessorConfiguration, InputConfigurationValidation.MissingData,
                 "Processor configuration must exist.");
         }
-
         if (configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault() < TimeSpan.Zero)
         {
             return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.TapReactivationTime, InputConfigurationValidation.InvalidData,
                 "Tap delay time can not be less than 0.");
         }
-
         if (configuration.ProcessorConfiguration.ActiveTimeThreshold.GetValueOrDefault() < TimeSpan.Zero)
         {
             return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.ActiveTimeThreshold, InputConfigurationValidation.InvalidData,
                 "Start Phase Delay Before Active can not be less than 0.");
+        }
+        if (configuration.ProcessorConfiguration.DeadzoneTolerance.GetValueOrDefault() < 0)
+        {
+            return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.DeadzoneTolerance, InputConfigurationValidation.InvalidData,
+                "Deadzone Tolerance can not be less than 0.");
+        }
+        if (configuration.ProcessorConfiguration.PointerMovementThreshold.GetValueOrDefault() < 0)
+        {
+            return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.PointerMovementThreshold, InputConfigurationValidation.InvalidData,
+                "Pointer move threshold can not be less than 0.");
         }
 
         return InputConfigurationValidationResult.Success();

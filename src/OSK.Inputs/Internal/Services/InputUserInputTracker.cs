@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
+using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
@@ -18,7 +19,18 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 {
     #region Variables
 
+    /// <summary>
+    /// The deadzone minimum prevents calculating smoothness for intensities if the tolerance is effectively 0.
+    /// </summary>
+    private const float DeadzoneMinimumThreshold = 0.01f;
     private const int MaxPointerRecords = 3;
+    private float _pointerSquareThreshold = MathF.Pow(processorConfiguration.PointerMovementThreshold.GetValueOrDefault(.01f), 2);
+
+    private float _deadZoneTolerance = processorConfiguration.DeadzoneTolerance.HasValue
+        ? processorConfiguration.DeadzoneTolerance < DeadzoneMinimumThreshold 
+            ? DeadzoneMinimumThreshold 
+            : processorConfiguration.DeadzoneTolerance.Value
+        : DeadzoneMinimumThreshold;
 
     private readonly Dictionary<InputDeviceFamily, DeviceInputTracker> _deviceInputTrackerLookup
         = schemeMap.DeviceSchemeMaps.ToDictionary(
@@ -93,22 +105,22 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
     public IOutput<TriggeredActionEvent?> Track(InputEvent inputEvent)
     {
-        if (inputEvent is not DeviceInputEvent physicalInputEvent)
+        if (inputEvent is not DeviceInputEvent deviceInputEvent)
         {
             return outputFactory.Fail<TriggeredActionEvent?>("The input event was not a physical input event");
         }
-        if (!_deviceInputTrackerLookup.TryGetValue(physicalInputEvent.DeviceIdentifier.DeviceFamily, out var deviceTracker))
+        if (!_deviceInputTrackerLookup.TryGetValue(deviceInputEvent.DeviceIdentifier.DeviceFamily, out var deviceTracker))
         {
-            return outputFactory.Fail<TriggeredActionEvent?>("No device tracker was found for the device triggering the input.");
+            return outputFactory.NotFound<TriggeredActionEvent?>("No device tracker was found for the device triggering the input.");
         }
 
-        var actionMaps = deviceTracker.SchemeMap.GetActionMaps(physicalInputEvent.Input.Id);
+        var actionMaps = deviceTracker.SchemeMap.GetActionMaps(deviceInputEvent.Input.Id);
         if (!actionMaps.Any())
         {
             return outputFactory.Fail<TriggeredActionEvent?>("No action map found for the input");
         }
 
-        var inputState = GetAndUpdateInputState(deviceTracker, physicalInputEvent);
+        var inputState = GetAndUpdateInputState(deviceTracker, deviceInputEvent);
         if (inputState is null)
         {
             return outputFactory.Fail<TriggeredActionEvent?>("Unable to acquire input state");
@@ -121,7 +133,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         var virtualInputActivationContext = ProcessVirtualInputEvent(deviceTracker, inputState, virtualActionMaps);
         var triggeredActivation = virtualInputActivationContext is null && inputActionMap is not null 
                 && inputActionMap.Action.TriggerPhases.Contains(inputState.Phase)
-            ? GetTriggeredActivation(inputState, physicalInputEvent, inputActionMap)
+            ? GetTriggeredActivation(inputState, deviceInputEvent, inputActionMap)
             : virtualInputActivationContext;
 
         inputState.MappedAction = triggeredActivation?.ActionMap;
@@ -151,7 +163,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
             case InputPointerEvent pointerEvent:
                 var pointerState = deviceTracker.GetOrCreatePointerState(pointerEvent.PointerId, () =>
                 {
-                    return new InputPointerState(pointerEvent.PointerId, pointerEvent.Input, MaxPointerRecords)
+                    return new InputPointerState(pointerEvent.PointerId, pointerEvent.Input, MaxPointerRecords, _pointerSquareThreshold)
                     {
                         DeviceIdentifier = pointerEvent.DeviceIdentifier,
                         Phase = pointerEvent.Phase,
@@ -173,7 +185,11 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
                     };
                 });
 
-                inputPowerState.InputPowers = [.. powerEvent.InputIntensities];
+                inputPowerState.InputPowers = powerEvent.Input switch  
+                {
+                    AnalogInput _ => ApplyDeadzoneSmoothScaling([.. powerEvent.InputIntensities], _deadZoneTolerance),
+                    _ => [.. powerEvent.InputIntensities]
+                };
                 if (inputPowerState.Phase is InputPhase.End && inputEvent.Phase is InputPhase.Start)
                 {
                     inputPowerState.TapCount += 1;
@@ -309,6 +325,34 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         => new(ActiveScheme, actionMap,
                 new InputEventContext(userId, activation, GetPointerInformation(actionMap),
                 GetActivityInformation(state), serviceProvider));
+
+    private InputIntensity[] ApplyDeadzoneSmoothScaling(InputIntensity[] inputIntensities, float deadzone)
+    {
+        if (deadzone <= DeadzoneMinimumThreshold)
+        {
+            return [.. inputIntensities.Select(intensity => InputIntensity.Zero(intensity.Axis))];
+        }
+
+        var rawMagnitude = inputIntensities.CalculateMagnitude();
+        if (rawMagnitude <= deadzone)
+        {
+            return [.. inputIntensities.Select(intensity => InputIntensity.Zero(intensity.Axis))];
+        }
+
+        // Calculate the scaled magnitude (0.0 to 1.0)
+        // This ensures that at the deadzone edge, the value is 0, not the deadzone value itself.
+        var scaledMagnitude = (rawMagnitude - deadzone) / (1f - deadzone);
+
+        // Clamp to 1.0 to handle slight hardware variances
+        scaledMagnitude = MathF.Min(scaledMagnitude, 1f);
+
+        // Calculate the scaling ratio
+        // We multiply the original component by (scaledMagnitude / rawMagnitude)
+        // This effectively "shortens" the vector while keeping its direction.
+        var factor = MathF.Abs(scaledMagnitude / rawMagnitude);
+
+        return [.. inputIntensities.Select(intensity => new InputIntensity(intensity.Axis, intensity.Power * factor))];
+    }
 
     #endregion
 

@@ -90,7 +90,7 @@ internal partial class InputProcessor: IInputProcessor
 
     public IOutput ProcessEvent(InputEvent inputEvent)
     {
-        if (inputEvent is null)
+        if (inputEvent?.Input is null)
         {
             throw new ArgumentNullException(nameof(inputEvent));
         }
@@ -111,6 +111,13 @@ internal partial class InputProcessor: IInputProcessor
         }
 
         var triggeredActionOutput = inputTracker.Track(inputEvent);
+        // Not found represents the device triggering the input is tied to the user but the current scheme doesn't support it.
+        // We should try to switch the scheme to one that supports the device if it exists
+        if (!triggeredActionOutput.IsSuccessful && triggeredActionOutput.StatusCode.SpecificityCode is OutputSpecificityCode.DataNotFound)
+        {
+
+        }
+
         if (triggeredActionOutput.IsSuccessful && triggeredActionOutput.Value is not null)
         {
             LogInputActionTriggeredDebug(_logger, inputTracker.UserId, physicalInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, 
@@ -251,10 +258,13 @@ internal partial class InputProcessor: IInputProcessor
             return null;
         }
 
+        _registeredUserDevices[deviceIdentifier] = deviceUser.Id;
+
         if (!_userInputTrackerLookup.TryGetValue(deviceUser.Id, out var inputTracker))
         {
             LogNewInputTrackerForUnregisteredUserDebug(_logger, deviceUser.Id, deviceIdentifier);
             inputTracker = CreateTracker(deviceUser.Id, _configurationProvider.Configuration, deviceUser.ActiveScheme);
+            _userInputTrackerLookup[deviceUser.Id] = inputTracker;
         }
 
         return inputTracker;
