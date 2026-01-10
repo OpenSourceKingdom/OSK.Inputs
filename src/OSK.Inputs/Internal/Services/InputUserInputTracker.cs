@@ -97,7 +97,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         {
             return outputFactory.Fail<TriggeredActionEvent?>("The input event was not a physical input event");
         }
-        if (!_deviceInputTrackerLookup.TryGetValue(physicalInputEvent.DeviceIdentifier.Identity, out var deviceTracker))
+        if (!_deviceInputTrackerLookup.TryGetValue(physicalInputEvent.DeviceIdentifier.DeviceFamily, out var deviceTracker))
         {
             return outputFactory.Fail<TriggeredActionEvent?>("No device tracker was found for the device triggering the input.");
         }

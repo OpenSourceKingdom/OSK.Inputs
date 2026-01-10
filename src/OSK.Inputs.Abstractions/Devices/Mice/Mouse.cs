@@ -5,18 +5,9 @@
 /// </summary>
 public class Mouse: MouseDeviceSpecification
 {
-    #region Variables
-
-    /// <summary>
-    /// Represents an identity for a mouse
-    /// </summary>
-    public static InputDeviceFamily StandardMice = new("Mouse", InputDeviceType.Mice);
-
-    #endregion
-
     #region InputDeviceSpecification Overrides
 
-    public override InputDeviceFamily DeviceFamily => StandardMice;
+    public override InputDeviceFamily DeviceFamily => InputDeviceFamily.Mice;
 
     protected override MouseInput[] Inputs { get; } 
         = [ MouseInput.LeftClick, MouseInput.RightClick, MouseInput.ScrollWheelClick, MouseInput.ScrollWheel, MouseInput.MouseMovement ];

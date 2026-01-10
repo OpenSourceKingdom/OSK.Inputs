@@ -1,8 +1,12 @@
-﻿namespace OSK.Inputs.Abstractions.Devices.GamePads;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-public class PlayStationGamePad : GamePadDeviceSpecification
+namespace OSK.Inputs.Abstractions.Devices.GamePads;
+
+public class NintendoGamePad: GamePadDeviceSpecification
 {
-    #region InputDeviceSpecification Overrides
+    #region GamePadDeviceSpecification Overrides
 
     public override InputDeviceFamily DeviceFamily => InputDeviceFamily.PlayStation;
 

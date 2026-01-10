@@ -2,15 +2,9 @@
 
 public class AnsiKeyboard : KeyboardDeviceSpecification
 {
-    #region Variables
-
-    public static InputDeviceFamily Ansi = new("AnsiKeyboard", InputDeviceType.Keyboard);
-
-    #endregion
-
     #region KeyboardDeviceSpecification Overrides
 
-    public override InputDeviceFamily DeviceFamily => Ansi;
+    public override InputDeviceFamily DeviceFamily => InputDeviceFamily.Keyboards;
 
     protected override KeyboardInput[] StandardKeys { get; } = [
         // Special / Non-ASCII

@@ -72,7 +72,7 @@ public class DeviceSchemeActionMapTests
     #region Helpers
 
     private DeviceSchemeActionMap CreateActionMap(params Input[] inputs)
-        => new(TestIdentity.Identity1, inputs
+        => new(TestDeviceFamily.Identity1, inputs
             .Select(input => new InputActionMap() 
             { 
                 Action = new InputAction("", new HashSet<InputPhase>(), _ => { }),

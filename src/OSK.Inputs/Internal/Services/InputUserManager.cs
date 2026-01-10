@@ -46,7 +46,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         var alreadyPairedDevices = devicesToPair.Where(device => GetInputUserForDevice(device.DeviceId) is not null);
         if (alreadyPairedDevices.Any())
         {
-            var inputDeviceError = string.Join(",", alreadyPairedDevices.Select(device => device.Identity));
+            var inputDeviceError = string.Join(",", alreadyPairedDevices.Select(device => device.DeviceFamily));
             return outputFactory.Fail<IInputUser>($"Unable to create user as one more devices have already been paired to the input system: {inputDeviceError}");
         }
 
@@ -150,7 +150,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
     {
         if (!_users.TryGetValue(userId, out var user))
         {
-            return outputFactory.NotFound($"Unable to pair device {device.DeviceId}, {device.Identity.Name}, because there is no user with id {userId}.");
+            return outputFactory.NotFound($"Unable to pair device {device.DeviceId}, {device.DeviceFamily.Name}, because there is no user with id {userId}.");
         }
 
         var pairedUser = GetInputUserForDevice(device.DeviceId);
@@ -158,7 +158,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         {
             return pairedUser.Id == userId
                 ? outputFactory.Succeed()
-                : outputFactory.Fail($"Unable to pair device {device.DeviceId}, {device.Identity.Name}, to user {userId} because it is already paired to {pairedUser.Id}.");
+                : outputFactory.Fail($"Unable to pair device {device.DeviceId}, {device.DeviceFamily.Name}, to user {userId} because it is already paired to {pairedUser.Id}.");
         }
 
         user.AddDevice(device);
@@ -210,6 +210,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             return outputFactory.NotFound($"No input scheme named '{scheme.SchemeName}' exists on the definition '{scheme.DefinitionName}'.");
         }
 
+        // Fix scheme not taking effect
         return await schemeRepository.SavePreferredSchemeAsync(scheme, cancellationToken);
     }
 

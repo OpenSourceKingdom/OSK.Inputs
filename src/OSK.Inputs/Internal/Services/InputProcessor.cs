@@ -202,7 +202,7 @@ internal partial class InputProcessor: IInputProcessor
         }
 
         var supportedDeviceCombination = configuration.SupportedDeviceCombinations
-                                        .Where(deviceCombination => deviceCombination.DeviceIdentities.Contains(deviceIdentifier.Identity))
+                                        .Where(deviceCombination => deviceCombination.DeviceIdentities.Contains(deviceIdentifier.DeviceFamily))
                                         .Cast<InputDeviceCombination?>()
                                         .FirstOrDefault();
         if (supportedDeviceCombination is null)
@@ -212,7 +212,7 @@ internal partial class InputProcessor: IInputProcessor
         }
 
         var targetUser = GetUserForDevicePairing(configuration.SupportedDeviceCombinations, _userManager.GetUsers(), 
-            configuration.JoinPolicy.DeviceJoinBehavior, deviceIdentifier.Identity);
+            configuration.JoinPolicy.DeviceJoinBehavior, deviceIdentifier.DeviceFamily);
         if (targetUser is null)
         {
             LogNewUserCreateDebug(_logger, deviceIdentifier);
@@ -246,7 +246,7 @@ internal partial class InputProcessor: IInputProcessor
         var deviceUser = _userManager.GetInputUserForDevice(deviceIdentifier.DeviceId) ?? TryDevicePairing(_configurationProvider.Configuration, deviceIdentifier);
         if (deviceUser is null)
         {
-            LogNoInputUserForDeviceWarning(_logger, deviceIdentifier.Identity);
+            LogNoInputUserForDeviceWarning(_logger, deviceIdentifier.DeviceFamily);
             _notificationPublisher.Notify(new UnrecognizedDeviceNotification(deviceIdentifier));
             return null;
         }
@@ -291,7 +291,7 @@ internal partial class InputProcessor: IInputProcessor
 
         var userDevicePairingData = users.Select(user =>
         {
-            var pairedDeviceSet = user.PairedDevices.Select(pairedDevice => pairedDevice.DeviceIdentifier.Identity).ToHashSet();
+            var pairedDeviceSet = user.PairedDevices.Select(pairedDevice => pairedDevice.DeviceIdentifier.DeviceFamily).ToHashSet();
             var completedCombinations = supportedDeviceCombinations.Count(combination => combination.DeviceIdentities.All(identity => pairedDeviceSet.Contains(identity)));
             var missingNewDevice = !pairedDeviceSet.Contains(newdeviceFamily);
             var fewestDevicesToCompleteClosestCombinationWithDevice = missingNewDevice

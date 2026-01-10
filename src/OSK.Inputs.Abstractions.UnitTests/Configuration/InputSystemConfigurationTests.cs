@@ -28,13 +28,13 @@ public class InputSystemConfigurationTests
         // 3. Redudant Identity1
         var definition1 = new InputDefinition("abc", [],
             [
-              new InputScheme("Abc", [new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }], false, false),
+              new InputScheme("Abc", [new DeviceInputMap() { DeviceFamily = TestDeviceFamily.Identity1, InputMaps = [] }], false, false),
               new InputScheme("Def", 
                [
-                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }, 
-                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [] }
+                 new DeviceInputMap() { DeviceFamily = TestDeviceFamily.Identity1, InputMaps = [] }, 
+                 new DeviceInputMap() { DeviceFamily = TestDeviceFamily.Identity2, InputMaps = [] }
                ], false, false),
-              new InputScheme("GHI", [new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }], false, false)
+              new InputScheme("GHI", [new DeviceInputMap() { DeviceFamily = TestDeviceFamily.Identity1, InputMaps = [] }], false, false)
              ], false);
 
         // Creates a set of schemes with the following:
@@ -43,13 +43,13 @@ public class InputSystemConfigurationTests
         // 3. Identity4
         var definition2 = new InputDefinition("def", [],
             [
-              new InputScheme("Abc", [new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }], false, false),
+              new InputScheme("Abc", [new DeviceInputMap() { DeviceFamily = TestDeviceFamily.Identity1, InputMaps = [] }], false, false),
                       new InputScheme("Def",
                        [
-                         new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] },
-                         new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [] }
+                         new DeviceInputMap() { DeviceFamily = TestDeviceFamily.Identity1, InputMaps = [] },
+                         new DeviceInputMap() { DeviceFamily = TestDeviceFamily.Identity2, InputMaps = [] }
                        ], false, false),
-                      new InputScheme("GHI", [new DeviceInputMap() { DeviceFamily = TestIdentity.Identity4, InputMaps = [] }], false, false)
+                      new InputScheme("GHI", [new DeviceInputMap() { DeviceFamily = TestDeviceFamily.Identity4, InputMaps = [] }], false, false)
              ], false);
         var configuration = new InputSystemConfiguration([], [definition1, definition2], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
@@ -60,12 +60,12 @@ public class InputSystemConfigurationTests
         Assert.Equal(3, supportedDeviceCombinations.Count);
 
         Assert.Single(supportedDeviceCombinations,
-            combination => combination.DeviceIdentities.Count is 1 && combination.DeviceIdentities.Contains(TestIdentity.Identity1));
+            combination => combination.DeviceIdentities.Count is 1 && combination.DeviceIdentities.Contains(TestDeviceFamily.Identity1));
         Assert.Single(supportedDeviceCombinations,
-            combination => combination.DeviceIdentities.Count is 2 && combination.DeviceIdentities.Contains(TestIdentity.Identity1)
-                && combination.DeviceIdentities.Contains(TestIdentity.Identity2));
+            combination => combination.DeviceIdentities.Count is 2 && combination.DeviceIdentities.Contains(TestDeviceFamily.Identity1)
+                && combination.DeviceIdentities.Contains(TestDeviceFamily.Identity2));
         Assert.Single(supportedDeviceCombinations,
-            combination => combination.DeviceIdentities.Count is 1 && combination.DeviceIdentities.Contains(TestIdentity.Identity4));
+            combination => combination.DeviceIdentities.Count is 1 && combination.DeviceIdentities.Contains(TestDeviceFamily.Identity4));
     }
 
     #endregion
@@ -79,7 +79,7 @@ public class InputSystemConfigurationTests
         var configuration = new InputSystemConfiguration([], [], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act
-        var specification = configuration.GetDeviceSpecification(TestIdentity.Identity1);
+        var specification = configuration.GetDeviceSpecification(TestDeviceFamily.Identity1);
 
         // Assert
         Assert.Null(specification);
@@ -94,7 +94,7 @@ public class InputSystemConfigurationTests
         var configuration = new InputSystemConfiguration([expectedSpecification], [], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act
-        var specification = configuration.GetDeviceSpecification(TestIdentity.Identity1);
+        var specification = configuration.GetDeviceSpecification(TestDeviceFamily.Identity1);
 
         // Assert
         Assert.NotNull(specification);
