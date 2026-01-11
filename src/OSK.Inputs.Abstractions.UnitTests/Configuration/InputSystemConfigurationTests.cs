@@ -60,12 +60,12 @@ public class InputSystemConfigurationTests
         Assert.Equal(3, supportedDeviceCombinations.Count);
 
         Assert.Single(supportedDeviceCombinations,
-            combination => combination.DeviceIdentities.Count is 1 && combination.DeviceIdentities.Contains(TestDeviceFamily.Identity1));
+            combination => combination.DeviceFamilies.Count is 1 && combination.DeviceFamilies.Contains(TestDeviceFamily.Identity1));
         Assert.Single(supportedDeviceCombinations,
-            combination => combination.DeviceIdentities.Count is 2 && combination.DeviceIdentities.Contains(TestDeviceFamily.Identity1)
-                && combination.DeviceIdentities.Contains(TestDeviceFamily.Identity2));
+            combination => combination.DeviceFamilies.Count is 2 && combination.DeviceFamilies.Contains(TestDeviceFamily.Identity1)
+                && combination.DeviceFamilies.Contains(TestDeviceFamily.Identity2));
         Assert.Single(supportedDeviceCombinations,
-            combination => combination.DeviceIdentities.Count is 1 && combination.DeviceIdentities.Contains(TestDeviceFamily.Identity4));
+            combination => combination.DeviceFamilies.Count is 1 && combination.DeviceFamilies.Contains(TestDeviceFamily.Identity4));
     }
 
     #endregion

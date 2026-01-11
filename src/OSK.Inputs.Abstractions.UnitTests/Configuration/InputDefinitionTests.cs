@@ -63,7 +63,7 @@ public class InputDefinitionTests
         var definition = new InputDefinition("Hello", [], [], false);
 
         // Act
-        var action = definition.GetScheme(schemeName!);
+        var action = definition.GetSchemesByDeviceFamily(schemeName!);
 
         // Assert
         Assert.Null(action);
@@ -76,7 +76,7 @@ public class InputDefinitionTests
         var definition = new InputDefinition("Hello", [], [], false);
 
         // Act
-        var action = definition.GetScheme("Hello");
+        var action = definition.GetSchemesByDeviceFamily("Hello");
 
         // Assert
         Assert.Null(action);
@@ -89,7 +89,7 @@ public class InputDefinitionTests
         var definition = new InputDefinition("Hello", [], [new InputScheme("Hello", [], false, false)], false);
 
         // Act
-        var action = definition.GetScheme("Hello");
+        var action = definition.GetSchemesByDeviceFamily("Hello");
 
         // Assert
         Assert.NotNull(action);
@@ -129,7 +129,7 @@ public class InputDefinitionTests
             DeviceMaps = []
         });
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDeviceFamily("Hello");
 
         // Assert
         Assert.Null(scheme);
@@ -149,7 +149,7 @@ public class InputDefinitionTests
             DeviceMaps = []
         });
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDeviceFamily("Hello");
 
         // Assert
         Assert.Null(scheme);
@@ -172,7 +172,7 @@ public class InputDefinitionTests
             DeviceMaps = []
         });
 
-        var scheme = definition.GetScheme(schemeName!);
+        var scheme = definition.GetSchemesByDeviceFamily(schemeName!);
 
         // Assert
         Assert.Null(scheme);
@@ -195,7 +195,7 @@ public class InputDefinitionTests
         // Act
         definition.ApplyCustomScheme(expectedScheme);
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDeviceFamily("Hello");
 
         // Assert
         Assert.NotNull(scheme);
@@ -218,7 +218,7 @@ public class InputDefinitionTests
         // Act
         definition.ApplyCustomScheme(newScheme);
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDeviceFamily("Hello");
 
         // Assert
         Assert.NotNull(scheme);
@@ -243,7 +243,7 @@ public class InputDefinitionTests
         // Act
         definition.ApplyCustomScheme(expectedScheme);
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDeviceFamily("Hello");
 
         // Assert
         Assert.NotNull(scheme);
@@ -278,7 +278,7 @@ public class InputDefinitionTests
         definition.ResetDefinition();
 
         // Assert
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDeviceFamily("Hello");
 
         Assert.NotNull(scheme);
         Assert.Equal(expectedScheme, scheme);
@@ -294,15 +294,15 @@ public class InputDefinitionTests
         var customScheme = new CustomInputScheme() { Name = "What", DefinitionName = "Hello", DeviceMaps = [] };
         definition.ApplyCustomScheme(customScheme);
 
-        Assert.NotNull(definition.GetScheme("What"));
+        Assert.NotNull(definition.GetSchemesByDeviceFamily("What"));
 
         // Act
         definition.ResetDefinition();
 
         // Assert
-        Assert.Null(definition.GetScheme("What"));
+        Assert.Null(definition.GetSchemesByDeviceFamily("What"));
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDeviceFamily("Hello");
         Assert.NotNull(scheme);
         Assert.Equal(expectedScheme, scheme);
     }

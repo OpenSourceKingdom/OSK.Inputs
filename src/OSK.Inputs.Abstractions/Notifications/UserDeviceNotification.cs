@@ -2,8 +2,8 @@
 
 namespace OSK.Inputs.Abstractions.Notifications;
 
-public abstract class UserDeviceNotification(int userId, RuntimeDeviceIdentifier deviceIdentifier)
+public abstract class UserDeviceNotification(IInputUser user, RuntimeDeviceIdentifier deviceIdentifier)
     : InputDeviceNotification(deviceIdentifier)
 {
-    public int UserId => userId;
+    public IInputUser User => user;
 }

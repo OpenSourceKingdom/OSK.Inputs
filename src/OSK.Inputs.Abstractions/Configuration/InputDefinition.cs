@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
@@ -10,8 +11,11 @@ public class InputDefinition(string name, IEnumerable<InputAction> actions, IEnu
 
     private readonly Dictionary<string, InputAction> _actionLookup
         = actions?.Where(action => action?.Name is not null).ToDictionary(action => action.Name, StringComparer.OrdinalIgnoreCase) ?? [];
-    private Dictionary<string, InputScheme> _schemeLookup 
-        = schemes?.Where(scheme => scheme?.Name is not null).ToDictionary(scheme => scheme.Name, StringComparer.OrdinalIgnoreCase) ?? [];
+    private Dictionary<string, Dictionary<string, InputScheme>> _deviceCombinationSchemeLookup 
+        = schemes?.Where(scheme => scheme?.Name is not null)
+                  .GroupBy(scheme => scheme.CombinationId, StringComparer.OrdinalIgnoreCase)
+                  .ToDictionary(schemeGroup => schemeGroup.Key, schemegroup => schemegroup.ToDictionary(scheme => scheme.Name, StringComparer.OrdinalIgnoreCase)) 
+            ?? [];
 
     #endregion
 
@@ -23,15 +27,21 @@ public class InputDefinition(string name, IEnumerable<InputAction> actions, IEnu
 
     public IReadOnlyCollection<InputAction> Actions => _actionLookup.Values;
 
-    public IReadOnlyCollection<InputScheme> Schemes => _schemeLookup.Values;
+    public IReadOnlyCollection<InputScheme> Schemes => [.. _deviceCombinationSchemeLookup.Values.SelectMany(schemeLookup => schemeLookup.Values)];
     
     public InputAction? GetAction(string name)
         => !string.IsNullOrWhiteSpace(name) && _actionLookup.TryGetValue(name, out var action)
             ? action
             : null;
 
-    public InputScheme? GetScheme(string name)
-        => !string.IsNullOrWhiteSpace(name) && _schemeLookup.TryGetValue(name, out var scheme)
+    public IEnumerable<InputScheme> GetSchemesByDevicecCombination(string combinationId)
+        => _deviceCombinationSchemeLookup.TryGetValue(combinationId, out var schemeGroup)
+            ? schemeGroup.Values
+            : Enumerable.Empty<InputScheme>();
+
+    public InputScheme? GetScheme(string combinationId, string schemeName)
+        => _deviceCombinationSchemeLookup.TryGetValue(combinationId, out var schemeGroup)
+            && schemeGroup.TryGetValue(schemeName, out var scheme)
             ? scheme
             : null;
 
@@ -41,8 +51,9 @@ public class InputDefinition(string name, IEnumerable<InputAction> actions, IEnu
 
     internal void ResetDefinition()
     {
-        _schemeLookup = _schemeLookup.Where(schemeKvp => !schemeKvp.Value.IsCustom)
-                                     .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        _deviceCombinationSchemeLookup = _deviceCombinationSchemeLookup.SelectMany(schemeLookup => schemeLookup.Value.Values.Where(scheme => !scheme.IsCustom))
+                                     .GroupBy(scheme => scheme.CombinationId)
+                                     .ToDictionary(schemeGroup => schemeGroup.Key, schemeGroup => schemeGroup.ToDictionary(scheme => scheme.Name));
     }
 
     internal void ApplyCustomScheme(CustomInputScheme scheme)
@@ -58,9 +69,11 @@ public class InputDefinition(string name, IEnumerable<InputAction> actions, IEnu
             return;
         }
 
-        if (!_schemeLookup.TryGetValue(scheme.Name, out var currentScheme) || currentScheme.IsCustom)
+        var inputScheme = scheme.ToInputScheme();
+        if (_deviceCombinationSchemeLookup.TryGetValue(inputScheme.CombinationId, out var combinationSchemeLookup) 
+             && (!combinationSchemeLookup.TryGetValue(inputScheme.Name, out var existingScheme) || existingScheme.IsCustom))
         {
-            _schemeLookup[scheme.Name] = scheme.ToInputScheme();
+            _deviceCombinationSchemeLookup[inputScheme.CombinationId][inputScheme.Name] = inputScheme;
         }
     }
 

@@ -1,5 +1,5 @@
 ﻿namespace OSK.Inputs.Abstractions.Notifications;
 
-public class InputUserRemovedNotification(int userId): InputUserNotification(userId)
+public class InputUserRemovedNotification(IInputUser user): InputUserNotification(user)
 {
 }

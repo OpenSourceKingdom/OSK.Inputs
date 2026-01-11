@@ -13,7 +13,9 @@ public interface IInputUser
 {
     int Id { get; }
 
-    ActiveInputScheme ActiveScheme { get; }
+    string ActiveInputDefinitionName { get; }
+
+    PreferredInputScheme? GetPreferredInputScheme(string definitionName, string schemeName);
 
     IReadOnlyCollection<PairedDevice> PairedDevices { get; }
 

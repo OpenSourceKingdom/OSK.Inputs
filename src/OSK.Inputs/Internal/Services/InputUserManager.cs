@@ -22,9 +22,21 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
 {
     #region Variables
 
-    // TODO: Encapsulation Better
-    internal readonly Dictionary<int, InputUser> _users = [];
-    internal readonly Dictionary<int, Dictionary<string, PreferredInputScheme>> _userPreferredSchemesLookup = [];
+    private readonly Dictionary<int, InputUser> _users = [];
+    private readonly Dictionary<int, PreferredInputScheme[]> _userPreferredSchemesLookup = [];
+
+    #endregion
+
+    #region Constructors
+
+    InputUserManager(Dictionary<int, InputUser> users, Dictionary<int, PreferredInputScheme[]> preferredSchemes,
+        IInputConfigurationProvider configurationProvider, IInputNotificationPublisher notificationPublisher,
+        IInputSchemeRepository schemeRepository, ILogger<InputUserManager> logger, IOutputFactory<InputUserManager> outputFactory)
+        : this(configurationProvider, notificationPublisher, schemeRepository, logger, outputFactory)
+    {
+        _users = users;
+        _userPreferredSchemesLookup = preferredSchemes;
+    }
 
     #endregion
 
@@ -55,31 +67,22 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             : _users.Values.Max(user => user.Id) + 1;
 
         InputDefinition? inputDefinition = null;
-        var useActiveDefinition = !string.IsNullOrWhiteSpace(options.ActiveScheme?.DefinitionName);
+        var useActiveDefinition = !string.IsNullOrWhiteSpace(options.ActiveDefinitionName);
         if (useActiveDefinition)
         {
             inputDefinition = configurationProvider.Configuration.Definitions.FirstOrDefault(definition
-                => definition.Name.Equals(options.ActiveScheme!.Value.DefinitionName, StringComparison.OrdinalIgnoreCase));
+                => definition.Name.Equals(options.ActiveDefinitionName, StringComparison.OrdinalIgnoreCase));
         }
 
-        inputDefinition = inputDefinition ?? configurationProvider.Configuration.Definitions.FirstOrDefault(definition 
-            => definition.IsDefault)
+        inputDefinition = inputDefinition ?? configurationProvider.Configuration.Definitions.FirstOrDefault(definition => definition.IsDefault)
             ?? configurationProvider.Configuration.Definitions.First();
 
-        if (useActiveDefinition && !inputDefinition.Name.Equals(options.ActiveScheme!.Value.DefinitionName, StringComparison.OrdinalIgnoreCase))
+        if (useActiveDefinition && !inputDefinition.Name.Equals(options.ActiveDefinitionName, StringComparison.OrdinalIgnoreCase))
         {
-            LogCreateUseActiveDefinitionNameNotFoundWarning(logger, options.ActiveScheme.Value.DefinitionName, inputDefinition.Name);
+            LogCreateUseActiveDefinitionNameNotFoundWarning(logger, options.ActiveDefinitionName!, inputDefinition.Name);
         }
 
-        var activeScheme = GetActiveScheme(newUserId, inputDefinition);
-
-        if (!string.IsNullOrWhiteSpace(options.ActiveScheme?.SchemeName)
-             && !activeScheme.SchemeName.Equals(options.ActiveScheme!.Value.SchemeName, StringComparison.OrdinalIgnoreCase)) 
-        {
-            LogCreateUserActiveSchemeNameNotFoundWarning(logger, inputDefinition.Name, options.ActiveScheme.Value.SchemeName, activeScheme.SchemeName);
-        }
-
-        _users[newUserId] = new InputUser(newUserId, activeScheme);
+        _users[newUserId] = new InputUser(newUserId);
 
         notificationPublisher.Notify(new InputUserJoinedNotification(_users[newUserId]));
 
@@ -113,8 +116,9 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             return outputFactory.NotFound($"Input definition with name {definition} does not exist.");
         }
 
-        user.ActiveScheme = GetActiveScheme(userId, definition);
-        notificationPublisher.Notify(new InputUserSchemeChangeNotification(userId, user.ActiveScheme));
+        user.ActiveInputDefinitionName = definitionName;
+
+        notificationPublisher.Notify(new InputUserActiveDefinitionChangeNotification(user, user.ActiveInputDefinitionName));
         return outputFactory.Succeed();
     }
 
@@ -139,7 +143,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             }
 
             _users.Remove(userId);
-            notificationPublisher.Notify(new InputUserRemovedNotification(userId));
+            notificationPublisher.Notify(new InputUserRemovedNotification(user));
             return true;
         }
 
@@ -205,9 +209,9 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             return outputFactory.Fail("Scheme name can not be empty.");
         }
 
-        if (definition.GetScheme(scheme.SchemeName) is null)
+        if (definition.GetScheme(scheme.CombinationId, scheme.SchemeName) is null)
         {
-            return outputFactory.NotFound($"No input scheme named '{scheme.SchemeName}' exists on the definition '{scheme.DefinitionName}'.");
+            return outputFactory.NotFound($"No input scheme named '{scheme.SchemeName}' exists on the definition '{scheme.DefinitionName}' for the device combination '{scheme.CombinationId}'");
         }
 
         // Fix scheme not taking effect
@@ -238,12 +242,19 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
                         return false;
                     }
 
-                    return definition.GetScheme(preferredScheme.SchemeName) is not null;
-                }).GroupBy(scheme => scheme.UserId))
+                    return definition.GetScheme(preferredScheme.CombinationId, preferredScheme.SchemeName) is not null;
+                })
+                .GroupBy(scheme => scheme.UserId))
             {
-                _userPreferredSchemesLookup[userPreferredSchemes.Key] = 
-                    userPreferredSchemes.GroupBy(scheme => scheme.DefinitionName)
-                                        .ToDictionary(schemeGroup => schemeGroup.Key, schemeGroup => schemeGroup.First());
+                _userPreferredSchemesLookup[userPreferredSchemes.Key] =
+                    userPreferredSchemes.GroupBy(scheme => new { scheme.DefinitionName, scheme.CombinationId, scheme.SchemeName })
+                                        .Select(schemeGroup => schemeGroup.First())
+                                        .ToArray();
+
+                if (_users.TryGetValue(userPreferredSchemes.Key, out var user))
+                {
+                    user.SetPreferredSchemes(_userPreferredSchemesLookup[userPreferredSchemes.Key]);
+                }
             }
         }
         else
@@ -262,32 +273,6 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         }
 
         return outputFactory.Succeed();
-    }
-
-    #endregion
-
-    #region Helpers
-
-    private ActiveInputScheme GetActiveScheme(int userId, InputDefinition definition, string? preferredSchemeName = null)
-    {
-        if (!string.IsNullOrWhiteSpace(preferredSchemeName))
-        {
-            var activeScheme = definition.GetScheme(preferredSchemeName);
-            if (activeScheme is not null)
-            {
-                return new ActiveInputScheme(definition.Name, preferredSchemeName);
-            }
-        }
-
-        if (_userPreferredSchemesLookup.TryGetValue(userId, out var userPreferredSchemeLookup)
-             && userPreferredSchemeLookup.TryGetValue(definition.Name, out var preferredInputScheme)
-             && definition.GetScheme(preferredInputScheme.SchemeName) is not null)
-        {
-            return new ActiveInputScheme(definition.Name, preferredInputScheme.SchemeName);
-        }
-
-        var defaultScheme = definition.Schemes.FirstOrDefault(scheme => scheme.IsDefault) ?? definition.Schemes.First();
-        return new ActiveInputScheme(definition.Name, defaultScheme.Name);
     }
 
     #endregion

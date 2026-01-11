@@ -14,11 +14,11 @@ internal partial class InputProcessor
     [LoggerMessage(eventId: 3, LogLevel.Warning, "An attempt was made to use an active scheme with input definition '{desiredDefinitionName}' but it did not exist, defaulting to '{defaultDefinitionName}'.")]
     private static partial void LogInvalidDefinitionUsageWarning(ILogger logger, string desiredDefinitionName, string defaultDefinitionName);
 
-    [LoggerMessage(eventId: 4, LogLevel.Warning, "An attempt was made to use an active scheme '{desiredSchemeName}' with input definition '{definitionName}' but the scheme did not exist, defaulting to '{defaultSchemeName}'.")]
-    private static partial void LogInvalidSchemeUsageWarning(ILogger logger, string definitionName, string desiredSchemeName, string defaultSchemeName);
+    [LoggerMessage(eventId: 4, LogLevel.Warning, "An attempt was made to use an input scheme for device of family '{deviceFamily}' with input definition '{definitionName}' but no scheme exists to support it, it will be ignored.")]
+    private static partial void LogUnsupportedDeviceFamiliesWarning(ILogger logger, string definitionName, string deviceFamily);
 
-    [LoggerMessage(eventId: 5, LogLevel.Debug, "User {userId} has changed their scheme to use a scheme '{schemeName}' for input definition '{definitionName}'.")]
-    private static partial void LogSchemeChangeDebug(ILogger logger, int userId, string definitionName, string schemeName);
+    [LoggerMessage(eventId: 5, LogLevel.Debug, "User {userId} has changed their definition to '{definitionName}'.")]
+    private static partial void LogDefinitionChangeDebug(ILogger logger, int userId, string definitionName);
 
     [LoggerMessage(eventId: 6, LogLevel.Debug, "User {userId} has joined the session, creating new input tracker.")]
     private static partial void LogUserJoinedDebug(ILogger logger, int userId);

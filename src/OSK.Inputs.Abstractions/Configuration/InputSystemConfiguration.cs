@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
+using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
@@ -73,18 +74,17 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
     /// <summary>
     /// Attempts to get an action map for the provided definition and scheme that can be used to trigger configured actions at runtime
     /// </summary>
-    /// <param name="inputDefinitionName">The definition name that references one configured with the input system</param>
-    /// <param name="schemeName">A scheme name that should be configured with the associated input definition</param>
+    /// 
     /// <returns>An action map that combines the input scheme input maps and input definition's actions, if the names match existing configured items, otherwise null</returns>
-    public InputSchemeActionMap? GetSchemeMap(string inputDefinitionName, string schemeName)
+    public InputSchemeActionMap? GetSchemeMap(string definitionName, string combinationId, string schemeName)
     {
-        var definition = GetDefinition(inputDefinitionName);
+        var definition = GetDefinition(definitionName);
         if (definition is null)
         {
             return null;
         }
 
-        var scheme = definition.GetScheme(schemeName);
+        var scheme = definition.GetScheme(combinationId, schemeName);
         if (scheme is null)
         {
             return null;
@@ -171,36 +171,23 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
     {
         // Make sure to create combinations from non custom schemes, otherwise we might potentially
         // support a scheme that was not intended by a developer
-        var controllerSchemeGroups = definitions.SelectMany(definition => definition.Schemes)
+        var schemeCombinations = definitions.SelectMany(definition => definition.Schemes)
             .Where(scheme => !scheme.IsCustom)
             .Select(scheme => new
             {
-                ControllerName = string.Join(".", scheme.DeviceMaps.Select(map => map.DeviceFamily)),
+                CombinationId = InputDeviceCombination.GetCombinationId(scheme.GetDeviceFamilies()),
                 Devices = scheme.DeviceMaps.Select(map => map.DeviceFamily)
             })
-            .GroupBy(controllerScheme => controllerScheme.ControllerName);
+            .GroupBy(combination => combination.CombinationId);
 
-        var controllers = new Dictionary<string, InputDeviceCombination>();
-        foreach (var controllerSchemeGroup in controllerSchemeGroups)
+        var deviceCombinations = new Dictionary<string, InputDeviceCombination>();
+        foreach (var combination in schemeCombinations)
         {
-            var scheme = controllerSchemeGroup.First();
-
-            var deviceList = scheme.Devices.ToArray();
-
-            // Attempts to create a display name for the combination that is more readable for a combination:
-            // "Keyboard", "Keyboard and Mouse", etc.
-            var displayName = deviceList.Length switch
-            {
-                0 => string.Empty,
-                1 => deviceList[0].Name,
-                2 => $"{deviceList[0]} and {deviceList[1]}",
-                _ => $"{string.Join(", ", deviceList.Take(deviceList.Length - 1))}, and {deviceList[^1]}"
-            };
-
-            controllers[controllerSchemeGroup.Key] = new InputDeviceCombination(displayName, deviceList);
+            var scheme = combination.First();
+            deviceCombinations[combination.Key] = new InputDeviceCombination(scheme.Devices);
         }
 
-        return controllers.Values;
+        return deviceCombinations.Values;
     }
 
     #endregion

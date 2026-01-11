@@ -113,7 +113,7 @@ public class InputUserManagerTests
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Equal("Def", output.Value.ActiveScheme.DefinitionName);
+        Assert.Equal("Def", output.Value. vActiveScheme.DefinitionName);
 
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
     }
