@@ -31,10 +31,10 @@ internal partial class InputProcessor: IInputProcessor
     private readonly IOutputFactory<InputProcessor> _outputFactory;
 
     internal readonly ObjectFactory<InputUserInputTracker> _userInputTrackerFactory
-        = ActivatorUtilities.CreateFactory<InputUserInputTracker>([typeof(int), typeof(ActiveInputScheme),
+        = ActivatorUtilities.CreateFactory<InputUserInputTracker>([typeof(int),
             typeof(InputSchemeActionMap), typeof(InputProcessorConfiguration)]);
 
-    private readonly Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> _newInputTrackerFactory;
+    private readonly Func<int, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> _newInputTrackerFactory;
 
     #endregion
 
@@ -52,14 +52,14 @@ internal partial class InputProcessor: IInputProcessor
         _outputFactory = outputFactory ?? throw new ArgumentNullException(nameof(outputFactory));
 
         notificationPublisher.OnUserNotification += HandleUserEvent;
-        _newInputTrackerFactory = (userId, activeScheme, schemeActionMap, processorConfiguration)
-            => _userInputTrackerFactory(_serviceProvider, [userId, activeScheme, schemeActionMap, processorConfiguration]);
+        _newInputTrackerFactory = (userId, schemeActionMap, processorConfiguration)
+            => _userInputTrackerFactory(_serviceProvider, [userId, schemeActionMap, processorConfiguration]);
     }
 
     internal InputProcessor(IInputUserManager userManager, IInputNotificationPublisher notificationPublisher,
         IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger,
         IOutputFactory<InputProcessor> outputFactory,
-        Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> customTrackerFactory,
+        Func<int, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> customTrackerFactory,
         Dictionary<int, IInputUserTracker> trackerDictionary)
         : this(userManager, notificationPublisher, configurationProvider, serviceProvider, logger, outputFactory)
     {
@@ -192,7 +192,8 @@ internal partial class InputProcessor: IInputProcessor
             LogInvalidDefinitionUsageWarning(_logger, user.ActiveInputDefinitionName, inputDefinition.Name);
         }
 
-        var potentialSchemes = inputDefinition.GetSchemesByDevicecCombination(InputDeviceCombination.GetCombinationId(deviceFamilies));
+        var deviceCombinationId = InputDeviceCombination.GetCombinationId(deviceFamilies);
+        var potentialSchemes = inputDefinition.GetSchemesByDevicecCombination(deviceCombinationId);
         if (!potentialSchemes.Any())
         {
             // Say search fails for keyboard but one exists for keyboard and mouse. Or, say we fail to find an Xbox scheme but there is a game pad scheme that could
@@ -212,17 +213,13 @@ internal partial class InputProcessor: IInputProcessor
                 return null;
             }
 
-            potentialSchemes = inputDefinition.GetSchemesByDevicecCombination(InputDeviceCombination.GetCombinationId(closestSupportedCombination.Combination.DeviceFamilies));
+            deviceCombinationId = InputDeviceCombination.GetCombinationId(closestSupportedCombination.Combination.DeviceFamilies);
+            potentialSchemes = inputDefinition.GetSchemesByDevicecCombination(deviceCombinationId);
         }
 
-        var preferredScheme = user.GetPreferredInputScheme(user.ActiveInputDefinitionName)
-
-        var preferredSchemeName = user.PreferredInputSchemes.Where(scheme => scheme.DefinitionName.Equals(user.ActiveInputDefinitionName, StringComparison.OrdinalIgnoreCase))
-                                                            .Cast<PreferredInputScheme?>()
-                                                            .FirstOrDefault();
-
-        var scheme = preferredSchemeName.HasValue 
-            ? potentialSchemes.FirstOrDefault(s => s.Name.Equals(preferredSchemeName.Value.SchemeName, StringComparison.OrdinalIgnoreCase)) ?? potentialSchemes.First()
+        var preferredScheme = user.GetPreferredInputScheme(user.ActiveInputDefinitionName, deviceCombinationId);
+        var scheme = preferredScheme.HasValue 
+            ? potentialSchemes.FirstOrDefault(s => s.Name.Equals(preferredScheme.Value.SchemeName, StringComparison.OrdinalIgnoreCase)) ?? potentialSchemes.First()
             : potentialSchemes.FirstOrDefault(s => s.IsDefault) ?? potentialSchemes.First();
 
         return new ActiveInputScheme(user.ActiveInputDefinitionName, scheme.Name, [.. scheme.DeviceMaps.Select(m => m.DeviceFamily)]);
@@ -317,7 +314,7 @@ internal partial class InputProcessor: IInputProcessor
             throw new InvalidOperationException($"Scheme action map for user input tracker was null, but this should not have been possible; definition: {activeScheme.Value.DefinitionName}, scheme: {activeScheme.Value.SchemeName}.");
         }
 
-        _userInputTrackerLookup[user.Id] = _newInputTrackerFactory(user.Id, activeScheme.Value, schemeActionMap, configuration.ProcessorConfiguration);
+        _userInputTrackerLookup[user.Id] = _newInputTrackerFactory(user.Id, schemeActionMap, configuration.ProcessorConfiguration);
         return _userInputTrackerLookup[user.Id];
     }
 

@@ -30,7 +30,7 @@ public class InMemorySchemeRepositoryTests
     {
         // Arrange
         var repository = new InMemorySchemeRepository(new MockOutputFactory<InMemorySchemeRepository>());
-        var scheme = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = "Abc" };
+        var scheme = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" };
 
         // Act
         var schemeOutput = await repository.SavePreferredSchemeAsync(scheme);
@@ -47,8 +47,8 @@ public class InMemorySchemeRepositoryTests
     {
         // Arrange
         var repository = new InMemorySchemeRepository(new MockOutputFactory<InMemorySchemeRepository>());
-        var scheme1 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = "Abc" };
-        var scheme2 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = "Def" };
+        var scheme1 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" };
+        var scheme2 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Def" };
 
         // Act
         var schemesOutput1 = await repository.SavePreferredSchemeAsync(scheme1);
@@ -68,9 +68,9 @@ public class InMemorySchemeRepositoryTests
     {
         // Arrange
         var repository = new InMemorySchemeRepository(new MockOutputFactory<InMemorySchemeRepository>());
-        var scheme1 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = "Abc" };
-        var scheme2 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = "Def" };
-        var scheme3 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Def", SchemeName = "Abc" };
+        var scheme1 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" };
+        var scheme2 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Def", SchemeName = "Def" };
+        var scheme3 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Def", CombinationId = "Ghi", SchemeName = "Abc" };
 
         // Act
         var schemesOutput1 = await repository.SavePreferredSchemeAsync(scheme1);
@@ -99,14 +99,14 @@ public class InMemorySchemeRepositoryTests
         var repository = new InMemorySchemeRepository(new MockOutputFactory<InMemorySchemeRepository>());
 
         repository._preferredSchemeLookup[1] = [
-            new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = "Abc"}
+            new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc"}
         ];
         repository._preferredSchemeLookup[2] = [
-            new PreferredInputScheme() { UserId = 2, DefinitionName = "Abc", SchemeName = "Abc"},
-            new PreferredInputScheme() { UserId = 2, DefinitionName = "Def", SchemeName = "Abc"}
+            new PreferredInputScheme() { UserId = 2, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc"},
+            new PreferredInputScheme() { UserId = 2, DefinitionName = "Def", CombinationId = "Abc", SchemeName = "Abc"}
         ];
         repository._preferredSchemeLookup[3] = [
-            new PreferredInputScheme() { UserId = 3, DefinitionName = "Abc", SchemeName = "Abc"}
+            new PreferredInputScheme() { UserId = 3, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc"}
         ];
 
         // Act

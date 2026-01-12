@@ -29,7 +29,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
 
     #region Constructors
 
-    InputUserManager(Dictionary<int, InputUser> users, Dictionary<int, PreferredInputScheme[]> preferredSchemes,
+    internal InputUserManager(Dictionary<int, InputUser> users, Dictionary<int, PreferredInputScheme[]> preferredSchemes,
         IInputConfigurationProvider configurationProvider, IInputNotificationPublisher notificationPublisher,
         IInputSchemeRepository schemeRepository, ILogger<InputUserManager> logger, IOutputFactory<InputUserManager> outputFactory)
         : this(configurationProvider, notificationPublisher, schemeRepository, logger, outputFactory)
@@ -83,6 +83,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         }
 
         _users[newUserId] = new InputUser(newUserId);
+        _users[newUserId].ActiveInputDefinitionName = inputDefinition.Name;
 
         notificationPublisher.Notify(new InputUserJoinedNotification(_users[newUserId]));
 

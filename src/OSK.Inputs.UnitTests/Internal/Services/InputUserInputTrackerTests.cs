@@ -24,9 +24,9 @@ public class InputUserInputTrackerTests
     {
         var outputFactory = new MockOutputFactory<InputUserInputTracker>();
 
-        _tracker = new InputUserInputTracker(1, new ActiveInputScheme() { DefinitionName = "Abc", SchemeName = "Abc" },
+        _tracker = new InputUserInputTracker(1,
             new InputSchemeActionMap
-            ([ 
+            ("Abc", "Abc", [ 
                 new DeviceSchemeActionMap(TestIdentity.Identity1,
                  [
                     new InputActionMap() {

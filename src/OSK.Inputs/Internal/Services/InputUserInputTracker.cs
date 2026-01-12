@@ -13,7 +13,7 @@ using OSK.Inputs.Internal.Models;
 
 namespace OSK.Inputs.Internal.Services;
 
-internal partial class InputUserInputTracker(int userId, ActiveInputScheme scheme, InputSchemeActionMap schemeMap, 
+internal partial class InputUserInputTracker(int userId, InputSchemeActionMap schemeMap, 
     InputProcessorConfiguration processorConfiguration, ILogger<InputUserInputTracker> logger, IOutputFactory<InputUserInputTracker> outputFactory,
     IServiceProvider serviceProvider): IInputUserTracker
 {
@@ -41,7 +41,8 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
     #region IUserInputTracker
 
-    public ActiveInputScheme ActiveScheme => scheme;
+    public ActiveInputScheme ActiveScheme { get; } = new ActiveInputScheme(schemeMap.DefinitionName, schemeMap.SchemeName, 
+                                                                            [.. schemeMap.DeviceSchemeMaps.Select(m => m.DeviceFamily)]);
 
     public int UserId => userId;
 

@@ -1,4 +1,5 @@
 ﻿using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.UnitTests._Helpers;
 
 namespace OSK.Inputs.Abstractions.UnitTests.Configuration;
@@ -163,7 +164,7 @@ public class InputSystemConfigurationTests
         var configuration = new InputSystemConfiguration([], [], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act
-        var map = configuration.GetSchemeMap(definitionName!, "Abc");
+        var map = configuration.GetSchemeMap(definitionName!, "Abc", "Abc");
 
         // Assert
         Assert.Null(map);
@@ -176,10 +177,27 @@ public class InputSystemConfigurationTests
         var configuration = new InputSystemConfiguration([], [], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act
-        var definition = configuration.GetSchemeMap("Abc", "Abc");
+        var definition = configuration.GetSchemeMap("Abc", "Abc", "Abc");
 
         // Assert
         Assert.Null(definition);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void GetSchemeMap_InvalidCombinationId_ReturnsNull(string? combiantionId)
+    {
+        // Arrange
+        var definition = new InputDefinition("Hello", [], [], false);
+        var configuration = new InputSystemConfiguration([], [definition], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
+
+        // Act
+        var map = configuration.GetSchemeMap(definition.Name, combiantionId!, "Abc");
+
+        // Assert
+        Assert.Null(map);
     }
 
     [Theory]
@@ -193,7 +211,7 @@ public class InputSystemConfigurationTests
         var configuration = new InputSystemConfiguration([], [definition], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act
-        var map = configuration.GetSchemeMap(definition.Name, schemeName!);
+        var map = configuration.GetSchemeMap(definition.Name, "Abc", schemeName!);
 
         // Assert
         Assert.Null(map);
@@ -207,7 +225,7 @@ public class InputSystemConfigurationTests
         var configuration = new InputSystemConfiguration([], [definition], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act
-        var map = configuration.GetSchemeMap(definition.Name, "Abc");
+        var map = configuration.GetSchemeMap(definition.Name, "Abc", "Abc");
 
         // Assert
         Assert.Null(map);
@@ -217,14 +235,15 @@ public class InputSystemConfigurationTests
     public void GetSchemeMap_Valid_ReturnsSchemeMap()
     {
         // Arrange
-        var definition = new InputDefinition("Hello", [], [new InputScheme("Abc", [], false, false)], false);
+        var map = new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Abc", InputDeviceType.Keyboard), InputMaps = [] };
+        var definition = new InputDefinition("Hello", [], [new InputScheme("Abc", [map], false, false)], false);
         var configuration = new InputSystemConfiguration([], [definition], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act
-        var map = configuration.GetSchemeMap(definition.Name, "Abc");
+        var schemeMap = configuration.GetSchemeMap(definition.Name, "Abc", "Abc");
 
         // Assert
-        Assert.NotNull(map);
+        Assert.NotNull(schemeMap);
     }
 
     #endregion

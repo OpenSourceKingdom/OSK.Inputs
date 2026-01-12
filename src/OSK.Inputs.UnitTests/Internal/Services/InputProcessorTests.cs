@@ -60,7 +60,7 @@ public class InputProcessorTests
             _mockServiceProvider.Object, 
             Mock.Of<ILogger<InputProcessor>>(), 
             _outputFactory,
-            (_, _, _, _) => _mockUserInputTracker.Object,
+            (_, _, _) => _mockUserInputTracker.Object,
             _trackers);
     }
 
@@ -99,14 +99,14 @@ public class InputProcessorTests
         var stateChangeEvent = new DeviceStateChangedNotification(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1), DeviceStatus.Disconnected);
 
         _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
-            .Returns(new InputUser(1, default));
+            .Returns(new InputUser(1));
 
         // Act
         _processor.HandleDeviceNotification(stateChangeEvent);
 
         // Assert
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<DeviceStateChangedNotification>(s => true)), Times.Never);
-        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<UserDeviceNotification>(s => s.UserId == 1)), Times.Once);
+        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<UserDeviceNotification>(s => s.User.Id == 1)), Times.Once);
     }
 
     #endregion
@@ -304,7 +304,7 @@ public class InputProcessorTests
         _mockUserManager.Setup(m => m.GetUsers())
             .Returns([]);
         _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
-            .Returns(_outputFactory.Succeed((IInputUser)new InputUser(1, new ActiveInputScheme("Abc", "Abc"))));
+            .Returns(_outputFactory.Succeed((IInputUser)new InputUser(1)));
         _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
             .Returns(_outputFactory.Fail("Bad Day"));
 
@@ -340,6 +340,8 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
 
@@ -389,6 +391,8 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
 
@@ -438,12 +442,16 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
 
         var mockUser2 = new Mock<IInputUser>();
         mockUser2.SetupGet(m => m.Id)
             .Returns(2);
+        mockUser2.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser2.SetupGet(m => m.PairedDevices)
             .Returns([]);
 
@@ -493,12 +501,16 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
 
         var mockUser2 = new Mock<IInputUser>();
         mockUser2.SetupGet(m => m.Id)
             .Returns(2);
+        mockUser2.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser2.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(2, new RuntimeDeviceIdentifier(2, TestIdentity.Identity1))]);
 
@@ -548,14 +560,18 @@ public class InputProcessorTests
 
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
-            .Returns(1);
+            .Returns(1); 
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1)), 
                     new PairedDevice(1, new RuntimeDeviceIdentifier(2, TestIdentity.Identity2))]);
 
         var mockUser2 = new Mock<IInputUser>();
         mockUser2.SetupGet(m => m.Id)
-            .Returns(2);
+            .Returns(2); 
+        mockUser2.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser2.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(2, new RuntimeDeviceIdentifier(3, TestIdentity.Identity1))]);
 
@@ -612,6 +628,8 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1)),
                     new PairedDevice(1, new RuntimeDeviceIdentifier(2, TestIdentity.Identity2))]);
@@ -619,6 +637,8 @@ public class InputProcessorTests
         var mockUser2 = new Mock<IInputUser>();
         mockUser2.SetupGet(m => m.Id)
             .Returns(2);
+        mockUser2.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser2.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(2, new RuntimeDeviceIdentifier(3, TestIdentity.Identity1))]);
 
@@ -669,8 +689,11 @@ public class InputProcessorTests
             .Returns((IInputUser?)null);
         _mockUserManager.Setup(m => m.GetUsers())
             .Returns([]);
+
+        var user = new InputUser(1);
+        user.ActiveInputDefinitionName = "Abc";
         _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
-            .Returns(_outputFactory.Succeed((IInputUser)new InputUser(1, new ActiveInputScheme("Abc", "Abc"))));
+            .Returns(_outputFactory.Succeed((IInputUser)user));
         _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
             .Returns(_outputFactory.Succeed());
 
@@ -706,10 +729,16 @@ public class InputProcessorTests
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
             }));
 
+        var mockUser = new Mock<IInputUser>();
+        mockUser.SetupGet(m => m.Id)
+            .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
+
         _mockUserManager.Setup(m => m.GetUsers())
             .Returns([]);
         _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
-            .Returns(new InputUser(1, new ActiveInputScheme("Abc", "Abc")));
+            .Returns(mockUser.Object);
         _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
             .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
 
@@ -732,7 +761,7 @@ public class InputProcessorTests
     {
         // Arrange/Act/Assert
         Assert.NotNull(_processor._userInputTrackerFactory.Invoke(_mockServiceProvider.Object,
-            [1, new ActiveInputScheme("Abc", "Abc"), new InputSchemeActionMap([]), new InputProcessorConfiguration()]));
+            [1, new InputSchemeActionMap("Abc", "Abc", []), new InputProcessorConfiguration()]));
     }
 
     #endregion

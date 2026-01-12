@@ -1,4 +1,5 @@
-﻿using OSK.Inputs.Abstractions.Runtime;
+﻿using OSK.Inputs.Abstractions;
+using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal.Models;
 using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
@@ -7,34 +8,48 @@ namespace OSK.Inputs.UnitTests.Internal.Models;
 
 public class InputUserTests
 {
+    #region Variables
+
+    private readonly Dictionary<int, PairedDevice> _pairedDevices;
+
+    private InputUser _inputUser;
+
+    #endregion
+
+    #region Constructors
+
+    public InputUserTests()
+    {
+        _pairedDevices = [];
+        _inputUser = new InputUser(1, _pairedDevices);
+    }
+
+    #endregion
+
     #region AddDevice
 
     [Fact]
     public void AddDevice_NoDevices_ReturnsSuccessfully()
     {
-        // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
-
-        // Act
-        inputUser.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
+        // Arrange/Act
+        _inputUser.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
 
         // Asssert
-        Assert.Single(inputUser._pairedDevices);
+        Assert.Single(_pairedDevices);
     }
 
     [Fact]
     public void AddDevice_IdenticalDeviceAlreadyAdded_DoesNotAddNewDeviceToUser_ReturnsSuccessfully()
     {
-        // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        // Arrange;
         var deviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1);
-        inputUser._pairedDevices[1] = new PairedDevice(1, deviceIdentifier);
+        _pairedDevices[1] = new PairedDevice(1, deviceIdentifier);
 
         // Act
-        inputUser.AddDevice(deviceIdentifier);
+        _inputUser.AddDevice(deviceIdentifier);
 
         // Asssert
-        Assert.Single(inputUser._pairedDevices);
+        Assert.Single(_pairedDevices);
     }
 
 
@@ -42,14 +57,13 @@ public class InputUserTests
     public void AddDevice_SimilarButNotIdenticalDeviceAdded_AddsNewDeviceToUser_ReturnsSuccessfully()
     {
         // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
-        inputUser._pairedDevices[1] = new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
+        _pairedDevices[1] = new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
 
         // Act
-        inputUser.AddDevice(new RuntimeDeviceIdentifier(2, TestIdentity.Identity1));
+        _inputUser.AddDevice(new RuntimeDeviceIdentifier(2, TestIdentity.Identity1));
 
         // Asssert
-        Assert.Equal(2, inputUser._pairedDevices.Count);
+        Assert.Equal(2, _pairedDevices.Count);
     }
 
     #endregion
@@ -60,7 +74,7 @@ public class InputUserTests
     public void RemoveDevice_DeviceNotAdded_ReturnsNull()
     {
         // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var inputUser = new InputUser(1);
 
         // Act
         var device = inputUser.RemoveDevice(1);
@@ -69,23 +83,21 @@ public class InputUserTests
         Assert.Null(device);
     }
 
-
     [Fact]
     public void RemoveDevice_DeviceAdded_RemovesFromUserAndReturnsDevice()
     {
         // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
         var deviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1);
         var pairedDevice = new PairedDevice(1, deviceIdentifier);
-        inputUser._pairedDevices[1] = pairedDevice;
+        _pairedDevices[1] = pairedDevice;
 
         // Act
-        var device = inputUser.RemoveDevice(1);
+        var device = _inputUser.RemoveDevice(1);
 
         // Assert
         Assert.NotNull(device);
         Assert.Equal(pairedDevice, device);
-        Assert.Empty(inputUser._pairedDevices);
+        Assert.Empty(_pairedDevices);
     }
 
     #endregion
@@ -95,28 +107,23 @@ public class InputUserTests
     [Fact]
     public void GetPairedDevices_NoDevices_ReturnsEmpty()
     {
-        // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
-
-        // Act
-        var devices = inputUser.GetPairedDevices();
+        // Arrange/Act
+        var devices = _inputUser.GetPairedDevices();
 
         // Assert
         Assert.Empty(devices);
     }
 
-
     [Fact]
     public void GetPairedDevices_HasDevices_ReturnsExpectedList()
     {
         // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
         var deviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1);
         var pairedDevice = new PairedDevice(1, deviceIdentifier);
-        inputUser._pairedDevices[1] = pairedDevice;
+        _pairedDevices[1] = pairedDevice;
 
         // Act
-        var devices = inputUser.GetPairedDevices();
+        var devices = _inputUser.GetPairedDevices();
 
         // Assert
         Assert.Single(devices);
@@ -132,11 +139,8 @@ public class InputUserTests
     [InlineData(100)]
     public void GetPairedDevice_IndexOutOfRange_ReturnsNull(int index)
     {
-        // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
-
-        // Act
-        var device = inputUser.GetDevice(index);
+        // Arrange/Act
+        var device = _inputUser.GetDevice(index);
 
         // Assert
         Assert.Null(device);
@@ -146,13 +150,12 @@ public class InputUserTests
     public void GetPairedDevice_DeviceIdDoesNotExist_ReturnsNull()
     {
         // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
         var deviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1);
         var pairedDevice = new PairedDevice(1, deviceIdentifier);
-        inputUser._pairedDevices[1] = pairedDevice;
+        _pairedDevices[1] = pairedDevice;
 
         // Act
-        var device = inputUser.GetDevice(2);
+        var device = _inputUser.GetDevice(2);
 
         // Assert
         Assert.Null(device);
@@ -162,13 +165,12 @@ public class InputUserTests
     public void GetPairedDevice_Valid_ReturnsDevice()
     {
         // Arrange
-        var inputUser = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
         var deviceIdentifier = new RuntimeDeviceIdentifier(1, TestIdentity.Identity1);
         var pairedDevice = new PairedDevice(1, deviceIdentifier);
-        inputUser._pairedDevices[1] = pairedDevice;
+        _pairedDevices[1] = pairedDevice;
 
         // Act
-        var device = inputUser.GetDevice(1);
+        var device = _inputUser.GetDevice(1);
 
         // Assert
         Assert.NotNull(device);

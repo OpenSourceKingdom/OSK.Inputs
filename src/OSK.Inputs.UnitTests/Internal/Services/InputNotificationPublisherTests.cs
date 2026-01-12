@@ -2,6 +2,7 @@
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Notifications;
 using OSK.Inputs.Abstractions.Runtime;
+using OSK.Inputs.Internal.Models;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.UnitTests._Helpers;
 using Xunit;
@@ -60,7 +61,7 @@ public class InputNotificationPublisherTests
     public void Notify_InputUserNotification_NoRegisteredAction_ReturnsSuccessfully()
     {
         // Arrange/Act
-        _publisher.Notify(new UserDeviceConnectedNotification(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1)));
+        _publisher.Notify(new UserDeviceConnectedNotification(new InputUser(1), new RuntimeDeviceIdentifier(1, TestIdentity.Identity1)));
 
         // Assert
         Assert.True(true);

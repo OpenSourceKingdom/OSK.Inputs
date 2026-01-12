@@ -1,4 +1,5 @@
 ﻿using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Models;
@@ -918,21 +919,49 @@ public class InputSystemConfigurationValidatorTests
         Assert.Equal("Name", validation.TargetName);
     }
 
-    [Fact]
-    public void ValidateCustomScheme_DuplicateSchemeName_OriginalSchemeBuiltIn_DontSkipDuplicateCustomSchemeGuard_ReturnsDuplicateError()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ValidateCustomScheme_MissingDeviceMapsName_ReturnsMissingDataError(bool useEmpty)
     {
         // Arrange
         var validator = new InputSystemConfigurationValidator();
 
         // Act
-        var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([], 
+        var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],
             [
                 new InputDefinition("Abc", [],
                     [
                         new InputScheme("Abc", [], false, false)
                     ], false)
             ], new(), new()),
-            new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
+            new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = useEmpty ? [] : null! },
+            false);
+
+        // Assert
+        Assert.False(validation.IsValid);
+        Assert.Equal(InputConfigurationValidation.MissingData, validation.Result);
+        Assert.Equal(InputConfigurationType.Scheme, validation.ConfigurationType);
+        Assert.Equal("DeviceMaps", validation.TargetName);
+    }
+
+    [Fact]
+    public void ValidateCustomScheme_DuplicateSchemeName_OriginalSchemeBuiltIn_DontSkipDuplicateCustomSchemeGuard_ReturnsDuplicateError()
+    {
+        // Arrange
+        var validator = new InputSystemConfigurationValidator();
+
+        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [] };
+
+        // Act
+        var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([], 
+            [
+                new InputDefinition("Abc", [],
+                    [
+                        new InputScheme("Abc", [map], false, false)
+                    ], false)
+            ], new(), new()),
+            new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [map] },
             false);
 
         // Assert
@@ -948,15 +977,17 @@ public class InputSystemConfigurationValidatorTests
         // Arrange
         var validator = new InputSystemConfigurationValidator();
 
+        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [] };
+
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],
             [
                 new InputDefinition("Abc", [],
                     [
-                        new InputScheme("Abc", [], false, false)
+                        new InputScheme("Abc", [map], false, false)
                     ], false)
             ], new(), new()),
-            new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
+            new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [map] },
             true);
 
         // Assert
@@ -971,16 +1002,18 @@ public class InputSystemConfigurationValidatorTests
     {
         // Arrange
         var validator = new InputSystemConfigurationValidator();
+        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [] };
 
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],
             [
                 new InputDefinition("Abc", [],
                     [
-                        new InputScheme("Abc", [], false, true)
+                        new InputScheme("def", [map], false, false),
+                        new InputScheme("Abc", [map], false, true)
                     ], false)
             ], new(), new()),
-            new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [] },
+            new CustomInputScheme() { DefinitionName = "Abc", Name = "Abc", DeviceMaps = [map] },
             false);
 
         // Assert

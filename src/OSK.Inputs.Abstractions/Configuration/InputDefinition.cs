@@ -14,7 +14,8 @@ public class InputDefinition(string name, IEnumerable<InputAction> actions, IEnu
     private Dictionary<string, Dictionary<string, InputScheme>> _deviceCombinationSchemeLookup 
         = schemes?.Where(scheme => scheme?.Name is not null)
                   .GroupBy(scheme => scheme.CombinationId, StringComparer.OrdinalIgnoreCase)
-                  .ToDictionary(schemeGroup => schemeGroup.Key, schemegroup => schemegroup.ToDictionary(scheme => scheme.Name, StringComparer.OrdinalIgnoreCase)) 
+                  .ToDictionary(schemeGroup => schemeGroup.Key, schemegroup => schemegroup.ToDictionary(scheme => scheme.Name, StringComparer.OrdinalIgnoreCase),
+                        StringComparer.OrdinalIgnoreCase) 
             ?? [];
 
     #endregion
@@ -35,12 +36,13 @@ public class InputDefinition(string name, IEnumerable<InputAction> actions, IEnu
             : null;
 
     public IEnumerable<InputScheme> GetSchemesByDevicecCombination(string combinationId)
-        => _deviceCombinationSchemeLookup.TryGetValue(combinationId, out var schemeGroup)
+        => !string.IsNullOrWhiteSpace(combinationId) && _deviceCombinationSchemeLookup.TryGetValue(combinationId, out var schemeGroup)
             ? schemeGroup.Values
             : Enumerable.Empty<InputScheme>();
 
     public InputScheme? GetScheme(string combinationId, string schemeName)
-        => _deviceCombinationSchemeLookup.TryGetValue(combinationId, out var schemeGroup)
+        => !string.IsNullOrWhiteSpace(combinationId) && !string.IsNullOrWhiteSpace(schemeName)
+            && _deviceCombinationSchemeLookup.TryGetValue(combinationId, out var schemeGroup)
             && schemeGroup.TryGetValue(schemeName, out var scheme)
             ? scheme
             : null;

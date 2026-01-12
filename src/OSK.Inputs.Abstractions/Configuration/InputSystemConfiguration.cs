@@ -108,7 +108,7 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
                     return new DeviceSchemeActionMap(deviceMap.DeviceFamily, actionMaps);
                 });
 
-        return new InputSchemeActionMap(deviceMaps);
+        return new InputSchemeActionMap(definitionName, schemeName, deviceMaps);
     }
 
     /// <summary>
