@@ -9,11 +9,7 @@ public abstract class MouseDeviceSpecification: InputDeviceSpecification<MouseIn
     #region InputDeviceSpecification Overrides
 
     public override IReadOnlyCollection<IInput> GetInputs()
-        => [.. Inputs.Select(input => (IInput) (input switch 
-        {
-            MouseInput.MouseMovement => new PointerInput(InputDeviceType.Mice, (int)input),
-            _ => new DigitalInput(InputDeviceType.Mice, (int)input)
-        }))];
+        => [.. Inputs.Select(input => input.ToInput())];
 
     #endregion
 
