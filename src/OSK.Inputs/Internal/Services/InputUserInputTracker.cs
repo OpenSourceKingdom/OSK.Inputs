@@ -14,8 +14,8 @@ using OSK.Inputs.Internal.Models;
 namespace OSK.Inputs.Internal.Services;
 
 internal partial class InputUserInputTracker(int userId, InputSchemeActionMap schemeMap, 
-    InputProcessorConfiguration processorConfiguration, ILogger<InputUserInputTracker> logger, IOutputFactory<InputUserInputTracker> outputFactory,
-    IServiceProvider serviceProvider): IInputUserTracker
+    InputSystemConfiguration configuration, ILogger<InputUserInputTracker> logger,
+    IOutputFactory<InputUserInputTracker> outputFactory, IServiceProvider serviceProvider): IInputUserTracker
 {
     #region Variables
 
@@ -24,18 +24,23 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
     /// </summary>
     private const float DeadzoneMinimumThreshold = 0.01f;
     private const int MaxPointerRecords = 3;
-    private float _pointerSquareThreshold = MathF.Pow(processorConfiguration.PointerMovementThreshold.GetValueOrDefault(.01f), 2);
+    private float _pointerSquareThreshold = MathF.Pow(configuration.ProcessorConfiguration.PointerMovementThreshold.GetValueOrDefault(.01f), 2);
 
-    private float _deadZoneTolerance = processorConfiguration.DeadzoneTolerance.HasValue
-        ? processorConfiguration.DeadzoneTolerance < DeadzoneMinimumThreshold 
+    private float _deadZoneTolerance = configuration.ProcessorConfiguration.DeadzoneTolerance.HasValue
+        ? configuration.ProcessorConfiguration.DeadzoneTolerance < DeadzoneMinimumThreshold 
             ? DeadzoneMinimumThreshold 
-            : processorConfiguration.DeadzoneTolerance.Value
+            : configuration.ProcessorConfiguration.DeadzoneTolerance.Value
         : DeadzoneMinimumThreshold;
 
     private readonly Dictionary<InputDeviceFamily, DeviceInputTracker> _deviceInputTrackerLookup
         = schemeMap.DeviceSchemeMaps.ToDictionary(
             deviceScheme => deviceScheme.DeviceFamily, 
             deviceScheme => new DeviceInputTracker(deviceScheme));
+
+    private readonly Dictionary<InputDeviceFamily, InputDeviceSpecification> _deviceInputLookup = schemeMap.DeviceSchemeMaps
+            .Select(device => configuration.GetDeviceSpecification(device.DeviceFamily))
+            .Where(specification => specification is not null)
+            .ToDictionary(specification => specification!.DeviceFamily, specification => specification!);
 
     #endregion
 
@@ -48,7 +53,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
     public IEnumerable<TriggeredActionEvent> Update(TimeSpan deltaTime)
     {
-        var removalDelay = processorConfiguration.TapReactivationTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
+        var removalDelay = configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
 
         var triggeredActions = new List<TriggeredActionEvent>();
         foreach (var deviceTracker in _deviceInputTrackerLookup.Values)
@@ -72,7 +77,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                 switch (inputState.Phase)
                 {
                     case InputPhase.Start:
-                        if (inputState.Duration >= processorConfiguration.ActiveTimeThreshold.GetValueOrDefault(TimeSpan.Zero))
+                        if (inputState.Duration >= configuration.ProcessorConfiguration.ActiveTimeThreshold.GetValueOrDefault(TimeSpan.Zero))
                         {
                             inputState.Phase = InputPhase.Active;
                             reprocess = true;
@@ -115,7 +120,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             return outputFactory.NotFound<TriggeredActionEvent?>("No device tracker was found for the device triggering the input.");
         }
 
-        var actionMaps = deviceTracker.SchemeMap.GetActionMaps(deviceInputEvent.Input.Id);
+        var actionMaps = deviceTracker.SchemeMap.GetActionMaps(deviceInputEvent.InputId);
         if (!actionMaps.Any())
         {
             return outputFactory.Fail<TriggeredActionEvent?>("No action map found for the input");
@@ -144,7 +149,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             triggeredActivation.Value.Execute();
         }
 
-        if (inputState.Phase is InputPhase.End && processorConfiguration.TapReactivationTime is null)
+        if (inputState.Phase is InputPhase.End && configuration.ProcessorConfiguration.TapReactivationTime is null)
         {
             deviceTracker.RemoveState(inputState);
         }
@@ -156,15 +161,23 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
     #region Helpers
 
-    private DeviceInputState? GetAndUpdateInputState(DeviceInputTracker deviceTracker, InputEvent inputEvent)
+    private DeviceInputState? GetAndUpdateInputState(DeviceInputTracker deviceTracker, DeviceInputEvent inputEvent)
     {
+        IInput? input = null;
+        if (!_deviceInputLookup.TryGetValue(inputEvent.DeviceIdentifier.DeviceFamily, out var specification)
+             || !specification.TryGetInput(inputEvent.InputId, out input))
+        {
+            return null;
+        }
+
+
         DeviceInputState inputState;
         switch (inputEvent)
         {
             case InputPointerEvent pointerEvent:
                 var pointerState = deviceTracker.GetOrCreatePointerState(pointerEvent.PointerId, () =>
                 {
-                    return new InputPointerState(pointerEvent.PointerId, pointerEvent.Input, MaxPointerRecords, _pointerSquareThreshold)
+                    return new InputPointerState(pointerEvent.PointerId, (IDeviceInput)input!, MaxPointerRecords, _pointerSquareThreshold)
                     {
                         DeviceIdentifier = pointerEvent.DeviceIdentifier,
                         Phase = pointerEvent.Phase,
@@ -176,9 +189,9 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                 inputState = pointerState;
                 break;
             case InputPowerEvent powerEvent:
-                var inputPowerState = deviceTracker.GetOrCreatePowerState(powerEvent.Input.Id, () =>
+                var inputPowerState = deviceTracker.GetOrCreatePowerState(powerEvent.InputId, () =>
                 {
-                    return new InputPowerState(powerEvent.Input)
+                    return new InputPowerState((IDeviceInput)input!)
                     {
                         DeviceIdentifier = powerEvent.DeviceIdentifier,
                         Duration = TimeSpan.Zero,
@@ -186,7 +199,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                     };
                 });
 
-                inputPowerState.InputPowers = powerEvent.Input switch  
+                inputPowerState.InputPowers = input switch  
                 {
                     AnalogInput _ => ApplyDeadzoneSmoothScaling([.. powerEvent.InputIntensities], _deadZoneTolerance),
                     _ => [.. powerEvent.InputIntensities]
@@ -310,12 +323,12 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
         switch (state)
         {
             case InputPowerState powerState:
-                return new InputPowerEvent(powerState.DeviceIdentifier, powerState.Input, powerState.Phase, powerState.InputPowers);
+                return new InputPowerEvent(powerState.DeviceIdentifier, powerState.Input.Id, powerState.Phase, powerState.InputPowers);
             case InputPointerState pointerState:
                 var pointerPositionAndMotionData = pointerState.GetCurrentPositionAndMotionData();
                 return pointerPositionAndMotionData is null
                     ? null
-                    : new InputPointerEvent(pointerState.DeviceIdentifier, pointerState.Input, pointerState.Phase, pointerState.PointerId,
+                    : new InputPointerEvent(pointerState.DeviceIdentifier, pointerState.Input.Id, pointerState.Phase, pointerState.PointerId,
                             pointerPositionAndMotionData.Value.Item1);
             default:
                 return null;

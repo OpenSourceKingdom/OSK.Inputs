@@ -10,6 +10,6 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// <param name="virtualInput">The virtual input that was triggered</param>
 /// <param name="phase">The phase of the input triggered</param>
 public class VirtualInputEvent(VirtualInput virtualInput, InputPhase phase)
-    : InputEvent(virtualInput, phase)
+    : InputEvent(virtualInput.Id, phase)
 {
 }

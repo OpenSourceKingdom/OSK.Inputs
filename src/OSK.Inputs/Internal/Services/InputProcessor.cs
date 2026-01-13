@@ -32,9 +32,9 @@ internal partial class InputProcessor: IInputProcessor
 
     internal readonly ObjectFactory<InputUserInputTracker> _userInputTrackerFactory
         = ActivatorUtilities.CreateFactory<InputUserInputTracker>([typeof(int),
-            typeof(InputSchemeActionMap), typeof(InputProcessorConfiguration)]);
+            typeof(InputSchemeActionMap), typeof(InputSystemConfiguration)]);
 
-    private readonly Func<int, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> _newInputTrackerFactory;
+    private readonly Func<int, InputSchemeActionMap, InputSystemConfiguration, IInputUserTracker> _newInputTrackerFactory;
 
     #endregion
 
@@ -52,6 +52,14 @@ internal partial class InputProcessor: IInputProcessor
         _outputFactory = outputFactory ?? throw new ArgumentNullException(nameof(outputFactory));
 
         notificationPublisher.OnUserNotification += HandleUserEvent;
+        notificationPublisher.OnDeviceNotification += deviceNotification =>
+        {
+            if (deviceNotification is DeviceUnpairedNotification deviceUnpairedNotification)
+            {
+                _registeredUserDevices.Remove(deviceUnpairedNotification.DeviceIdentifier);
+            }
+        };
+
         _newInputTrackerFactory = (userId, schemeActionMap, processorConfiguration)
             => _userInputTrackerFactory(_serviceProvider, [userId, schemeActionMap, processorConfiguration]);
     }
@@ -59,7 +67,7 @@ internal partial class InputProcessor: IInputProcessor
     internal InputProcessor(IInputUserManager userManager, IInputNotificationPublisher notificationPublisher,
         IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger,
         IOutputFactory<InputProcessor> outputFactory,
-        Func<int, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> customTrackerFactory,
+        Func<int, InputSchemeActionMap, InputSystemConfiguration, IInputUserTracker> customTrackerFactory,
         Dictionary<int, IInputUserTracker> trackerDictionary)
         : this(userManager, notificationPublisher, configurationProvider, serviceProvider, logger, outputFactory)
     {
@@ -90,7 +98,7 @@ internal partial class InputProcessor: IInputProcessor
 
     public IOutput ProcessEvent(InputEvent inputEvent)
     {
-        if (inputEvent?.Input is null)
+        if (inputEvent is null)
         {
             throw new ArgumentNullException(nameof(inputEvent));
         }
@@ -101,7 +109,7 @@ internal partial class InputProcessor: IInputProcessor
         if (inputEvent is not DeviceInputEvent deviceInputEvent)
         {
             LogUnsupportedInputTypeInformation(_logger, inputEvent.GetType().FullName);
-            return _outputFactory.Fail($"Input type '{inputEvent.Input.GetType().FullName}' is not supported.");
+            return _outputFactory.Fail($"Input type '{inputEvent.GetType().FullName}' is not supported.");
         }
 
         var inputTracker = GetInputTrackerForDevice(deviceInputEvent.DeviceIdentifier);
@@ -111,13 +119,6 @@ internal partial class InputProcessor: IInputProcessor
         }
 
         var triggeredActionOutput = inputTracker.Track(inputEvent);
-        // Not found represents the device triggering the input is tied to the user but the current scheme doesn't support it.
-        // We should try to switch the scheme to one that supports the device if it exists
-        if (!triggeredActionOutput.IsSuccessful && triggeredActionOutput.StatusCode.SpecificityCode is OutputSpecificityCode.DataNotFound)
-        {
-
-        }
-
         if (triggeredActionOutput.IsSuccessful && triggeredActionOutput.Value is not null)
         {
             LogInputActionTriggeredDebug(_logger, inputTracker.UserId, deviceInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, 
@@ -166,7 +167,7 @@ internal partial class InputProcessor: IInputProcessor
             case InputUserActiveDefinitionChangeNotification definitionChangeNotification:
                 if (_userInputTrackerLookup.TryGetValue(definitionChangeNotification.User.Id, out var tracker))
                 {
-                    CreateOrUpdateTracker(definitionChangeNotification.User, _configurationProvider.Configuration, tracker.ActiveScheme.DeviceFamilies);
+                    CreateOrUpdateTracker(_configurationProvider.Configuration, definitionChangeNotification.User, tracker.ActiveScheme.DeviceFamilies);
                 }
                 LogDefinitionChangeDebug(_logger, definitionChangeNotification.User.Id, definitionChangeNotification.ActiveDefinitionName);
                 break;
@@ -272,7 +273,7 @@ internal partial class InputProcessor: IInputProcessor
     {
         if (_registeredUserDevices.TryGetValue(deviceIdentifier, out var userId))
         {
-            return CreateOrUpdateTracker(_userManager.GetUser(userId)!, _configurationProvider.Configuration, [deviceIdentifier.DeviceFamily]);
+            return CreateOrUpdateTracker(_configurationProvider.Configuration, _userManager.GetUser(userId)!, [deviceIdentifier.DeviceFamily]);
         }
 
         var deviceUser = _userManager.GetInputUserForDevice(deviceIdentifier.DeviceId) ?? TryDevicePairing(_configurationProvider.Configuration, deviceIdentifier);
@@ -290,10 +291,10 @@ internal partial class InputProcessor: IInputProcessor
         }
 
         LogNewInputTrackerForUnregisteredUserDebug(_logger, deviceUser.Id, deviceIdentifier);
-        return CreateOrUpdateTracker(deviceUser, _configurationProvider.Configuration, [deviceIdentifier.DeviceFamily]);
+        return CreateOrUpdateTracker(_configurationProvider.Configuration, deviceUser, [deviceIdentifier.DeviceFamily]);
     }
 
-    private IInputUserTracker? CreateOrUpdateTracker(IInputUser user, InputSystemConfiguration configuration, InputDeviceFamily[] deviceFamilies)
+    private IInputUserTracker? CreateOrUpdateTracker(InputSystemConfiguration configuration, IInputUser user, InputDeviceFamily[] deviceFamilies)
     {
         if (_userInputTrackerLookup.TryGetValue(user.Id, out var inputTracker)
              && user.ActiveInputDefinitionName.Equals(inputTracker.ActiveScheme.DefinitionName, StringComparison.OrdinalIgnoreCase)
@@ -314,7 +315,8 @@ internal partial class InputProcessor: IInputProcessor
             throw new InvalidOperationException($"Scheme action map for user input tracker was null, but this should not have been possible; definition: {activeScheme.Value.DefinitionName}, scheme: {activeScheme.Value.SchemeName}.");
         }
 
-        _userInputTrackerLookup[user.Id] = _newInputTrackerFactory(user.Id, schemeActionMap, configuration.ProcessorConfiguration);
+        LogNewActiveSchemeInformation(_logger, user.Id, string.Join(", ", deviceFamilies.Select(family => family.Name)), schemeActionMap.DefinitionName, schemeActionMap.SchemeName);
+        _userInputTrackerLookup[user.Id] = _newInputTrackerFactory(user.Id, schemeActionMap, configuration);
         return _userInputTrackerLookup[user.Id];
     }
 

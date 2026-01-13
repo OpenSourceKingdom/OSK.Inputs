@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using OSK.Inputs.Abstractions.Devices;
+﻿using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.Inputs;
 

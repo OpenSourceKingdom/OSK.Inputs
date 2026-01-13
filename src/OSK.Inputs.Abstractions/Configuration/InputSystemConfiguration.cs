@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
-using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 

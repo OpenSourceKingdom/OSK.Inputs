@@ -1,5 +1,4 @@
-﻿using OSK.Inputs.Abstractions;
-using OSK.Inputs.Abstractions.Runtime;
+﻿using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal.Models;
 using OSK.Inputs.UnitTests._Helpers;
 using Xunit;

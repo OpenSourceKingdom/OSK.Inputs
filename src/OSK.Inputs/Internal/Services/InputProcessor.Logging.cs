@@ -51,7 +51,10 @@ internal partial class InputProcessor
     private static partial void LogInputActionTriggeredDebug(ILogger logger, int userId, RuntimeDeviceIdentifier deviceIdentifier, ActiveInputScheme activeScheme, string actionName);
 
     [LoggerMessage(eventId: 16, LogLevel.Warning, "An attempt was made to pair device {deviceIdentifier} to user {userId} but it failed.")]
-    public static partial void LogDevicePairingFailedWarning(ILogger logger, int userId, RuntimeDeviceIdentifier deviceIdentifier);
+    private static partial void LogDevicePairingFailedWarning(ILogger logger, int userId, RuntimeDeviceIdentifier deviceIdentifier);
+
+    [LoggerMessage(eventId: 17, LogLevel.Information, "Input received from a device for user {userId} has changed the active scheme to {activeSchemeName} for input definition {definitionName} and supports '{deviceNames}'.")]
+    private static partial void LogNewActiveSchemeInformation(ILogger logger, int userId, string deviceNames, string definitionName, string activeSchemeName);
 
     #endregion
 }

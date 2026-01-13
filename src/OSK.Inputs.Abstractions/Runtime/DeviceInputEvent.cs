@@ -7,16 +7,11 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// determined by the software; this input is a physical entity on a device that is intereacted with by the user.
 /// </summary>
 /// <param name="deviceIdentifier">The device that the input belongs to</param>
-/// <param name="input">The input that triggered this event</param>
+/// <param name="inputId">The input id that triggered this event</param>
 /// <param name="phase">The specific phase for the input</param>
-public abstract class DeviceInputEvent(RuntimeDeviceIdentifier deviceIdentifier, IDeviceInput input, InputPhase phase)
-    : InputEvent(input, phase)
+public abstract class DeviceInputEvent(RuntimeDeviceIdentifier deviceIdentifier, int inputId, InputPhase phase)
+    : InputEvent(inputId, phase)
 {
-    /// <summary>
-    /// The raw physical input that was used to trigger this event
-    /// </summary>
-    public new IDeviceInput Input => input;
-
     /// <summary>
     /// The specific device that initiated the input
     /// </summary>

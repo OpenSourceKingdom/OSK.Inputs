@@ -187,7 +187,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Asseert
         Assert.False(output.IsSuccessful);
@@ -212,7 +212,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -238,7 +238,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -273,7 +273,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -310,7 +310,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -361,7 +361,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -412,7 +412,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -471,7 +471,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(2, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -530,7 +530,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(3, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -591,7 +591,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity2),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -658,7 +658,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity3),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -702,7 +702,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -744,7 +744,7 @@ public class InputProcessorTests
 
         // Act
         var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -761,7 +761,7 @@ public class InputProcessorTests
     {
         // Arrange/Act/Assert
         Assert.NotNull(_processor._userInputTrackerFactory.Invoke(_mockServiceProvider.Object,
-            [1, new InputSchemeActionMap("Abc", "Abc", []), new InputProcessorConfiguration()]));
+            [1, new InputSchemeActionMap("Abc", "Abc", []), new InputSystemConfiguration([], [], new(), new())]));
     }
 
     #endregion

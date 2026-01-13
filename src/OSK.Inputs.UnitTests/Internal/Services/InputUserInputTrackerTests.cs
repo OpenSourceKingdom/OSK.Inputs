@@ -35,7 +35,7 @@ public class InputUserInputTrackerTests
                         LinkedInputIds = []
                     }
                  ])
-            ]), new InputProcessorConfiguration(), Mock.Of<ILogger<InputUserInputTracker>>(), outputFactory,
+            ]), new InputSystemConfiguration([new TestDeviceSpecification(TestIdentity.Identity1, new TestPhysicalInput(1))], [], new(), new()), Mock.Of<ILogger<InputUserInputTracker>>(), outputFactory,
                 Mock.Of<IServiceProvider>());
     }
 
@@ -58,7 +58,7 @@ public class InputUserInputTrackerTests
     {
         // Arrange/Act
         var output = _tracker.Track(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity2),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -69,7 +69,7 @@ public class InputUserInputTrackerTests
     {
         // Arrange/Act
         var output = _tracker.Track(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(10), InputPhase.Start, []));
+            2, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -92,7 +92,7 @@ public class InputUserInputTrackerTests
     {
         // Arrange/Act
         var output = _tracker.Track(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
