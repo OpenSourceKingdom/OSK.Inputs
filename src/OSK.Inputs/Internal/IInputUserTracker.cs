@@ -12,7 +12,7 @@ internal interface IInputUserTracker
 
     int UserId { get; }
 
-    IEnumerable<TriggeredActionEvent> Update(TimeSpan deltaTime);
+    IEnumerable<ProcessedInputEvent> Update(TimeSpan deltaTime);
 
-    IOutput<TriggeredActionEvent?> Track(InputEvent inputActivation);
+    IOutput<ProcessedInputEvent> Track(TimeSpan deltaTime, InputEvent inputActivation);
 }

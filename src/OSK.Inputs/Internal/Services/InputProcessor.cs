@@ -96,7 +96,7 @@ internal partial class InputProcessor: IInputProcessor
         }
     }
 
-    public IOutput ProcessEvent(InputEvent inputEvent)
+    public IOutput ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent)
     {
         if (inputEvent is null)
         {
@@ -118,15 +118,15 @@ internal partial class InputProcessor: IInputProcessor
             return _outputFactory.Fail($"Unrecognized error, unable to get an input tracker for the device or user.");
         }
 
-        var triggeredActionOutput = inputTracker.Track(inputEvent);
-        if (triggeredActionOutput.IsSuccessful && triggeredActionOutput.Value is not null)
+        var processedInputEvent = inputTracker.Track(deltaTime, inputEvent);
+        if (processedInputEvent.IsSuccessful && processedInputEvent.Value.Triggered)
         {
             LogInputActionTriggeredDebug(_logger, inputTracker.UserId, deviceInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, 
-                triggeredActionOutput.Value.Value.ActionMap.Action.Name);
-            triggeredActionOutput.Value.Value.Execute();
+                processedInputEvent.Value.ActionMap.Action.Name);
+            processedInputEvent.Value.Execute();
         }
 
-        return triggeredActionOutput;
+        return processedInputEvent;
     }
 
     public void ToggleInputProcessing(bool pause)

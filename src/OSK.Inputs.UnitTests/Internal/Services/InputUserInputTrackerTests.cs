@@ -47,7 +47,7 @@ public class InputUserInputTrackerTests
     public void Track_NonPhysicalEvent_ReturnsFailureToProcess()
     {
         // Arrange/Act
-        var output = _tracker.Track(new VirtualInputEvent(new TestVirtualInput(new TestPhysicalInput(1)), InputPhase.Start));
+        var output = _tracker.Track(TimeSpan.Zero, new VirtualInputEvent(new TestVirtualInput(new TestPhysicalInput(1)), InputPhase.Start));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -57,7 +57,7 @@ public class InputUserInputTrackerTests
     public void Track_DeviceNotSetForTracking_ReturnsFailureToProcess()
     {
         // Arrange/Act
-        var output = _tracker.Track(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity2),
+        var output = _tracker.Track(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity2),
             1, InputPhase.Start, []));
 
         // Assert
@@ -68,7 +68,7 @@ public class InputUserInputTrackerTests
     public void Track_InputReceivedNotPartOfMap_ReturnsFailureToProcess()
     {
         // Arrange/Act
-        var output = _tracker.Track(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+        var output = _tracker.Track(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
             2, InputPhase.Start, []));
 
         // Assert
@@ -79,7 +79,7 @@ public class InputUserInputTrackerTests
     public void Track_InputReceivedPartOfMap_InputEventUnrecognizedPhysicalInputEvent_ReturnsFailureToProcess()
     {
         // Arrange/Act
-        var output = _tracker.Track(new SpecialInputEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+        var output = _tracker.Track(TimeSpan.Zero, new SpecialInputEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
             new TestPhysicalInput(1), InputPhase.Start));
 
         // Assert
@@ -91,7 +91,7 @@ public class InputUserInputTrackerTests
     public void Track_InputReceivedPartOfMap_ReturnsSuccessfulProcess()
     {
         // Arrange/Act
-        var output = _tracker.Track(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+        var output = _tracker.Track(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
             1, InputPhase.Start, []));
 
         // Assert
