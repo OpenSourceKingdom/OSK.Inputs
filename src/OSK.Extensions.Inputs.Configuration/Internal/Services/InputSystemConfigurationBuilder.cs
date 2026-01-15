@@ -44,7 +44,7 @@ internal class InputSystemConfigurationBuilder : IInputSystemConfigurationBuilde
             definitionKvp.Value(definitionBuilder);
 
             return definitionBuilder.Build();
-        });
+        }).ToList();
 
         return new InputSystemConfiguration(_deviceSpecifications.Values, definitions,
             new InputProcessorConfiguration()

@@ -63,7 +63,7 @@ public interface IInputSystem
     Task<IOutput> DeleteCustomSchemeAsync(string definitionName, string schemeName, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Attempts to save the custom scheme to the inpt system
+    /// Attempts to save the custom scheme to the input system
     /// </summary>
     /// <param name="scheme">The custom scheme to save</param>
     /// <param name="saveFlags">The various flag options that will impact the save operation</param>
