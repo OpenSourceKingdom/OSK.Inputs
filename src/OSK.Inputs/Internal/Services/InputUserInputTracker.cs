@@ -307,7 +307,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             return PointerDetails.Empty;
         }
 
-        var pointerData = _deviceInputTrackerLookup.Values.Select(deviceState
+        var pointerData = _deviceInputTrackerLookup.Values.SelectMany(deviceState
             => deviceState.PointerStates.Select(pointerState 
                 =>
             {
@@ -321,7 +321,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                     pointerPositionMotionData.Value.Item1, pointerPositionMotionData.Value.Item2);
             }))
             .Where(pointerData => pointerData is not null)
-            .Cast<PointerData>()
+            .Select(p => p!.Value)
             .ToArray();
 
         return new PointerDetails(pointerData);
