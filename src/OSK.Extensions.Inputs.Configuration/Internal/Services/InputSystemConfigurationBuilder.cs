@@ -31,11 +31,7 @@ internal class InputSystemConfigurationBuilder : IInputSystemConfigurationBuilde
         };
         _policyConfigurator?.Invoke(policy);
 
-        var processorOptions = new InputProcessingOptions()
-        {
-            TapReactivationTime = TimeSpan.FromSeconds(1),
-            ActiveTimeThreshold = TimeSpan.FromSeconds(1)
-        };
+        var processorOptions = new InputProcessingOptions();
         _processorConfigurator?.Invoke(processorOptions);
 
         var definitions = _definitionBuilderConfigurators.Select(definitionKvp =>

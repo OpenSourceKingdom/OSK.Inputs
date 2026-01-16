@@ -19,7 +19,7 @@ internal readonly struct ProcessedInputEvent(InputActionMap? actionMap, InputEve
     {
         if (Triggered)
         {
-            ActionMap?.Action.ActionExecutor(ActivationContext);
+            ActionMap?.Action?.ActionExecutor(ActivationContext);
         }
     }
 }

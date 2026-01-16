@@ -122,7 +122,7 @@ internal partial class InputProcessor: IInputProcessor
         if (processedInputEvent.IsSuccessful && processedInputEvent.Value.Triggered)
         {
             LogInputActionTriggeredDebug(_logger, inputTracker.UserId, deviceInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, 
-                processedInputEvent.Value.ActionMap.Action.Name);
+                processedInputEvent.Value.ActionMap.Action?.Name ?? "{Passive Action}");
             processedInputEvent.Value.Execute();
         }
 

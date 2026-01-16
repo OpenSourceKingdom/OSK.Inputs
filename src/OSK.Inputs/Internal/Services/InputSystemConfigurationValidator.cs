@@ -348,7 +348,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
                 $"There are {duplicateInputIds.Count()} input ids for the device map {deviceMap.DeviceFamily} with scheme {scheme.Name} on input definition {definition.Name}, the duplicate ids are: {string.Join(", ", duplicateInputIds)}.");
         }
 
-        var inputsMissingActionNames = deviceMap.InputMaps.Where(map => string.IsNullOrWhiteSpace(map.ActionName))
+        var inputsMissingActionNames = deviceMap.InputMaps.Where(map => !map.IsPassive && string.IsNullOrWhiteSpace(map.ActionName))
             .Select(map => map.InputId);
         if (inputsMissingActionNames.Any()) 
         {
@@ -356,7 +356,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
                 $"There are {inputsMissingActionNames.Count()} input maps missing action names for device map {deviceMap.DeviceFamily} with scheme {scheme.Name} on input definition {definition.Name}, the input map ids are: {string.Join(", ", inputsMissingActionNames)}.");
         }
 
-        var invalidActionNames = deviceMap.InputMaps.Where(map => definition.GetAction(map.ActionName) is null);
+        var invalidActionNames = deviceMap.InputMaps.Where(map => !map.IsPassive && definition.GetAction(map.ActionName) is null);
         if (invalidActionNames.Any()) 
         {
             return InputConfigurationValidationResult.ForDeviceMap(map => map.InputMaps, InputConfigurationValidation.InvalidData,

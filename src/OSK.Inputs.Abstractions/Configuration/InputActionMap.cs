@@ -22,7 +22,7 @@ public class InputActionMap
     /// <summary>
     /// The specific action this map references
     /// </summary>
-    public required InputAction Action { get; init; }
+    public required InputAction? Action { get; init; }
 
     /// <summary>
     /// The collection of inputs this input is associated with.

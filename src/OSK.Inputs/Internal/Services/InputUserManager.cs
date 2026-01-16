@@ -263,14 +263,17 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             LogLoadActiveInputFailedWarning(logger, getUserPreferredSchemes.GetErrorString());
         }
 
-        var getCustomSchemesOutput = await schemeRepository.GetCustomSchemesAsync(cancellationToken);
-        if (getCustomSchemesOutput.IsSuccessful)
+        if (schemeRepository.AllowCustomSchemes)
         {
-            configurationProvider.Configuration.ApplyCustomInputSchemes(getCustomSchemesOutput.Value);
-        }
-        else
-        {
-            LogLoadCustomSchemesFailedWarning(logger, getCustomSchemesOutput.GetErrorString());
+            var getCustomSchemesOutput = await schemeRepository.GetCustomSchemesAsync(cancellationToken);
+            if (getCustomSchemesOutput.IsSuccessful)
+            {
+                configurationProvider.Configuration.ApplyCustomInputSchemes(getCustomSchemesOutput.Value);
+            }
+            else
+            {
+                LogLoadCustomSchemesFailedWarning(logger, getCustomSchemesOutput.GetErrorString());
+            }
         }
 
         return outputFactory.Succeed();

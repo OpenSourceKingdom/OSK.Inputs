@@ -72,7 +72,6 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
                 inputState.Duration += deltaTime;
 
-                ProcessedInputEvent? triggeredAction;
                 var reprocess = false;
                 switch (inputState.Phase)
                 {
@@ -87,16 +86,27 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                         break;
                 }
 
+                ProcessedInputEvent? processedInputEvent = null;
                 var inputEvent = GetEventForState(inputState);
-                triggeredAction = inputEvent is not null && inputState.MappedAction is not null
-                    ? reprocess 
-                        ? Track(deltaTime, inputEvent).Value 
-                        : GetTriggeredProcessedEvent(deltaTime, inputState, inputEvent, inputState.MappedAction)
-                    : null;
 
-                if (triggeredAction is not null)
+                if (inputEvent is not null)
                 {
-                    triggeredActions.Add(triggeredAction.Value);
+                    if (reprocess)
+                    {
+                        var reprocessedOutput = Track(deltaTime, inputEvent);
+                        processedInputEvent = reprocessedOutput.IsSuccessful
+                            ? reprocessedOutput.Value
+                            : null;
+                    }
+                    else if (inputState.MappedAction is not null)
+                    {
+                        processedInputEvent = GetTriggeredProcessedEvent(deltaTime, inputState, inputEvent, inputState.MappedAction);
+                    }
+                }
+
+                if (processedInputEvent is not null)
+                {
+                    triggeredActions.Add(processedInputEvent.Value);
                 }
             }
 
@@ -135,6 +145,12 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
         var virtualActionMaps = actionMaps.Where(map => map.Input is VirtualInput);
         var inputActionMap = actionMaps.FirstOrDefault(map => map.Input is IDeviceInput);
 
+        // Null action maps refer to passive inputs (i.e. pointers) that are merely meant to provide passive data collection rather than
+        // active input execution
+        if (inputActionMap.Action is null)
+        {
+            return outputFactory.Succeed(ProcessedInputEvent.NotTriggered);
+        }
 
         var virtualInputActivationContext = ProcessVirtualInputEvent(deltaTime, deviceTracker, inputState, virtualActionMaps);
         var processInputEvent = virtualInputActivationContext is null && inputActionMap is not null 
@@ -163,7 +179,6 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
         {
             return null;
         }
-
 
         DeviceInputState inputState;
         switch (inputEvent)
@@ -287,7 +302,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
     private PointerDetails GetPointerInformation(InputActionMap actionMap)
     {
-        if (!actionMap.Action.IncludePointerDetails)
+        if (actionMap.Action is null || !actionMap.Action.IncludePointerDetails)
         {
             return PointerDetails.Empty;
         }

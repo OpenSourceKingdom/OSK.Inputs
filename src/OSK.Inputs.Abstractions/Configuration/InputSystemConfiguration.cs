@@ -95,19 +95,19 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
                     var actionMaps = _deviceSpecificationLookup[deviceMap.DeviceFamily].GetInputs().Select(input =>
                     {
                         var inputMap = deviceMap.GetInputMap(input.Id);
-                        var action = inputMap is null
+                        var action = inputMap is null || inputMap.Value.IsPassive
                             ? null
                             : definition.GetAction(inputMap.Value.ActionName);
 
-                    return inputMap is null || action is null
+                    return inputMap is null || (action is null && !inputMap.Value.IsPassive)
                             ? null
-                            : GetActionMap(input, inputMap.Value, action);
+                            : GetActionMap(input, action);
                     }).Where(inputMap => inputMap is not null).Cast<InputActionMap>() ?? [];
 
                     return new DeviceSchemeActionMap(deviceMap.DeviceFamily, actionMaps);
                 });
 
-        return new InputSchemeActionMap(definitionName, schemeName, deviceMaps);
+        return new  (definitionName, schemeName, deviceMaps);
     }
 
     /// <summary>
@@ -149,7 +149,7 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
 
     #region Helpers
 
-    private InputActionMap GetActionMap(IInput input, InputMap map, InputAction action)
+    private InputActionMap GetActionMap(IInput input, InputAction? action)
     {
         return new InputActionMap()
         {

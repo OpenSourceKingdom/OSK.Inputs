@@ -12,8 +12,7 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
     #region Variables
 
     private readonly HashSet<int> _validInputIds = [.. deviceSpecification.GetInputs().Select(input => input.Id)];
-
-    private readonly Dictionary<int, string> _inputMaps = [];
+    private readonly Dictionary<int, string?> _inputMaps = [];
 
     #endregion
 
@@ -25,8 +24,24 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
         {
             throw new InvalidOperationException($"Unable to assign input {inputId} to a device map with {deviceSpecification.DeviceFamily} because it is not valid for the device.");
         }
+        if (string.IsNullOrWhiteSpace(actionName))
+        {
+            throw new InvalidOperationException($"Unable to assign input {inputId} to a device map with {deviceSpecification.DeviceFamily} because it was not specified as passive.");
+        }
 
         _inputMaps[inputId] = actionName;
+        return this;
+    }
+
+    public IInputDeviceMapBuilder WithPassiveInput(int inputId)
+    {
+        if (!_validInputIds.Contains(inputId))
+        {
+            throw new InvalidOperationException($"Unable to assign input {inputId} to a device map with {deviceSpecification.DeviceFamily} because it is not valid for the device.");
+        }
+
+        _inputMaps[inputId] = null;
+
         return this;
     }
 

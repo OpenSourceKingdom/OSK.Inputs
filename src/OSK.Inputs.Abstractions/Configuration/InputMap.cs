@@ -1,4 +1,5 @@
-﻿using OSK.Inputs.Abstractions.Inputs;
+﻿using System.Diagnostics.CodeAnalysis;
+using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
@@ -9,6 +10,13 @@ public readonly struct InputMap
 {
     #region Variables
 
+    private readonly bool _isPassive;
+    private readonly string? _actionName;
+
+    #endregion
+
+    #region Api
+
     /// <summary>
     /// The unique id for the input on the device
     /// </summary>
@@ -17,7 +25,21 @@ public readonly struct InputMap
     /// <summary>
     /// The definition's action name the input maps to
     /// </summary>
-    public required string ActionName { get; init; }
+    public string? ActionName
+    {
+        get => _actionName;
+        init
+        {
+            _actionName = value;
+            _isPassive = string.IsNullOrWhiteSpace(value);
+        }
+    }
+
+    /// <summary>
+    /// Indicates if the given input triggers an action in the system or if it provides data passively
+    /// </summary>
+    [MemberNotNullWhen(false, nameof(ActionName))]
+    public bool IsPassive => _isPassive;
 
     #endregion
 }
