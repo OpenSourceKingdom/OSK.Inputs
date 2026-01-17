@@ -2,7 +2,7 @@
 
 namespace OSK.Inputs.Internal.Models;
 
-internal abstract class DeviceInputState(IDeviceInput input): InputState<IDeviceInput>(input)
+internal abstract class DeviceInputState(DeviceInput input): InputState<DeviceInput>(input)
 {
 
 }

@@ -92,22 +92,53 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
         var deviceMaps = scheme.DeviceMaps.Where(deviceMap => _deviceSpecificationLookup.TryGetValue(deviceMap.DeviceFamily, out _))
                 .Select(deviceMap =>
                 {
-                    var actionMaps = _deviceSpecificationLookup[deviceMap.DeviceFamily].GetInputs().Select(input =>
+                    var virtualInputMaps = deviceMap.VirtualMaps.Select(virtualMap =>
+                    {
+                        if (virtualMap.Input.GetLinkedInputs().OfType<DeviceInput>().Any(input => deviceMap.GetInputMap(input.Id) is null))
+                        {
+                            return null;
+                        }
+
+                        var action = definition.GetAction(virtualMap.ActionName);
+
+                        return action is null
+                            ? null
+                            : new InputActionMap()
+                            {
+                                Action = action,
+                                Input = virtualMap.Input
+                            };
+                    }).Where(inputMap => inputMap is not null).Cast<InputActionMap>();
+
+                    var activeDeviceInputMaps = _deviceSpecificationLookup[deviceMap.DeviceFamily].GetInputs().Select(input =>
                     {
                         var inputMap = deviceMap.GetInputMap(input.Id);
                         var action = inputMap is null || inputMap.Value.IsPassive
                             ? null
                             : definition.GetAction(inputMap.Value.ActionName);
-
-                    return inputMap is null || (action is null && !inputMap.Value.IsPassive)
+                        return inputMap is null || (action is null && !inputMap.Value.IsPassive)
                             ? null
-                            : GetActionMap(input, action);
-                    }).Where(inputMap => inputMap is not null).Cast<InputActionMap>() ?? [];
+                            : new InputActionMap()
+                            {
+                                Input = input,
+                                Action = action
+                            };
+                    }).Where(inputMap => inputMap is not null).Cast<InputActionMap>();
 
-                    return new DeviceSchemeActionMap(deviceMap.DeviceFamily, actionMaps);
+                    // Make passive inputs of any device input that a virtual map needs that isn't already used for an active input map
+                    // This is so we can track the data for it even if it doesn't directly trigger an action - the virtual map does
+                    var passiveDeviceInputs = virtualInputMaps.SelectMany(virtualMap =>
+                    {
+                        var deviceInputs = ((VirtualInput)virtualMap.Input).GetLinkedInputs().OfType<DeviceInput>();
+
+                        return deviceInputs.Where(input => !activeDeviceInputMaps.Any(map => ((DeviceInput)map.Input).Id == input.Id))
+                            .Select(missingInput => new InputActionMap() { Action = null, Input = missingInput });
+                    });
+
+                    return new DeviceSchemeActionMap(deviceMap.DeviceFamily, activeDeviceInputMaps.Concat(passiveDeviceInputs).Concat(virtualInputMaps));
                 });
 
-        return new  (definitionName, schemeName, deviceMaps);
+        return new(definitionName, schemeName, deviceMaps);
     }
 
     /// <summary>
@@ -148,18 +179,6 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
     #endregion
 
     #region Helpers
-
-    private InputActionMap GetActionMap(IInput input, InputAction? action)
-    {
-        return new InputActionMap()
-        {
-            Input = input,
-            Action = action,
-            LinkedInputIds = input is DeviceCombinationInput combinationInput
-                ? [.. combinationInput.DeviceInputs.Select(i => i.Id)]
-                : []
-        };
-    }
 
     /// <summary>
     /// Determines the list of device combinations the configuration supports, based on the input schemes provided

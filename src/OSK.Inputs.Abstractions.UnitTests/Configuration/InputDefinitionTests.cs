@@ -106,7 +106,8 @@ public class InputDefinitionTests
         var map = new DeviceInputMap()
         {
             DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad),
-            InputMaps = []
+            InputMaps = [],
+            VirtualMaps = []
         };
         var definition = new InputDefinition("Hello", [], [new InputScheme("Hello", [map], false, false)], false);
 
@@ -148,7 +149,7 @@ public class InputDefinitionTests
         {
             DefinitionName = definitionName!,
             Name = "Hello",
-            DeviceMaps = [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [] }]
+            DeviceMaps = [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] }]
         });
 
         var scheme = definition.GetSchemesByDevicecCombination("Hello");
@@ -168,7 +169,7 @@ public class InputDefinitionTests
         {
             DefinitionName = "Bye",
             Name = "Hello",
-            DeviceMaps = [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [] }]
+            DeviceMaps = [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] }]
         });
 
         var scheme = definition.GetSchemesByDevicecCombination("Hello");
@@ -191,7 +192,7 @@ public class InputDefinitionTests
         {
             DefinitionName = "Hello",
             Name = schemeName!,
-            DeviceMaps = [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [] }]
+            DeviceMaps = [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] }]
         });
 
         var schemes = definition.GetSchemesByDevicecCombination(schemeName!);
@@ -207,7 +208,8 @@ public class InputDefinitionTests
         var map = new DeviceInputMap()
         {
             DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad),
-            InputMaps = []
+            InputMaps = [],
+            VirtualMaps = []
         };
         var builtInScheme = new InputScheme("Hello", [map], false, false);
         var definition = new InputDefinition("Hello", [], [builtInScheme], false);
@@ -233,7 +235,7 @@ public class InputDefinitionTests
     public void ApplyCustomScheme_Valid_AddsToDefinition_ReturnsSuccessfully()
     {
         // Arrange
-        var map = new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [] };
+        var map = new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] };
         var definition = new InputDefinition("Hello", [], [new InputScheme("Abc", [map], false, false)], false);
 
         var newScheme = new CustomInputScheme()
@@ -261,7 +263,8 @@ public class InputDefinitionTests
         var map = new DeviceInputMap()
         {
             DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad),
-            InputMaps = []
+            InputMaps = [],
+            VirtualMaps = []
         };
         var originalCustomScheme = new InputScheme("Hello", [map], false, true);
         var definition = new InputDefinition("Hello", [], [originalCustomScheme], false);
@@ -304,7 +307,7 @@ public class InputDefinitionTests
     public void ResetDefinition_BuiltInScheme_DoesNotRemove_ReturnsSuccessfully()
     {
         // Arrange
-        var expectedScheme = new InputScheme("Hello", [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [] }], 
+        var expectedScheme = new InputScheme("Hello", [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] }], 
                                              false, false);
         var definition = new InputDefinition("Hello", [], [expectedScheme], false);
 
@@ -325,7 +328,8 @@ public class InputDefinitionTests
         var map = new DeviceInputMap()
         {
             DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad),
-            InputMaps = []
+            InputMaps = [],
+            VirtualMaps = []
         };
         var expectedScheme = new InputScheme("Hello", [map],
                                               false, false);

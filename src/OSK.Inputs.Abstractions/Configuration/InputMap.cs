@@ -31,7 +31,7 @@ public readonly struct InputMap
         init
         {
             _actionName = value;
-            _isPassive = string.IsNullOrWhiteSpace(value);
+            _isPassive = _actionName is null;
         }
     }
 

@@ -271,7 +271,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc", 
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -301,7 +301,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -331,7 +331,7 @@ public class InputSystemConfigurationValidatorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1} ], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -362,7 +362,7 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, 
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 2 }, new InputMap() { ActionName = "Def", InputId = 2 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 2 }, new InputMap() { ActionName = "Def", InputId = 2 }], VirtualMaps = [] },
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -379,7 +379,6 @@ public class InputSystemConfigurationValidatorTests
     }
 
     [Theory]
-    [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
     public void Validate_DeviceMapInputMapsWithInvalidActionNames_ReturnsMissingData(string? actionName)
@@ -396,7 +395,7 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = actionName!, InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = actionName!, InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -427,7 +426,7 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -462,7 +461,7 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }, new InputMap() { ActionName = "Abc", InputId = 2 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }, new InputMap() { ActionName = "Abc", InputId = 2 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -499,9 +498,9 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] },
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new(), new());
@@ -539,9 +538,9 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] },
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
-                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], null!, new());
@@ -578,9 +577,9 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] },
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
-                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new() { TapReactivationTime = TimeSpan.FromSeconds(-1) }, new());
@@ -617,9 +616,9 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] },
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
-                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(-1) }, new());
@@ -656,9 +655,9 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] },
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
-                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(1), DeadzoneTolerance = -1 }, new());
@@ -695,9 +694,9 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] },
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
-                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(1), DeadzoneTolerance = 0, PointerMovementThreshold = -1 }, new());
@@ -734,9 +733,9 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] },
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
-                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(1) }, null!);
@@ -775,9 +774,9 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] },
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
-                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new() { TapReactivationTime = TimeSpan.FromSeconds(1), ActiveTimeThreshold = TimeSpan.FromSeconds(1) }, 
@@ -815,9 +814,9 @@ public class InputSystemConfigurationValidatorTests
                         new InputScheme("Abc",
                             [
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1,
-                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }] },
+                                    InputMaps = [ new InputMap() { ActionName = "Abc", InputId = 1 }], VirtualMaps = [] },
                                 new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2,
-                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }] }
+                                    InputMaps = [ new InputMap() { ActionName = "Def", InputId = 1 }], VirtualMaps = [] }
                             ], false, false)
                     ], false)
             ], new(), new() { MaxUsers = 1 });
@@ -951,7 +950,7 @@ public class InputSystemConfigurationValidatorTests
         // Arrange
         var validator = new InputSystemConfigurationValidator();
 
-        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [] };
+        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [], VirtualMaps = [] };
 
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([], 
@@ -977,7 +976,7 @@ public class InputSystemConfigurationValidatorTests
         // Arrange
         var validator = new InputSystemConfigurationValidator();
 
-        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [] };
+        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [], VirtualMaps = [] };
 
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],
@@ -1002,7 +1001,7 @@ public class InputSystemConfigurationValidatorTests
     {
         // Arrange
         var validator = new InputSystemConfigurationValidator();
-        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [] };
+        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [], VirtualMaps = [] };
 
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],

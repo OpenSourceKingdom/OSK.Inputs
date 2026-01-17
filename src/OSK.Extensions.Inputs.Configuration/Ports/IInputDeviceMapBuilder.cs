@@ -1,4 +1,6 @@
-﻿namespace OSK.Extensions.Inputs.Configuration.Ports;
+﻿using OSK.Inputs.Abstractions.Inputs;
+
+namespace OSK.Extensions.Inputs.Configuration.Ports;
 
 /// <summary>
 /// A builder that helps to more fluently create configuration for device maps
@@ -19,4 +21,12 @@ public interface IInputDeviceMapBuilder
     /// <param name="actionName">The action the input maps to</param>
     /// <returns>The builder for chaining</returns>
     IInputDeviceMapBuilder WithInputMap(int inputId, string actionName);
+
+    /// <summary>
+    /// Create a map using a virtual input consisting of inputs on the device
+    /// </summary>
+    /// <param name="virtualInput">The virtual input</param>
+    /// <param name="actionName">The action the input maps to</param>
+    /// <returns>The builder for chaining</returns>
+    IInputDeviceMapBuilder WithVirtualInput(VirtualInput virtualInput, string actionName);
 }

@@ -11,7 +11,7 @@ public abstract class InputDeviceSpecification
 {
     #region Variables
 
-    private Dictionary<int, IInput>? _inputLookup;
+    private Dictionary<int, DeviceInput>? _inputLookup;
 
     #endregion
 
@@ -26,7 +26,7 @@ public abstract class InputDeviceSpecification
     /// Gets the collection of inputs for the device
     /// </summary>
     /// <returns>The collection of inputs</returns>
-    public abstract IReadOnlyCollection<IInput> GetInputs();
+    public abstract IReadOnlyCollection<DeviceInput> GetInputs();
 
     /// <summary>
     /// Tries to get the input with the given id
@@ -34,7 +34,7 @@ public abstract class InputDeviceSpecification
     /// <param name="inputId">The id to get</param>
     /// <param name="input">The input the id references, if it is a valid id</param>
     /// <returns>The input if the id is valid</returns>
-    public bool TryGetInput(int inputId, out IInput input)
+    public bool TryGetInput(int inputId, out DeviceInput input)
     {
         if (_inputLookup is null)
         {

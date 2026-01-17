@@ -4,7 +4,7 @@ namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
 public static class GamePadInputExtensions
 {
-    internal static IInput ToInput(this GamePadInput gamePadInput)
+    internal static DeviceInput ToInput(this GamePadInput gamePadInput)
         => gamePadInput switch
         {
             GamePadInput.LeftTrigger or GamePadInput.RightTrigger

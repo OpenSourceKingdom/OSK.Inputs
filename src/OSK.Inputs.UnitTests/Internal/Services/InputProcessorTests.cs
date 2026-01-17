@@ -255,7 +255,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc", 
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ], 
                             false, false)
                     ], false)
@@ -290,7 +290,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -328,7 +328,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -379,7 +379,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -430,7 +430,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -489,7 +489,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -548,8 +548,8 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] },
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps =[]},
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -609,14 +609,14 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] },
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps =[]},
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false),
 
                         new InputScheme("Def",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity3, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity3, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -676,7 +676,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = []}
                             ],
                             false, false)
                     ], false)
@@ -720,7 +720,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)

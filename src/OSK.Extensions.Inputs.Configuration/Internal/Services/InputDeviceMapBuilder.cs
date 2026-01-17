@@ -4,6 +4,7 @@ using System.Linq;
 using OSK.Extensions.Inputs.Configuration.Ports;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Devices;
+using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration.Internal.Services;
 
@@ -13,6 +14,7 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
 
     private readonly HashSet<int> _validInputIds = [.. deviceSpecification.GetInputs().Select(input => input.Id)];
     private readonly Dictionary<int, string?> _inputMaps = [];
+    private readonly Dictionary<string, VirtualInput> _customVirtualInputs = [];
 
     #endregion
 
@@ -26,7 +28,7 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
         }
         if (string.IsNullOrWhiteSpace(actionName))
         {
-            throw new InvalidOperationException($"Unable to assign input {inputId} to a device map with {deviceSpecification.DeviceFamily} because it was not specified as passive.");
+            throw new InvalidOperationException($"Unable to assign input {inputId} to a device map with {deviceSpecification.DeviceFamily} because the action map was null and the input wasn't passive.");
         }
 
         _inputMaps[inputId] = actionName;
@@ -45,6 +47,22 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
         return this;
     }
 
+    public IInputDeviceMapBuilder WithVirtualInput(VirtualInput virtualInput, string actionName)
+    {
+        if (virtualInput is null)
+        {
+            throw new ArgumentNullException(nameof(virtualInput));
+        }
+        if (string.IsNullOrWhiteSpace(actionName))
+        {
+            throw new InvalidOperationException($"Unable to assign virtual input to a device map with {deviceSpecification.DeviceFamily} because it was not specified as passive.");
+        }
+
+        _customVirtualInputs[actionName] = virtualInput;
+
+        return this;
+    }
+
     #endregion
 
     #region Helpers
@@ -53,7 +71,9 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
         => new()
         {
             DeviceFamily = deviceSpecification.DeviceFamily,
-            InputMaps = [.. _inputMaps.Select(kvp => new InputMap() { InputId = kvp.Key, ActionName = kvp.Value })]
+            InputMaps = [.. _inputMaps.Select(kvp => new InputMap() { InputId = kvp.Key, ActionName = kvp.Value })],
+            VirtualMaps = [.. _customVirtualInputs.Select(kvp 
+                => new VirtualInputMap() { ActionName = kvp.Key, Input = kvp.Value })]
         };
 
     #endregion

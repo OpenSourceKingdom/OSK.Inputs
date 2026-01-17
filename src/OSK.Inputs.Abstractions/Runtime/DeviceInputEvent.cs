@@ -10,8 +10,13 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// <param name="inputId">The input id that triggered this event</param>
 /// <param name="phase">The specific phase for the input</param>
 public abstract class DeviceInputEvent(RuntimeDeviceIdentifier deviceIdentifier, int inputId, InputPhase phase)
-    : InputEvent(inputId, phase)
+    : InputEvent(phase)
 {
+    /// <summary>
+    /// The input's unique device id
+    /// </summary>
+    public int InputId => inputId;
+
     /// <summary>
     /// The specific device that initiated the input
     /// </summary>

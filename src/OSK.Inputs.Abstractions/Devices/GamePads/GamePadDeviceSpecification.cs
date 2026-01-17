@@ -8,7 +8,7 @@ public abstract class GamePadDeviceSpecification : InputDeviceSpecification<Game
 {
     #region InputDeviceSpecification Overrides
 
-    public override IReadOnlyCollection<IInput> GetInputs()
+    public override IReadOnlyCollection<DeviceInput> GetInputs()
         => [.. Inputs.Select(i => i.ToInput())];
 
     #endregion

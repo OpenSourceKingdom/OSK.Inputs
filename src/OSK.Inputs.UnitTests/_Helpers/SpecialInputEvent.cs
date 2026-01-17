@@ -3,7 +3,7 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.UnitTests._Helpers;
 
-public class SpecialInputEvent(RuntimeDeviceIdentifier deviceIdentifier, IDeviceInput p, InputPhase phase)
+public class SpecialInputEvent(RuntimeDeviceIdentifier deviceIdentifier, DeviceInput p, InputPhase phase)
     : DeviceInputEvent(deviceIdentifier, p.Id, phase)
 {
 }

@@ -8,16 +8,14 @@ public abstract class KeyboardDeviceSpecification : InputDeviceSpecification<Key
 {
     #region InputDeviceSpecification Overrides
 
-    public override IReadOnlyCollection<IInput> GetInputs()
-        => [.. StandardKeys.Select(key => (Input) new KeyboardKeyInput(key)).Concat(Combinations)];
+    public override IReadOnlyCollection<DeviceInput> GetInputs()
+        => [.. StandardKeys.Select(key => (DeviceInput) new KeyboardKeyInput(key))];
 
     #endregion
 
     #region Helpers
 
     protected abstract KeyboardInput[] StandardKeys { get; }
-
-    protected abstract KeyboardCombination[] Combinations { get; }
 
     #endregion
 }

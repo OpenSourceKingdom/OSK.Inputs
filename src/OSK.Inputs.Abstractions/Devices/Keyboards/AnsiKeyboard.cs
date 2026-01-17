@@ -78,29 +78,5 @@ public class AnsiKeyboard : KeyboardDeviceSpecification
         KeyboardInput.F9
     ];
 
-    protected override KeyboardCombination[] Combinations { get; } = [
-        new(KeyboardInput.Tilde, KeyboardInput.Shift, KeyboardInput.BackTick),
-        new(KeyboardInput.ExclamationPoint, KeyboardInput.Shift, KeyboardInput.One),
-        new(KeyboardInput.At, KeyboardInput.Shift, KeyboardInput.Two),
-        new(KeyboardInput.Pound, KeyboardInput.Shift, KeyboardInput.Three),
-        new(KeyboardInput.Dollar, KeyboardInput.Shift, KeyboardInput.Four),
-        new(KeyboardInput.Percent, KeyboardInput.Shift, KeyboardInput.Five),
-        new(KeyboardInput.Caret, KeyboardInput.Shift, KeyboardInput.Six),
-        new(KeyboardInput.Ampersand, KeyboardInput.Shift, KeyboardInput.Seven),
-        new(KeyboardInput.Asterisk, KeyboardInput.Shift, KeyboardInput.Eight),
-        new(KeyboardInput.LeftParanthesis, KeyboardInput.Shift, KeyboardInput.Nine),
-        new(KeyboardInput.RightParanthesis, KeyboardInput.Shift, KeyboardInput.Zero),
-        new(KeyboardInput.Underscore, KeyboardInput.Shift, KeyboardInput.Minus),
-        new(KeyboardInput.Plus, KeyboardInput.Shift, KeyboardInput.Equal),
-        new(KeyboardInput.LeftCurlyBrace, KeyboardInput.Shift, KeyboardInput.LeftBracket),
-        new(KeyboardInput.RightCurlyBrace, KeyboardInput.Shift, KeyboardInput.RightBracket),
-        new(KeyboardInput.Colon, KeyboardInput.Shift, KeyboardInput.SemiColon),
-        new(KeyboardInput.DoubleQuote, KeyboardInput.Shift, KeyboardInput.SingleQuote),
-        new(KeyboardInput.LessThan, KeyboardInput.Shift, KeyboardInput.Comma),
-        new(KeyboardInput.GreaterThan, KeyboardInput.Shift, KeyboardInput.Period),
-        new(KeyboardInput.QuestionMark, KeyboardInput.Shift, KeyboardInput.ForwardSlash),
-        new(KeyboardInput.Pipe, KeyboardInput.Shift, KeyboardInput.BackSlash)
-    ];
-
     #endregion
 }

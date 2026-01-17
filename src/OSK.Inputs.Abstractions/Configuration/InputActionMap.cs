@@ -10,11 +10,6 @@ public class InputActionMap
     #region Variables
 
     /// <summary>
-    /// The unique id for the input
-    /// </summary>
-    public int InputId => Input.Id;
-
-    /// <summary>
     /// The specific input this map references
     /// </summary>
     public required IInput Input { get; init; }
@@ -23,12 +18,6 @@ public class InputActionMap
     /// The specific action this map references
     /// </summary>
     public required InputAction? Action { get; init; }
-
-    /// <summary>
-    /// The collection of inputs this input is associated with.
-    /// For example, a virtual input will be linked to other inputs
-    /// </summary>
-    public required int[] LinkedInputIds { get; init; }
 
     #endregion
 }

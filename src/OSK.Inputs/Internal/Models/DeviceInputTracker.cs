@@ -51,13 +51,15 @@ internal class DeviceInputTracker(DeviceSchemeActionMap schemeMap)
 
     public void RemoveState(InputState state)
     {
-        if (state is InputPowerState)
+        switch (state)
         {
-            _powerStates.Remove(state.InputId);
-            return;
+            case InputPowerState powerState:
+                _powerStates.Remove(powerState.Input.Id);
+                break;
+            case InputPointerState pointerState:
+                _pointerStates.Remove(pointerState.Input.Id);
+                break;
         }
-
-        _pointerStates.Remove(state.InputId);
     }
 
     #endregion

@@ -684,7 +684,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([],
             [
                 new InputDefinition("Abc", [], [
-                    new InputScheme("Abc", [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Abc", InputDeviceType.Generic), InputMaps = [] }], false, false)
+                    new InputScheme("Abc", [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Abc", InputDeviceType.Generic), InputMaps = [], VirtualMaps = [] }], false, false)
                     ], false)
             ], new(), new() { MaxUsers = 2 }));
 

@@ -31,8 +31,7 @@ public class InputUserInputTrackerTests
                  [
                     new InputActionMap() {
                         Action = new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Active }, _ => { }),
-                        Input = new TestPhysicalInput(1),
-                        LinkedInputIds = []
+                        Input = new TestPhysicalInput(1)
                     }
                  ])
             ]), new InputSystemConfiguration([new TestDeviceSpecification(TestIdentity.Identity1, new TestPhysicalInput(1))], [], new(), new()), Mock.Of<ILogger<InputUserInputTracker>>(), outputFactory,
