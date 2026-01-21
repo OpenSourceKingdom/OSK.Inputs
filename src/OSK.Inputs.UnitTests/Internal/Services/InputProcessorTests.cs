@@ -72,7 +72,7 @@ public class InputProcessorTests
     public void HandleDeviceNotification_NullNotification_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _processor.HandleDeviceNotification(null!));
+        Assert.Throws<ArgumentNullException>(() => _processor.ProcessMessage(null!));
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class InputProcessorTests
             .Returns((IInputUser?)null);
 
         // Act
-        _processor.HandleDeviceNotification(stateChangeEvent);
+        _processor.ProcessMessage(stateChangeEvent);
 
         // Assert
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<DeviceStateChangedNotification>(s => true)), Times.Once);
@@ -102,7 +102,7 @@ public class InputProcessorTests
             .Returns(new InputUser(1));
 
         // Act
-        _processor.HandleDeviceNotification(stateChangeEvent);
+        _processor.ProcessMessage(stateChangeEvent);
 
         // Assert
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<DeviceStateChangedNotification>(s => true)), Times.Never);

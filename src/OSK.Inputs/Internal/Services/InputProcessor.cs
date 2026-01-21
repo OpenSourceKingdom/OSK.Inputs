@@ -135,25 +135,46 @@ internal partial class InputProcessor: IInputProcessor
         _pauseInputProcessing = pause;
     }
 
-    public void HandleDeviceNotification(DeviceStateChangedNotification deviceNotification)
+    public void ProcessMessage(IInputProcessorMessage processorMessage)
     {
-        if (deviceNotification is null)
+        if (processorMessage is null)
         {
-            throw new ArgumentNullException(nameof(deviceNotification));
+            throw new ArgumentNullException(nameof(processorMessage));
         }
 
-        var user = _userManager.GetInputUserForDevice(deviceNotification.DeviceIdentifier.DeviceId);
-        if (user is null)
+        switch (processorMessage)
         {
-            _notificationPublisher.Notify(deviceNotification);
-            return;
-        }
+            case DeviceStateChangedNotification deviceNotification:
+                var user = _userManager.GetInputUserForDevice(deviceNotification.DeviceIdentifier.DeviceId);
+                if (user is null)
+                {
+                    _notificationPublisher.Notify(deviceNotification);
+                    return;
+                }
 
-        var device = user.GetDevice(deviceNotification.DeviceIdentifier.DeviceId);
-        UserDeviceNotification userDeviceNotification = deviceNotification.Status is DeviceStatus.Disconnected
-            ? new UserDeviceDisconnectedNotification(user, deviceNotification.DeviceIdentifier)
-            : new UserDeviceConnectedNotification(user, deviceNotification.DeviceIdentifier);
-        _notificationPublisher.Notify(userDeviceNotification);
+                var device = user.GetDevice(deviceNotification.DeviceIdentifier.DeviceId);
+                UserDeviceNotification userDeviceNotification = deviceNotification.Status is DeviceStatus.Disconnected
+                    ? new UserDeviceDisconnectedNotification(user, deviceNotification.DeviceIdentifier)
+                    : new UserDeviceConnectedNotification(user, deviceNotification.DeviceIdentifier);
+
+                if (_userInputTrackerLookup.TryGetValue(user.Id, out var deviceTracker))
+                {
+                    deviceTracker.ResetInput(deviceNotification.DeviceIdentifier.DeviceFamily);
+                }
+
+                _notificationPublisher.Notify(userDeviceNotification);
+
+                break;
+            case InputSystemFocusLostEvent:
+                foreach (var tracker in _userInputTrackerLookup.Values)
+                {
+                    foreach (var deviceFamily in tracker.ActiveScheme.DeviceFamilies)
+                    {
+                        tracker.ResetInput(deviceFamily);
+                    }
+                }
+                break;
+        }
     }
 
     #endregion
@@ -223,7 +244,7 @@ internal partial class InputProcessor: IInputProcessor
             ? potentialSchemes.FirstOrDefault(s => s.Name.Equals(preferredScheme.Value.SchemeName, StringComparison.OrdinalIgnoreCase)) ?? potentialSchemes.First()
             : potentialSchemes.FirstOrDefault(s => s.IsDefault) ?? potentialSchemes.First();
 
-        return new ActiveInputScheme(user.ActiveInputDefinitionName, scheme.Name, [.. scheme.DeviceMaps.Select(m => m.DeviceFamily)]);
+        return new ActiveInputScheme(user.ActiveInputDefinitionName, scheme.Name, [.. scheme.GetDeviceFamilies() ]);
     }
 
     private IInputUser? TryDevicePairing(InputSystemConfiguration configuration, RuntimeDeviceIdentifier deviceIdentifier)

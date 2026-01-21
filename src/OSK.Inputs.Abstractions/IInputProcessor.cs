@@ -12,7 +12,7 @@ namespace OSK.Inputs.Abstractions;
 /// 
 /// <br />
 /// Note: the only methods that should, in most cases, be used by integrations is either the <see cref="ProcessEvent(TimeSpan, InputEvent)"/>
-/// or the <see cref="HandleDeviceNotification(DeviceStateChangedNotification)"/> signatures as they are used to drive inputs and notifications
+/// or the <see cref="ProcessMessage(IInputProcessorMessage)"/> signatures as they are used to drive inputs and messages
 /// within the input system. Other methods are utilized by the Input System itself.
 /// </summary>
 [HexagonalIntegration(HexagonalIntegrationType.LibraryProvided)]
@@ -45,8 +45,8 @@ public interface IInputProcessor
     IOutput ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent);
 
     /// <summary>
-    /// Notifies the input system and any listeners to device changes
+    /// Informs the processor of some meaningful change in input system state that the input system should be aware of.
     /// </summary>
-    /// <param name="notification">The <see cref="DeviceStateChangedNotification"/> to send to the input system</param>
-    void HandleDeviceNotification(DeviceStateChangedNotification notification);
+    /// <param name="message">The <see cref="IInputProcessorMessage"/> to send to the input system</param>
+    void ProcessMessage(IInputProcessorMessage message);
 }

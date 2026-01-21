@@ -9,6 +9,7 @@ internal class InputPointerState(int pointerId, DeviceInput input, int maxRecord
 {
     #region Variables
 
+    private Vector2? _startPosition;
     private readonly Queue<PointerLocationRecord> _pointerRecords = [];
 
     #endregion
@@ -17,7 +18,7 @@ internal class InputPointerState(int pointerId, DeviceInput input, int maxRecord
 
     public int PointerId => pointerId;
 
-    public (Vector2, PointerMotion)? GetCurrentPositionAndMotionData()
+    public PointerStateInformation? GetPointerStateInformation()
     {
         PointerLocationRecord? currentRecord = null;
         var currentVelocity = Vector2.Zero;
@@ -45,7 +46,7 @@ internal class InputPointerState(int pointerId, DeviceInput input, int maxRecord
 
         return currentRecord is null
             ? null
-            : (currentRecord.Value.Position, new PointerMotion(currentVelocity, currentAcceleration));
+            : new(_startPosition ?? currentRecord.Value.Position, currentRecord.Value.Position, new PointerMotion(currentVelocity, currentAcceleration));
     }
 
     public void AddRecord(Vector2 position)
@@ -55,6 +56,7 @@ internal class InputPointerState(int pointerId, DeviceInput input, int maxRecord
             return;
         }
 
+        _startPosition ??= position;
         _pointerRecords.Enqueue(new PointerLocationRecord(position, Duration));
         if (_pointerRecords.Count > maxRecords)
         {

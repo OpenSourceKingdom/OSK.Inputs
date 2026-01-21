@@ -51,6 +51,14 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
     public int UserId => userId;
 
+    public void ResetInput(InputDeviceFamily deviceFamily)
+    {
+        if (_deviceInputTrackerLookup.TryGetValue(deviceFamily, out _))
+        {
+            _deviceInputTrackerLookup[deviceFamily] = new DeviceInputTracker(schemeMap.DeviceSchemeMaps.First(map => map.DeviceFamily == deviceFamily));
+        }
+    }
+
     public IEnumerable<ProcessedInputEvent> Update(TimeSpan deltaTime)
     {
         var removalDelay = configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
@@ -311,14 +319,16 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             => deviceState.PointerStates.Select(pointerState 
                 =>
             {
-                var pointerPositionMotionData = pointerState.GetCurrentPositionAndMotionData();
-                if (pointerPositionMotionData is null)
+                var pointerStateInformation = pointerState.GetPointerStateInformation();
+                if (pointerStateInformation is null)
                 {
                     return null;
                 }
 
                 return (PointerData?) new PointerData(pointerState.PointerId, deviceState.SchemeMap.DeviceFamily,
-                    pointerPositionMotionData.Value.Item1, pointerPositionMotionData.Value.Item2);
+                    pointerStateInformation.Value.StartPosition, 
+                    pointerStateInformation.Value.CurrentPosition, 
+                    pointerStateInformation.Value.Motion);
             }))
             .Where(pointerData => pointerData is not null)
             .Select(p => p!.Value)
@@ -334,11 +344,11 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             case InputPowerState powerState:
                 return new InputPowerEvent(powerState.DeviceIdentifier, powerState.Input.Id, powerState.Phase, powerState.InputPowers);
             case InputPointerState pointerState:
-                var pointerPositionAndMotionData = pointerState.GetCurrentPositionAndMotionData();
+                var pointerPositionAndMotionData = pointerState.GetPointerStateInformation();
                 return pointerPositionAndMotionData is null
                     ? null
                     : new InputPointerEvent(pointerState.DeviceIdentifier, pointerState.Input.Id, pointerState.Phase, pointerState.PointerId,
-                            pointerPositionAndMotionData.Value.Item1);
+                            pointerPositionAndMotionData.Value.CurrentPosition);
             default:
                 return null;
         }

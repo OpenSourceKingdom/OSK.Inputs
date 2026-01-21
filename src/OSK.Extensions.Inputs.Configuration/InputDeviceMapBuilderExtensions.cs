@@ -1,7 +1,5 @@
 ﻿using System;
 using OSK.Extensions.Inputs.Configuration.Ports;
-using OSK.Inputs.Abstractions.Devices;
-using OSK.Inputs.Abstractions.Devices.Keyboards;
 
 namespace OSK.Extensions.Inputs.Configuration;
 
@@ -37,21 +35,6 @@ public static class InputDeviceMapBuilderExtensions
     {
         return builder.WithPassiveInput(Convert.ToInt32(input));
     }
-
-    #endregion
-
-    #region Keyboard
-
-    /// <summary>
-    /// Adds a keyboard combination virtual input
-    /// </summary>
-    /// <param name="builder">The builder to configure</param>
-    /// <param name="actionName">The action the input will trigger</param>
-    /// <param name="keyboardKeys">The various keys the combination uses</param>
-    /// <returns>The builder for chaining</returns>
-    public static IInputDeviceMapBuilder WithKeyboardCombination(this IInputDeviceMapBuilder builder,
-        string actionName, params KeyboardInput[] keyboardKeys)
-        => builder.WithVirtualInput(new KeyboardCombination(keyboardKeys), actionName);
 
     #endregion
 }

@@ -47,18 +47,19 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
         return this;
     }
 
-    public IInputDeviceMapBuilder WithVirtualInput(VirtualInput virtualInput, string actionName)
+    public IInputDeviceMapBuilder WithVirtualInput<TVirtualInput>(int[] inputIds, string actionName)
+        where TVirtualInput : VirtualInput
     {
-        if (virtualInput is null)
+        if (inputIds is null)
         {
-            throw new ArgumentNullException(nameof(virtualInput));
+            throw new ArgumentNullException(nameof(inputIds));
         }
         if (string.IsNullOrWhiteSpace(actionName))
         {
             throw new InvalidOperationException($"Unable to assign virtual input to a device map with {deviceSpecification.DeviceFamily} because it was not specified as passive.");
         }
 
-        _customVirtualInputs[actionName] = virtualInput;
+        _customVirtualInputs[actionName] = (TVirtualInput)Activator.CreateInstance(typeof(TVirtualInput), new { deviceSpecification.DeviceFamily.DeviceType, inputIds });
 
         return this;
     }

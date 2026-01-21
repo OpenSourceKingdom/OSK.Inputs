@@ -950,7 +950,7 @@ public class InputSystemConfigurationValidatorTests
         // Arrange
         var validator = new InputSystemConfigurationValidator();
 
-        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [], VirtualMaps = [] };
+        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.GenericMouse, InputMaps = [], VirtualMaps = [] };
 
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([], 
@@ -976,7 +976,7 @@ public class InputSystemConfigurationValidatorTests
         // Arrange
         var validator = new InputSystemConfigurationValidator();
 
-        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [], VirtualMaps = [] };
+        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.GenericMouse, InputMaps = [], VirtualMaps = [] };
 
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],
@@ -1001,7 +1001,7 @@ public class InputSystemConfigurationValidatorTests
     {
         // Arrange
         var validator = new InputSystemConfigurationValidator();
-        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.Mice, InputMaps = [], VirtualMaps = [] };
+        var map = new DeviceInputMap() { DeviceFamily = InputDeviceFamily.GenericMouse, InputMaps = [], VirtualMaps = [] };
 
         // Act
         var validation = validator.ValidateCustomScheme(new InputSystemConfiguration([],

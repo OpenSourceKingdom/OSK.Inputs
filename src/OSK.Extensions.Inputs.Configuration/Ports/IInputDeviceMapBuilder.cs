@@ -25,8 +25,10 @@ public interface IInputDeviceMapBuilder
     /// <summary>
     /// Create a map using a virtual input consisting of inputs on the device
     /// </summary>
-    /// <param name="virtualInput">The virtual input</param>
+    /// <typeparam name="TVirtualInput">The type of virtual input that will take a device type and list of input ids as parameters</typeparam>
+    /// <param name="inputIds">The inputs the virtual map uses</param>
     /// <param name="actionName">The action the input maps to</param>
     /// <returns>The builder for chaining</returns>
-    IInputDeviceMapBuilder WithVirtualInput(VirtualInput virtualInput, string actionName);
+    IInputDeviceMapBuilder WithVirtualInput<TVirtualInput>(int[] inputIds, string actionName)
+        where TVirtualInput: VirtualInput;
 }
