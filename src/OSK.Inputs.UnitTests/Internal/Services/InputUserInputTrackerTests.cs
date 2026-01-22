@@ -29,7 +29,7 @@ public class InputUserInputTrackerTests
             ("Abc", "Abc", [ 
                 new DeviceSchemeActionMap(TestIdentity.Identity1,
                  [
-                    new InputActionMap() {
+                    new ActiveInputActionMap() {
                         Action = new InputAction("Abc", new HashSet<InputPhase>() { InputPhase.Active }, _ => { }),
                         Input = new TestPhysicalInput(1)
                     }

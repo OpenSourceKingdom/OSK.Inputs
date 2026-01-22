@@ -73,7 +73,7 @@ public class DeviceSchemeActionMapTests
 
     private DeviceSchemeActionMap CreateActionMap(params Input[] inputs)
         => new(TestDeviceFamily.Identity1, inputs
-            .Select(input => new InputActionMap() 
+            .Select(input => new ActiveInputActionMap() 
             { 
                 Action = new InputAction("", new HashSet<InputPhase>(), _ => { }),
                 Input = input

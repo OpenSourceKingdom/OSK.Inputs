@@ -9,7 +9,7 @@ internal abstract class InputState
 {
     public required RuntimeDeviceIdentifier DeviceIdentifier { get; init; }
 
-    public required TimeSpan Duration { get; set; }
+    public TimeSpan Duration { get; set; } = TimeSpan.Zero;
 
     public InputPhase Phase { get; set; }
 

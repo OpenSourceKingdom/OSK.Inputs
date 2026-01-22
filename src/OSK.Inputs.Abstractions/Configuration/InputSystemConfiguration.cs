@@ -103,9 +103,10 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
 
                         var action = definition.GetAction(virtualMap.ActionName);
 
+                        // No passive inputs for virtual input maps
                         return action is null
                             ? null
-                            : new InputActionMap()
+                            : new ActiveInputActionMap()
                             {
                                 Action = action,
                                 Input = virtualMap.Input
@@ -120,13 +121,18 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
                         var action = inputMap is null || inputMap.Value.IsPassive
                             ? null
                             : definition.GetAction(inputMap.Value.ActionName);
-                        return inputMap is null || action is null
+                        return inputMap is null
                             ? null
-                            : new InputActionMap()
-                            {
-                                Input = input,
-                                Action = action
-                            };
+                            : action is not null
+                                ? (InputActionMap) new ActiveInputActionMap()
+                                {
+                                    Input = input,
+                                    Action = action
+                                }
+                                : new PassiveInputActionMap()
+                                {
+                                    Input = input
+                                };
                     })
                     .Where(inputMap => inputMap is not null).Cast<InputActionMap>()
                     .ToArray();
