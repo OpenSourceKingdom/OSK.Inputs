@@ -14,7 +14,7 @@ public class DeviceSchemeActionMap(InputDeviceFamily deviceFamily, IEnumerable<I
 {
     #region Variables
 
-    private readonly Dictionary<int, InputActionMap> _deviceInputMaps = actionMaps.Where(map => map.Input is DeviceInput)
+    private readonly Dictionary<int, InputActionMap> _deviceInputMaps = actionMaps.Where(map => map.Input is DeviceInput && map.Action is not null)
                                                                                   .ToDictionary(inputMap => ((DeviceInput)inputMap.Input).Id);
 
     private readonly Dictionary<int, InputActionMap[]> _deviceVirtualInputLookup

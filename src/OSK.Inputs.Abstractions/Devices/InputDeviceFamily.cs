@@ -10,9 +10,9 @@
 /// </param>
 public readonly record struct InputDeviceFamily(string Name, InputDeviceType DeviceType)
 {
-    public static InputDeviceFamily GenericKeyboard = new("Generic", InputDeviceType.Keyboard);
-    public static InputDeviceFamily GenericMouse = new("Generic", InputDeviceType.Mice);
-    public static InputDeviceFamily GenericGamePad = new("Generic", InputDeviceType.GamePad);
+    public static InputDeviceFamily GenericKeyboard = new("Keyboard", InputDeviceType.Keyboard);
+    public static InputDeviceFamily GenericMouse = new("Mouse", InputDeviceType.Mice);
+    public static InputDeviceFamily GenericGamePad = new("GamePad", InputDeviceType.GamePad);
 
     public static InputDeviceFamily Xbox = new("Xbox", InputDeviceType.GamePad);
     public static InputDeviceFamily PlayStation = new("PlayStation", InputDeviceType.GamePad);

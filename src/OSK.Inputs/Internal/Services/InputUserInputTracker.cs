@@ -155,14 +155,14 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
         // Null action maps refer to passive inputs (i.e. pointers) that are merely meant to provide passive data collection rather than
         // active input execution
-        if (inputActionMap.Action is null)
+        if (inputActionMap is null && !virtualActionMaps.Any())
         {
             return outputFactory.Succeed(ProcessedInputEvent.NotTriggered);
         }
 
         var virtualInputActivationContext = ProcessVirtualInputEvent(deltaTime, deviceTracker, inputState, virtualActionMaps);
         var processInputEvent = virtualInputActivationContext is null && inputActionMap is not null 
-                && inputActionMap.Action.TriggerPhases.Contains(inputState.Phase)
+               && inputActionMap is not null && inputActionMap.Action.TriggerPhases.Contains(inputState.Phase)
             ? GetTriggeredProcessedEvent(deltaTime, inputState, deviceInputEvent, inputActionMap)
             : virtualInputActivationContext;
 

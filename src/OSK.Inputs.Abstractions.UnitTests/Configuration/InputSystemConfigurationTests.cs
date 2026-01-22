@@ -1,5 +1,6 @@
 ﻿using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Devices;
+using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.UnitTests._Helpers;
 
 namespace OSK.Inputs.Abstractions.UnitTests.Configuration;
@@ -235,15 +236,39 @@ public class InputSystemConfigurationTests
     public void GetSchemeMap_Valid_ReturnsSchemeMap()
     {
         // Arrange
-        var map = new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Abc", InputDeviceType.Keyboard), InputMaps = [], VirtualMaps = [] };
-        var definition = new InputDefinition("Hello", [], [new InputScheme("Abc", [map], false, false)], false);
-        var configuration = new InputSystemConfiguration([], [definition], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
+        var input1 = new TestInput(1);
+        var input2 = new TestInput(2);
+
+        var testSpecification = new TestDeviceSpecification(input1, input2);
+
+        var map = new DeviceInputMap() { 
+            DeviceFamily = testSpecification.DeviceFamily,
+            InputMaps = [new InputMap() { InputId = 1, ActionName = "Abc" }], 
+            VirtualMaps = [new VirtualInputMap() { ActionName = "Def", Input = new DeviceCombinationInput(InputDeviceType.Keyboard, [input1, input2])}] 
+        };
+        var definition = new InputDefinition("Hello",
+            [new InputAction("Abc", new HashSet<InputPhase>(), _ => { } ), new InputAction("Def", new HashSet<InputPhase>(), _ => { })], 
+            [new InputScheme("Abc", [map], false, false)], false);
+        
+        var configuration = new InputSystemConfiguration([testSpecification], [definition], new InputProcessorConfiguration(), new InputSystemJoinPolicy());
 
         // Act
-        var schemeMap = configuration.GetSchemeMap(definition.Name, "Abc", "Abc");
+        var schemeMap = configuration.GetSchemeMap(definition.Name, InputDeviceCombination.GetCombinationId([map.DeviceFamily]), "Abc");
 
         // Assert
         Assert.NotNull(schemeMap);
+        Assert.Single(schemeMap.DeviceSchemeMaps);
+
+        var deviceMap = schemeMap.DeviceSchemeMaps.First();
+
+        var input1Maps = deviceMap.GetActionMaps(input1.Id);
+        Assert.Equal(2, input1Maps.Count());
+        Assert.Single(input1Maps, m => m.Input is DeviceInput);
+        Assert.Single(input1Maps, m => m.Input is DeviceCombinationInput comboInput && comboInput.GetDeviceInputs().SequenceEqual([input1, input2]));
+
+        var input2maps = deviceMap.GetActionMaps(input2.Id);
+        Assert.Single(input2maps);
+        Assert.Single(input2maps, m => m.Input is DeviceCombinationInput comboInput && comboInput.GetDeviceInputs().SequenceEqual([input1, input2]));
     }
 
     #endregion

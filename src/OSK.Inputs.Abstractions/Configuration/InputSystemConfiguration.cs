@@ -92,9 +92,11 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
         var deviceMaps = scheme.DeviceMaps.Where(deviceMap => _deviceSpecificationLookup.TryGetValue(deviceMap.DeviceFamily, out _))
                 .Select(deviceMap =>
                 {
+                    var deviceSpecification = _deviceSpecificationLookup[deviceMap.DeviceFamily];
+
                     var virtualInputMaps = deviceMap.VirtualMaps.Select(virtualMap =>
                     {
-                        if (virtualMap.Input.GetLinkedInputs().OfType<DeviceInput>().Any(input => deviceMap.GetInputMap(input.Id) is null))
+                        if (virtualMap.Input.GetLinkedInputs().OfType<DeviceInput>().Any(input => !deviceSpecification.TryGetInput(input.Id, out _)))
                         {
                             return null;
                         }
@@ -108,7 +110,9 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
                                 Action = action,
                                 Input = virtualMap.Input
                             };
-                    }).Where(inputMap => inputMap is not null).Cast<InputActionMap>();
+                    })
+                    .Where(inputMap => inputMap is not null).Cast<InputActionMap>()
+                    .ToArray();
 
                     var activeDeviceInputMaps = _deviceSpecificationLookup[deviceMap.DeviceFamily].GetInputs().Select(input =>
                     {
@@ -116,27 +120,20 @@ public class InputSystemConfiguration(IEnumerable<InputDeviceSpecification> devi
                         var action = inputMap is null || inputMap.Value.IsPassive
                             ? null
                             : definition.GetAction(inputMap.Value.ActionName);
-                        return inputMap is null || (action is null && !inputMap.Value.IsPassive)
+                        return inputMap is null || action is null
                             ? null
                             : new InputActionMap()
                             {
                                 Input = input,
                                 Action = action
                             };
-                    }).Where(inputMap => inputMap is not null).Cast<InputActionMap>();
+                    })
+                    .Where(inputMap => inputMap is not null).Cast<InputActionMap>()
+                    .ToArray();
 
-                    // Make passive inputs of any device input that a virtual map needs that isn't already used for an active input map
-                    // This is so we can track the data for it even if it doesn't directly trigger an action - the virtual map does
-                    var passiveDeviceInputs = virtualInputMaps.SelectMany(virtualMap =>
-                    {
-                        var deviceInputs = ((VirtualInput)virtualMap.Input).GetLinkedInputs().OfType<DeviceInput>();
-
-                        return deviceInputs.Where(input => !activeDeviceInputMaps.Any(map => ((DeviceInput)map.Input).Id == input.Id))
-                            .Select(missingInput => new InputActionMap() { Action = null, Input = missingInput });
-                    });
-
-                    return new DeviceSchemeActionMap(deviceMap.DeviceFamily, activeDeviceInputMaps.Concat(passiveDeviceInputs).Concat(virtualInputMaps));
-                });
+                    return new DeviceSchemeActionMap(deviceMap.DeviceFamily, activeDeviceInputMaps.Concat(virtualInputMaps));
+                })
+                .ToArray();
 
         return new(definitionName, schemeName, deviceMaps);
     }

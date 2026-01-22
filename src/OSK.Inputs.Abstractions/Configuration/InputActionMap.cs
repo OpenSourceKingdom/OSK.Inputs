@@ -1,4 +1,5 @@
-﻿using OSK.Inputs.Abstractions.Inputs;
+﻿using System.Diagnostics.CodeAnalysis;
+using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
@@ -17,7 +18,7 @@ public class InputActionMap
     /// <summary>
     /// The specific action this map references
     /// </summary>
-    public required InputAction? Action { get; init; }
+    public required InputAction Action { get; init; }
 
     #endregion
 }
