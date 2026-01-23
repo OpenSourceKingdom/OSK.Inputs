@@ -42,6 +42,8 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             .Where(specification => specification is not null)
             .ToDictionary(specification => specification!.DeviceFamily, specification => specification!);
 
+    internal IEnumerable<DeviceInputTracker> GetInputTrackers() => _deviceInputTrackerLookup.Values;
+
     #endregion
 
     #region IUserInputTracker
@@ -63,7 +65,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
     {
         var removalDelay = configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
 
-        var triggeredActions = new List<ProcessedInputEvent>();
+        var triggeredActions = new Dictionary<IInput, ProcessedInputEvent>();
         foreach (var deviceTracker in _deviceInputTrackerLookup.Values)
         {
             var inputsToRemove = new List<InputState>();
@@ -71,6 +73,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             {
                 if (inputState.Phase is InputPhase.End)
                 {
+                    inputState.InactiveDuration += deltaTime;
                     if (inputState.InactiveDuration.GetValueOrDefault(TimeSpan.Zero) >= removalDelay)
                     {
                         inputsToRemove.Add(inputState);
@@ -80,12 +83,6 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
                 inputState.Duration += deltaTime;
 
-                // Virtual inputs are only updated via their associated device inputs
-                if (inputState is VirtualInputState)
-                {
-                    continue;
-                }
-
                 var reprocess = false;
                 switch (inputState.Phase)
                 {
@@ -93,7 +90,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                         if (inputState.Duration >= configuration.ProcessorConfiguration.ActiveTimeThreshold.GetValueOrDefault(TimeSpan.Zero))
                         {
                             inputState.Phase = InputPhase.Active;
-                            reprocess = true;
+                            reprocess = inputState is not VirtualInputState;
                         }
                         break;
                     case InputPhase.Active:
@@ -112,7 +109,8 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                             ? reprocessedOutput.Value
                             : null;
                     }
-                    else if (inputState.MappedAction is not null && inputState.MappedAction is ActiveInputActionMap activeInputActionMap)
+                    else if (inputState.MappedAction is not null && inputState.MappedAction is ActiveInputActionMap activeInputActionMap
+                        && activeInputActionMap.Action.TriggerPhases.Contains(inputState.Phase))
                     {
                         processedInputEvent = GetTriggeredProcessedEvent(deltaTime, inputState, inputEvent, activeInputActionMap);
                     }
@@ -120,17 +118,19 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
                 if (processedInputEvent is not null)
                 {
-                    triggeredActions.Add(processedInputEvent.Value);
+                    triggeredActions[inputState.GetActiveInput()] = processedInputEvent.Value;
                 }
             }
 
             foreach (var state in inputsToRemove)
             {
+                LogInputStateRemovedDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, 
+                    state is DeviceInputState ds ? ds.Input.Id.ToString() : "Virtual Input", state.Phase);
                 deviceTracker.RemoveState(state);
             }
         }
 
-        return triggeredActions;
+        return triggeredActions.Values;
     }
 
     public IOutput<ProcessedInputEvent> Track(TimeSpan deltaTime, InputEvent inputEvent)
@@ -154,6 +154,12 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
         if (inputState is null)
         {
             return outputFactory.Fail<ProcessedInputEvent>("Unable to acquire input state");
+        }
+
+        if (inputState.Phase is InputPhase.End && configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault(TimeSpan.Zero) == TimeSpan.Zero)
+        {
+            LogInputStateRemovedDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, inputState.Input.Id.ToString(), inputState.Phase);
+            deviceTracker.RemoveState(inputState);
         }
 
         var activeInputActionMaps = actionMaps.OfType<ActiveInputActionMap>();
@@ -180,11 +186,6 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                 : null;
 
             inputState.MappedAction = processedInputEvent?.ActionMap;
-        }
-
-        if (inputState.Phase is InputPhase.End && configuration.ProcessorConfiguration.TapReactivationTime is null)
-        {
-            deviceTracker.RemoveState(inputState);
         }
 
         return outputFactory.Succeed(processedInputEvent ?? ProcessedInputEvent.NotTriggered);
@@ -252,6 +253,8 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             ? TimeSpan.Zero
             : null;
 
+        LogProcessedInputEventDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, inputState.Input.Id.ToString(), inputState.Phase);
+
         return inputState;
     }
 
@@ -282,7 +285,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                         }
 
                         combinationPhase = CombineVirtualInputPhase(combinationPhase, otherInputState.Phase);
-                    }
+                    }  
 
                     if (completedCombination)
                     {
@@ -295,6 +298,9 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                                 ? triggeredVirtualState.TapCount + 1
                                 : triggeredVirtualState?.TapCount ?? 0,
                         };
+
+                        LogProcessedInputEventDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, "Combination Input", inputState.Phase);
+
                         deviceTracker.SetVirtualInputState(virtualInputState);
                         return virtualInputActionMap.Action.TriggerPhases.Contains(combinationPhase)
                             ? GetTriggeredProcessedEvent(deltaTime, virtualInputState, GetEventForState(virtualInputState)!, virtualInputActionMap)
@@ -312,6 +318,8 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                         {
                             deviceTracker.RemoveState(triggeredVirtualState);
                         }
+
+                        LogProcessedInputEventDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, "Combination Input", inputState.Phase);
 
                         return virtualInputActionMap.Action.TriggerPhases.Contains(InputPhase.End) && endedEvent is not null
                             ? GetTriggeredProcessedEvent(deltaTime, triggeredVirtualState, endedEvent, virtualInputActionMap)
@@ -442,6 +450,12 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
     [LoggerMessage(eventId: 2, LogLevel.Warning, "An attempt was made to process a virtual input with on device '{deviceFamily}', but it was unrecognized type '{virtualInputType}' and could not be processed.")]
     private static partial void LogUnknownVirtualInputWarning(ILogger logger, InputDeviceFamily deviceFamily, string virtualInputType);
+
+    [LoggerMessage(eventId: 3, LogLevel.Debug, "Input User Tracker for user '{userId}' processed input event for device '{deviceFamily}' input id '{inputId}' with phase '{inputPhase}'")]
+    private static partial void LogProcessedInputEventDebug(ILogger logger, int userId, InputDeviceFamily deviceFamily, string inputId, InputPhase inputPhase);
+
+    [LoggerMessage(eventId: 4, LogLevel.Debug, "Input User Tracker for user '{userId}' removed input processing for device '{deviceFamily}' input id '{inputId}' with phase '{inputPhase}'")]
+    private static partial void LogInputStateRemovedDebug(ILogger logger, int userId, InputDeviceFamily deviceFamily, string inputId, InputPhase inputPhase);
 
     #endregion
 }

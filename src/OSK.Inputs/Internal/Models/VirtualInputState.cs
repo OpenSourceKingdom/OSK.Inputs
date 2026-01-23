@@ -8,4 +8,6 @@ internal class VirtualInputState(VirtualInput virtualInput): InputState<VirtualI
     public int TapCount { get; set; }
 
     public int[] LinkedInputIds { get; } = virtualInput.GetLinkedInputs().OfType<DeviceInput>().Select(input => input.Id).ToArray();
+
+    public override IInput GetActiveInput() => Input;
 }

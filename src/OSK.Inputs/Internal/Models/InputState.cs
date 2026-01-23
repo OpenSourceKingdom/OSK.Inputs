@@ -16,4 +16,6 @@ internal abstract class InputState
     public InputActionMap? MappedAction {  get; set; }
 
     public TimeSpan? InactiveDuration { get; set; }
+
+    public abstract IInput GetActiveInput();
 }
