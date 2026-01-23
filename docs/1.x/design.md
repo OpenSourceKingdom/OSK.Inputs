@@ -3,6 +3,7 @@
 The design utilizes the following core data structures:
  - Input System Configuration
    - Device Specifications
+     - Inputs
    - Input Definitions
      - Input Actions
      - Input Schemes
@@ -23,6 +24,13 @@ There is an extensions project available to help construct this configuration fi
 ## Device Specifications
 
 A device specification defines what a 'device' is for the input system. This will consist of a `InputDeviceIdentifier` and a collection of `IInput`s. The device identifier is meant to define the type of controller rather than the specific name. It consists of a **device family** and a **device type**. Device family is for the specific brand or family of device, for example Xbox for xbox controllers, while the device type represents the type of input device, so GamePad for console input devices. Using this, a list of supported devices can be defined for the input system to use.
+
+### Inputs
+
+An `IInput` is an abstraction to various inputs that might be implemented. The core library implements the following:
+ - `AnalogInput`: an input that provides a range of data, typically -1 to 1, including decimal values. These provide flexbile inputs that can be monitored for more granular data than a typical ON/OFF style input
+ - `DigitalInput`: an input that is meant to provide only one of two values 0 or 1. This is akin to an ON/OFF style input
+ - `Pointer`: a pointer represents a marker style input that typically is a mouse, touch, or similar style input. This can provide information for 2D motion 
 
 ## Device Combinations
 

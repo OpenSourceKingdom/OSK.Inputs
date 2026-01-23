@@ -4,6 +4,13 @@ using System.Linq;
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
+/// <summary>
+/// Defines a set of actions that are available for the input system along with the <see cref="InputScheme"/>s that provide mappings for those actions
+/// </summary>
+/// <param name="name">The name for the definition</param>
+/// <param name="actions">The list of actions</param>
+/// <param name="schemes">The input schemes the definition will use</param>
+/// <param name="isDefault">If this is the default definition to use</param>
 public class InputDefinition(string name, IEnumerable<InputAction> actions, IEnumerable<InputScheme> schemes, bool isDefault)
 {
     #region Variables

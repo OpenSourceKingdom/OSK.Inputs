@@ -2,8 +2,14 @@
 
 namespace OSK.Inputs.Abstractions.Configuration;
 
+/// <summary>
+/// A specific map for virtual inputs
+/// </summary>
 public readonly struct VirtualInputMap
 {
+    /// <summary>
+    /// The virtual input this map references
+    /// </summary>
     public VirtualInput Input { get; init; }
 
     /// <summary>
