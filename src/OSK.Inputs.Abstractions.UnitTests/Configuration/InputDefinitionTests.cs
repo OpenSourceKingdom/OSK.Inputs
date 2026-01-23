@@ -1,4 +1,5 @@
 ﻿using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.UnitTests.Configuration;
@@ -57,13 +58,29 @@ public class InputDefinitionTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
+    public void GetScheme_InvalidCombinationId_ReturnsNull(string? combinationId)
+    {
+        // Arrange 
+        var definition = new InputDefinition("Hello", [], [], false);
+
+        // Act
+        var action = definition.GetScheme(combinationId!, "Abc");
+
+        // Assert
+        Assert.Null(action);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
     public void GetScheme_InvalidSchemeName_ReturnsNull(string? schemeName)
     {
         // Arrange 
         var definition = new InputDefinition("Hello", [], [], false);
 
         // Act
-        var action = definition.GetScheme(schemeName!);
+        var action = definition.GetScheme("Abc", schemeName!);
 
         // Assert
         Assert.Null(action);
@@ -76,7 +93,7 @@ public class InputDefinitionTests
         var definition = new InputDefinition("Hello", [], [], false);
 
         // Act
-        var action = definition.GetScheme("Hello");
+        var action = definition.GetScheme("Hello", "Hello");
 
         // Assert
         Assert.Null(action);
@@ -86,10 +103,16 @@ public class InputDefinitionTests
     public void GetScheme_ValidSchemeName_ReturnsAction()
     {
         // Arrange 
-        var definition = new InputDefinition("Hello", [], [new InputScheme("Hello", [], false, false)], false);
+        var map = new DeviceInputMap()
+        {
+            DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad),
+            InputMaps = [],
+            VirtualMaps = []
+        };
+        var definition = new InputDefinition("Hello", [], [new InputScheme("Hello", [map], false, false)], false);
 
         // Act
-        var action = definition.GetScheme("Hello");
+        var action = definition.GetScheme("Hello", "Hello");
 
         // Assert
         Assert.NotNull(action);
@@ -126,13 +149,13 @@ public class InputDefinitionTests
         {
             DefinitionName = definitionName!,
             Name = "Hello",
-            DeviceMaps = []
+            DeviceMaps = [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] }]
         });
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDevicecCombination("Hello");
 
         // Assert
-        Assert.Null(scheme);
+        Assert.Empty(scheme);
     }
 
     [Fact]
@@ -146,13 +169,13 @@ public class InputDefinitionTests
         {
             DefinitionName = "Bye",
             Name = "Hello",
-            DeviceMaps = []
+            DeviceMaps = [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] }]
         });
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDevicecCombination("Hello");
 
         // Assert
-        Assert.Null(scheme);
+        Assert.Empty(scheme);
     }
 
     [Theory]
@@ -169,33 +192,39 @@ public class InputDefinitionTests
         {
             DefinitionName = "Hello",
             Name = schemeName!,
-            DeviceMaps = []
+            DeviceMaps = [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] }]
         });
 
-        var scheme = definition.GetScheme(schemeName!);
+        var schemes = definition.GetSchemesByDevicecCombination(schemeName!);
 
         // Assert
-        Assert.Null(scheme);
+        Assert.Empty(schemes);
     }
 
     [Fact]
     public void ApplyCustomScheme_ValidSchemeButBuiltInSchemeWithSameNameExists_DoesNotAddToDefinition_ReturnsSuccessfully()
     {
         // Arrange
-        var builtInScheme = new InputScheme("Hello", [], false, false);
+        var map = new DeviceInputMap()
+        {
+            DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad),
+            InputMaps = [],
+            VirtualMaps = []
+        };
+        var builtInScheme = new InputScheme("Hello", [map], false, false);
         var definition = new InputDefinition("Hello", [], [builtInScheme], false);
 
         var expectedScheme = new CustomInputScheme()
         {
             DefinitionName = "Hello",
             Name = "Hello",
-            DeviceMaps = []
+            DeviceMaps = [map]
         };
 
         // Act
         definition.ApplyCustomScheme(expectedScheme);
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetScheme("Hello", "HELLO");
 
         // Assert
         Assert.NotNull(scheme);
@@ -206,19 +235,20 @@ public class InputDefinitionTests
     public void ApplyCustomScheme_Valid_AddsToDefinition_ReturnsSuccessfully()
     {
         // Arrange
-        var definition = new InputDefinition("Hello", [], [], false);
+        var map = new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] };
+        var definition = new InputDefinition("Hello", [], [new InputScheme("Abc", [map], false, false)], false);
 
         var newScheme = new CustomInputScheme()
         {
             DefinitionName = "Hello",
             Name = "Hello",
-            DeviceMaps = []
+            DeviceMaps = [map]
         };
 
         // Act
         definition.ApplyCustomScheme(newScheme);
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetScheme("Hello", "Hello");
 
         // Assert
         Assert.NotNull(scheme);
@@ -230,20 +260,26 @@ public class InputDefinitionTests
     public void ApplyCustomScheme_ValidSchemeButCustomSchemeWithSameNameExists_ReplacesSchemeInDefinition_ReturnsSuccessfully()
     {
         // Arrange
-        var originalCustomScheme = new InputScheme("Hello", [], false, true);
+        var map = new DeviceInputMap()
+        {
+            DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad),
+            InputMaps = [],
+            VirtualMaps = []
+        };
+        var originalCustomScheme = new InputScheme("Hello", [map], false, true);
         var definition = new InputDefinition("Hello", [], [originalCustomScheme], false);
 
         var expectedScheme = new CustomInputScheme()
         {
             DefinitionName = "Hello",
             Name = "Hello",
-            DeviceMaps = []
+            DeviceMaps = [ map ]
         };
 
         // Act
         definition.ApplyCustomScheme(expectedScheme);
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetScheme("Hello", "Hello");
 
         // Assert
         Assert.NotNull(scheme);
@@ -271,38 +307,46 @@ public class InputDefinitionTests
     public void ResetDefinition_BuiltInScheme_DoesNotRemove_ReturnsSuccessfully()
     {
         // Arrange
-        var expectedScheme = new InputScheme("Hello", [], false, false);
+        var expectedScheme = new InputScheme("Hello", [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad), InputMaps = [], VirtualMaps = [] }], 
+                                             false, false);
         var definition = new InputDefinition("Hello", [], [expectedScheme], false);
 
         // Act
         definition.ResetDefinition();
 
         // Assert
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetSchemesByDevicecCombination("Hello");
 
         Assert.NotNull(scheme);
-        Assert.Equal(expectedScheme, scheme);
+        Assert.Equal(expectedScheme, scheme.First());
     }
 
     [Fact]
     public void ResetDefinition_BuiltInAndCustomSchemes_OnlyRemovesCustomScheme_ReturnsSuccessfully()
     {
         // Arrange
-        var expectedScheme = new InputScheme("Hello", [], false, false);
+        var map = new DeviceInputMap()
+        {
+            DeviceFamily = new InputDeviceFamily("Hello", InputDeviceType.GamePad),
+            InputMaps = [],
+            VirtualMaps = []
+        };
+        var expectedScheme = new InputScheme("Hello", [map],
+                                              false, false);
         var definition = new InputDefinition("Hello", [], [expectedScheme], false);
 
-        var customScheme = new CustomInputScheme() { Name = "What", DefinitionName = "Hello", DeviceMaps = [] };
+        var customScheme = new CustomInputScheme() { Name = "What", DefinitionName = "Hello", DeviceMaps = [map] };
         definition.ApplyCustomScheme(customScheme);
 
-        Assert.NotNull(definition.GetScheme("What"));
+        Assert.NotEmpty(definition.GetSchemesByDevicecCombination("HeLLO"));
 
         // Act
         definition.ResetDefinition();
 
         // Assert
-        Assert.Null(definition.GetScheme("What"));
+        Assert.Null(definition.GetScheme(map.DeviceFamily.Name, "What"));
 
-        var scheme = definition.GetScheme("Hello");
+        var scheme = definition.GetScheme(map.DeviceFamily.Name, "Hello");
         Assert.NotNull(scheme);
         Assert.Equal(expectedScheme, scheme);
     }

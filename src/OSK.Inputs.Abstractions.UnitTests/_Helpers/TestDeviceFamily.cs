@@ -2,7 +2,7 @@
 
 namespace OSK.Inputs.Abstractions.UnitTests._Helpers;
 
-public class TestIdentity
+public class TestDeviceFamily
 {
     public static InputDeviceFamily Identity1 = new("Test 1", InputDeviceType.Generic);
     public static InputDeviceFamily Identity2 = new("Test 2", InputDeviceType.Generic);

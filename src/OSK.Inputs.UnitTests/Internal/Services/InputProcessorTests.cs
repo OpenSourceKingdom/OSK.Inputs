@@ -60,7 +60,7 @@ public class InputProcessorTests
             _mockServiceProvider.Object, 
             Mock.Of<ILogger<InputProcessor>>(), 
             _outputFactory,
-            (_, _, _, _) => _mockUserInputTracker.Object,
+            (_, _, _) => _mockUserInputTracker.Object,
             _trackers);
     }
 
@@ -72,7 +72,7 @@ public class InputProcessorTests
     public void HandleDeviceNotification_NullNotification_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _processor.HandleDeviceNotification(null!));
+        Assert.Throws<ArgumentNullException>(() => _processor.ProcessMessage(null!));
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class InputProcessorTests
             .Returns((IInputUser?)null);
 
         // Act
-        _processor.HandleDeviceNotification(stateChangeEvent);
+        _processor.ProcessMessage(stateChangeEvent);
 
         // Assert
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<DeviceStateChangedNotification>(s => true)), Times.Once);
@@ -99,14 +99,14 @@ public class InputProcessorTests
         var stateChangeEvent = new DeviceStateChangedNotification(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1), DeviceStatus.Disconnected);
 
         _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
-            .Returns(new InputUser(1, default));
+            .Returns(new InputUser(1));
 
         // Act
-        _processor.HandleDeviceNotification(stateChangeEvent);
+        _processor.ProcessMessage(stateChangeEvent);
 
         // Assert
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<DeviceStateChangedNotification>(s => true)), Times.Never);
-        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<UserDeviceNotification>(s => s.UserId == 1)), Times.Once);
+        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<UserDeviceNotification>(s => s.User.Id == 1)), Times.Once);
     }
 
     #endregion
@@ -176,7 +176,7 @@ public class InputProcessorTests
     public void ProcessEvent_NullEvent_ThrowsArgumentNullException()
     {
         // Arrange/Act/Assert
-        Assert.Throws<ArgumentNullException>(() => _processor.ProcessEvent(null!));
+        Assert.Throws<ArgumentNullException>(() => _processor.ProcessEvent(TimeSpan.Zero, null!));
     }
 
     [Fact]
@@ -186,8 +186,8 @@ public class InputProcessorTests
         _processor._pauseInputProcessing = true;
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Asseert
         Assert.False(output.IsSuccessful);
@@ -211,8 +211,8 @@ public class InputProcessorTests
             .Returns((IInputUser?)null);
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -237,8 +237,8 @@ public class InputProcessorTests
             .Returns((IInputUser?)null);
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -255,7 +255,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc", 
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ], 
                             false, false)
                     ], false)
@@ -272,8 +272,8 @@ public class InputProcessorTests
             .Returns(_outputFactory.Fail<IInputUser>("Bad day"));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -290,7 +290,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -304,13 +304,13 @@ public class InputProcessorTests
         _mockUserManager.Setup(m => m.GetUsers())
             .Returns([]);
         _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
-            .Returns(_outputFactory.Succeed((IInputUser)new InputUser(1, new ActiveInputScheme("Abc", "Abc"))));
+            .Returns(_outputFactory.Succeed((IInputUser)new InputUser(1)));
         _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
             .Returns(_outputFactory.Fail("Bad Day"));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -328,7 +328,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -340,6 +340,8 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
 
@@ -354,12 +356,12 @@ public class InputProcessorTests
                 return _outputFactory.Succeed();
             });
 
-        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -377,7 +379,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -389,6 +391,8 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
 
@@ -403,12 +407,12 @@ public class InputProcessorTests
                 return _outputFactory.Succeed();
             });
 
-        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -426,7 +430,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -438,12 +442,16 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
 
         var mockUser2 = new Mock<IInputUser>();
         mockUser2.SetupGet(m => m.Id)
             .Returns(2);
+        mockUser2.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser2.SetupGet(m => m.PairedDevices)
             .Returns([]);
 
@@ -458,12 +466,12 @@ public class InputProcessorTests
                 return _outputFactory.Succeed();
             });
 
-        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(2, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(2, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -481,7 +489,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -493,12 +501,16 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1))]);
 
         var mockUser2 = new Mock<IInputUser>();
         mockUser2.SetupGet(m => m.Id)
             .Returns(2);
+        mockUser2.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser2.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(2, new RuntimeDeviceIdentifier(2, TestIdentity.Identity1))]);
 
@@ -513,12 +525,12 @@ public class InputProcessorTests
                 return _outputFactory.Succeed();
             });
 
-        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(3, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(3, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -536,8 +548,8 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] },
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps =[]},
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -548,14 +560,18 @@ public class InputProcessorTests
 
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
-            .Returns(1);
+            .Returns(1); 
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1)), 
                     new PairedDevice(1, new RuntimeDeviceIdentifier(2, TestIdentity.Identity2))]);
 
         var mockUser2 = new Mock<IInputUser>();
         mockUser2.SetupGet(m => m.Id)
-            .Returns(2);
+            .Returns(2); 
+        mockUser2.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser2.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(2, new RuntimeDeviceIdentifier(3, TestIdentity.Identity1))]);
 
@@ -570,12 +586,12 @@ public class InputProcessorTests
                 return _outputFactory.Succeed();
             });
 
-        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity2),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity2),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -593,14 +609,14 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] },
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps =[]},
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity2, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false),
 
                         new InputScheme("Def",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity3, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity3, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -612,6 +628,8 @@ public class InputProcessorTests
         var mockUser = new Mock<IInputUser>();
         mockUser.SetupGet(m => m.Id)
             .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1)),
                     new PairedDevice(1, new RuntimeDeviceIdentifier(2, TestIdentity.Identity2))]);
@@ -619,6 +637,8 @@ public class InputProcessorTests
         var mockUser2 = new Mock<IInputUser>();
         mockUser2.SetupGet(m => m.Id)
             .Returns(2);
+        mockUser2.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
         mockUser2.SetupGet(m => m.PairedDevices)
             .Returns([new PairedDevice(2, new RuntimeDeviceIdentifier(3, TestIdentity.Identity1))]);
 
@@ -633,12 +653,12 @@ public class InputProcessorTests
                 return _outputFactory.Succeed();
             });
 
-        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity3),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity3),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -656,7 +676,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = []}
                             ],
                             false, false)
                     ], false)
@@ -669,17 +689,20 @@ public class InputProcessorTests
             .Returns((IInputUser?)null);
         _mockUserManager.Setup(m => m.GetUsers())
             .Returns([]);
+
+        var user = new InputUser(1);
+        user.ActiveInputDefinitionName = "Abc";
         _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
-            .Returns(_outputFactory.Succeed((IInputUser)new InputUser(1, new ActiveInputScheme("Abc", "Abc"))));
+            .Returns(_outputFactory.Succeed((IInputUser)user));
         _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
             .Returns(_outputFactory.Succeed());
 
-        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -697,7 +720,7 @@ public class InputProcessorTests
                     [
                         new InputScheme("Abc",
                             [
-                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [] }
+                                new DeviceInputMap() { DeviceFamily = TestIdentity.Identity1, InputMaps = [], VirtualMaps = [] }
                             ],
                             false, false)
                     ], false)
@@ -706,16 +729,22 @@ public class InputProcessorTests
                 DeviceJoinBehavior = DevicePairingBehavior.Balanced
             }));
 
+        var mockUser = new Mock<IInputUser>();
+        mockUser.SetupGet(m => m.Id)
+            .Returns(1);
+        mockUser.SetupGet(m => m.ActiveInputDefinitionName)
+            .Returns("Abc");
+
         _mockUserManager.Setup(m => m.GetUsers())
             .Returns([]);
         _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
-            .Returns(new InputUser(1, new ActiveInputScheme("Abc", "Abc")));
-        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed((TriggeredActionEvent?)null));
+            .Returns(mockUser.Object);
+        _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
+            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
 
         // Act
-        var output = _processor.ProcessEvent(new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
-            new TestPhysicalInput(1), InputPhase.Start, []));
+        var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
+            1, InputPhase.Start, []));
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -732,7 +761,7 @@ public class InputProcessorTests
     {
         // Arrange/Act/Assert
         Assert.NotNull(_processor._userInputTrackerFactory.Invoke(_mockServiceProvider.Object,
-            [1, new ActiveInputScheme("Abc", "Abc"), new InputSchemeActionMap([]), new InputProcessorConfiguration()]));
+            [1, new InputSchemeActionMap("Abc", "Abc", []), new InputSystemConfiguration([], [], new(), new())]));
     }
 
     #endregion

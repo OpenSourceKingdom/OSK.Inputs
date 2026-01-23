@@ -5,17 +5,17 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 
-internal abstract class InputState(int inputId)
+internal abstract class InputState
 {
     public required RuntimeDeviceIdentifier DeviceIdentifier { get; init; }
 
-    public required TimeSpan Duration { get; set; }
-
-    public int InputId => inputId;
+    public TimeSpan Duration { get; set; } = TimeSpan.Zero;
 
     public InputPhase Phase { get; set; }
 
     public InputActionMap? MappedAction {  get; set; }
 
     public TimeSpan? InactiveDuration { get; set; }
+
+    public abstract IInput GetActiveInput();
 }

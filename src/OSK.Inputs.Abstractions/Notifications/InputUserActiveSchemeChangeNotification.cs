@@ -2,7 +2,7 @@
 
 namespace OSK.Inputs.Abstractions.Notifications;
 
-public class InputUserSchemeChangeNotification(int userId, ActiveInputScheme scheme): InputUserNotification(userId)
+public class InputUserActiveSchemeChangeNotification(IInputUser user, ActiveInputScheme scheme): InputUserNotification(user)
 {
     public ActiveInputScheme NewScheme => scheme;
 }

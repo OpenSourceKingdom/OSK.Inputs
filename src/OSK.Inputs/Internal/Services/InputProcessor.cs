@@ -31,10 +31,10 @@ internal partial class InputProcessor: IInputProcessor
     private readonly IOutputFactory<InputProcessor> _outputFactory;
 
     internal readonly ObjectFactory<InputUserInputTracker> _userInputTrackerFactory
-        = ActivatorUtilities.CreateFactory<InputUserInputTracker>([typeof(int), typeof(ActiveInputScheme),
-            typeof(InputSchemeActionMap), typeof(InputProcessorConfiguration)]);
+        = ActivatorUtilities.CreateFactory<InputUserInputTracker>([typeof(int),
+            typeof(InputSchemeActionMap), typeof(InputSystemConfiguration)]);
 
-    private readonly Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> _newInputTrackerFactory;
+    private readonly Func<int, InputSchemeActionMap, InputSystemConfiguration, IInputUserTracker> _newInputTrackerFactory;
 
     #endregion
 
@@ -52,14 +52,22 @@ internal partial class InputProcessor: IInputProcessor
         _outputFactory = outputFactory ?? throw new ArgumentNullException(nameof(outputFactory));
 
         notificationPublisher.OnUserNotification += HandleUserEvent;
-        _newInputTrackerFactory = (userId, activeScheme, schemeActionMap, processorConfiguration)
-            => _userInputTrackerFactory(_serviceProvider, [userId, activeScheme, schemeActionMap, processorConfiguration]);
+        notificationPublisher.OnDeviceNotification += deviceNotification =>
+        {
+            if (deviceNotification is DeviceUnpairedNotification deviceUnpairedNotification)
+            {
+                _registeredUserDevices.Remove(deviceUnpairedNotification.DeviceIdentifier);
+            }
+        };
+
+        _newInputTrackerFactory = (userId, schemeActionMap, processorConfiguration)
+            => _userInputTrackerFactory(_serviceProvider, [userId, schemeActionMap, processorConfiguration]);
     }
 
     internal InputProcessor(IInputUserManager userManager, IInputNotificationPublisher notificationPublisher,
         IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger,
         IOutputFactory<InputProcessor> outputFactory,
-        Func<int, ActiveInputScheme, InputSchemeActionMap, InputProcessorConfiguration, IInputUserTracker> customTrackerFactory,
+        Func<int, InputSchemeActionMap, InputSystemConfiguration, IInputUserTracker> customTrackerFactory,
         Dictionary<int, IInputUserTracker> trackerDictionary)
         : this(userManager, notificationPublisher, configurationProvider, serviceProvider, logger, outputFactory)
     {
@@ -88,7 +96,7 @@ internal partial class InputProcessor: IInputProcessor
         }
     }
 
-    public IOutput ProcessEvent(InputEvent inputEvent)
+    public IOutput ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent)
     {
         if (inputEvent is null)
         {
@@ -98,27 +106,27 @@ internal partial class InputProcessor: IInputProcessor
         {
             return _outputFactory.Fail("Input processing paused");
         }
-        if (inputEvent is not DeviceInputEvent physicalInputEvent)
+        if (inputEvent is not DeviceInputEvent deviceInputEvent)
         {
             LogUnsupportedInputTypeInformation(_logger, inputEvent.GetType().FullName);
-            return _outputFactory.Fail($"Input type '{inputEvent.Input.GetType().FullName}' is not supported.");
+            return _outputFactory.Fail($"Input type '{inputEvent.GetType().FullName}' is not supported.");
         }
 
-        var inputTracker = GetInputTrackerForDevice(physicalInputEvent.DeviceIdentifier);
+        var inputTracker = GetInputTrackerForDevice(deviceInputEvent.DeviceIdentifier);
         if (inputTracker is null)
         {
             return _outputFactory.Fail($"Unrecognized error, unable to get an input tracker for the device or user.");
         }
 
-        var triggeredActionOutput = inputTracker.Track(inputEvent);
-        if (triggeredActionOutput.IsSuccessful && triggeredActionOutput.Value is not null)
+        var processedInputEvent = inputTracker.Track(deltaTime, inputEvent);
+        if (processedInputEvent.IsSuccessful && processedInputEvent.Value.Triggered)
         {
-            LogInputActionTriggeredDebug(_logger, inputTracker.UserId, physicalInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, 
-                triggeredActionOutput.Value.Value.ActionMap.Action.Name);
-            triggeredActionOutput.Value.Value.Execute();
+            LogInputActionTriggeredDebug(_logger, inputTracker.UserId, deviceInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, 
+                processedInputEvent.Value.ActionMap.Action?.Name ?? "{Passive Action}");
+            processedInputEvent.Value.Execute();
         }
 
-        return triggeredActionOutput;
+        return processedInputEvent;
     }
 
     public void ToggleInputProcessing(bool pause)
@@ -127,46 +135,69 @@ internal partial class InputProcessor: IInputProcessor
         _pauseInputProcessing = pause;
     }
 
-    public void HandleDeviceNotification(DeviceStateChangedNotification deviceNotification)
+    public void ProcessMessage(IInputProcessorMessage processorMessage)
     {
-        if (deviceNotification is null)
+        if (processorMessage is null)
         {
-            throw new ArgumentNullException(nameof(deviceNotification));
+            throw new ArgumentNullException(nameof(processorMessage));
         }
 
-        var user = _userManager.GetInputUserForDevice(deviceNotification.DeviceIdentifier.DeviceId);
-        if (user is null)
+        switch (processorMessage)
         {
-            _notificationPublisher.Notify(deviceNotification);
-            return;
-        }
+            case DeviceStateChangedNotification deviceNotification:
+                var user = _userManager.GetInputUserForDevice(deviceNotification.DeviceIdentifier.DeviceId);
+                if (user is null)
+                {
+                    _notificationPublisher.Notify(deviceNotification);
+                    return;
+                }
 
-        var device = user.GetDevice(deviceNotification.DeviceIdentifier.DeviceId);
-        UserDeviceNotification userDeviceNotification = deviceNotification.Status is DeviceStatus.Disconnected
-            ? new UserDeviceDisconnectedNotification(user.Id, deviceNotification.DeviceIdentifier)
-            : new UserDeviceConnectedNotification(user.Id, deviceNotification.DeviceIdentifier);
-        _notificationPublisher.Notify(userDeviceNotification);
+                var device = user.GetDevice(deviceNotification.DeviceIdentifier.DeviceId);
+                UserDeviceNotification userDeviceNotification = deviceNotification.Status is DeviceStatus.Disconnected
+                    ? new UserDeviceDisconnectedNotification(user, deviceNotification.DeviceIdentifier)
+                    : new UserDeviceConnectedNotification(user, deviceNotification.DeviceIdentifier);
+
+                if (_userInputTrackerLookup.TryGetValue(user.Id, out var deviceTracker))
+                {
+                    deviceTracker.ResetInput(deviceNotification.DeviceIdentifier.DeviceFamily);
+                }
+
+                _notificationPublisher.Notify(userDeviceNotification);
+
+                break;
+            case InputSystemFocusLostEvent:
+                foreach (var tracker in _userInputTrackerLookup.Values)
+                {
+                    foreach (var deviceFamily in tracker.ActiveScheme.DeviceFamilies)
+                    {
+                        tracker.ResetInput(deviceFamily);
+                    }
+                }
+                break;
+        }
     }
 
     #endregion
 
     #region Helpers
-
+    
     private void HandleUserEvent(InputUserNotification userEvent)
     {
         switch (userEvent)
         {
-            case InputUserSchemeChangeNotification schemeChangeEvent:
-                _userInputTrackerLookup[schemeChangeEvent.UserId] = CreateTracker(schemeChangeEvent.UserId, _configurationProvider.Configuration, schemeChangeEvent.NewScheme);
-                LogSchemeChangeDebug(_logger, schemeChangeEvent.UserId, schemeChangeEvent.NewScheme.DefinitionName, schemeChangeEvent.NewScheme.SchemeName);
+            case InputUserActiveDefinitionChangeNotification definitionChangeNotification:
+                if (_userInputTrackerLookup.TryGetValue(definitionChangeNotification.User.Id, out var tracker))
+                {
+                    CreateOrUpdateTracker(_configurationProvider.Configuration, definitionChangeNotification.User, tracker.ActiveScheme.DeviceFamilies);
+                }
+                LogDefinitionChangeDebug(_logger, definitionChangeNotification.User.Id, definitionChangeNotification.ActiveDefinitionName);
                 break;
             case InputUserJoinedNotification userJoinedEvent:
-                _userInputTrackerLookup[userJoinedEvent.UserId] = CreateTracker(userJoinedEvent.UserId, _configurationProvider.Configuration, userJoinedEvent.User.ActiveScheme);
-                LogUserJoinedDebug(_logger, userJoinedEvent.UserId);
+                LogUserJoinedDebug(_logger, userJoinedEvent.User.Id);
                 break;
             case InputUserRemovedNotification userRemovedEvent:
-                _userInputTrackerLookup.Remove(userRemovedEvent.UserId);
-                LogUserRemovedDebug(_logger, userRemovedEvent.UserId);
+                _userInputTrackerLookup.Remove(userRemovedEvent.User.Id);
+                LogUserRemovedDebug(_logger, userRemovedEvent.User.Id);
                 break;
             default:
                 LogUnknownUserNotificationInformation(_logger, userEvent.GetType().FullName);
@@ -174,23 +205,46 @@ internal partial class InputProcessor: IInputProcessor
         }
     }
 
-    private (InputDefinition, InputScheme) GetViableInputScheme(InputSystemConfiguration configuration, ActiveInputScheme activeScheme)
+    private ActiveInputScheme? GetActiveInputScheme(InputSystemConfiguration configuration, IInputUser user, InputDeviceFamily[] deviceFamilies)
     {
-        var inputDefinition = configuration.GetDefinition(activeScheme.DefinitionName);
+        var inputDefinition = configuration.GetDefinition(user.ActiveInputDefinitionName);
         if (inputDefinition is null)
         {
             inputDefinition = configuration.Definitions.FirstOrDefault(definition => definition.IsDefault) ?? configuration.Definitions.First();
-            LogInvalidDefinitionUsageWarning(_logger, activeScheme.DefinitionName, inputDefinition.Name);
+            LogInvalidDefinitionUsageWarning(_logger, user.ActiveInputDefinitionName, inputDefinition.Name);
         }
 
-        var scheme = inputDefinition.GetScheme(activeScheme.SchemeName);
-        if (scheme is null)
+        var deviceCombinationId = InputDeviceCombination.GetCombinationId(deviceFamilies);
+        var potentialSchemes = inputDefinition.GetSchemesByDevicecCombination(deviceCombinationId);
+        if (!potentialSchemes.Any())
         {
-            scheme = inputDefinition.Schemes.FirstOrDefault(s => s.IsDefault) ?? inputDefinition.Schemes.First();
-            LogInvalidSchemeUsageWarning(_logger, inputDefinition.Name, activeScheme.SchemeName, scheme.Name);
+            // Say search fails for keyboard but one exists for keyboard and mouse. Or, say we fail to find an Xbox scheme but there is a game pad scheme that could
+            // somewhat work (most maps will function for all game pads, except for special functions). i.e. need to widen search
+            var closestSupportedCombination = configuration.SupportedDeviceCombinations.Select(combination => new
+                {
+                    Combination = combination,
+                    SupportConfidence = deviceFamilies.Sum(combination.GetDeviceSupportConfidence)
+                })
+                .Where(combinationSupportConfidence => combinationSupportConfidence.SupportConfidence > 0)
+                .OrderByDescending(combinationSupportConfidence => combinationSupportConfidence.SupportConfidence)
+                .FirstOrDefault();
+
+            if (closestSupportedCombination is null)
+            {
+                LogUnsupportedDeviceFamiliesWarning(_logger, inputDefinition.Name, string.Join(", ", deviceFamilies.Select(family => family.Name)));
+                return null;
+            }
+
+            deviceCombinationId = InputDeviceCombination.GetCombinationId(closestSupportedCombination.Combination.DeviceFamilies);
+            potentialSchemes = inputDefinition.GetSchemesByDevicecCombination(deviceCombinationId);
         }
 
-        return (inputDefinition, scheme);
+        var preferredScheme = user.GetPreferredInputScheme(user.ActiveInputDefinitionName, deviceCombinationId);
+        var scheme = preferredScheme.HasValue 
+            ? potentialSchemes.FirstOrDefault(s => s.Name.Equals(preferredScheme.Value.SchemeName, StringComparison.OrdinalIgnoreCase)) ?? potentialSchemes.First()
+            : potentialSchemes.FirstOrDefault(s => s.IsDefault) ?? potentialSchemes.First();
+
+        return new ActiveInputScheme(user.ActiveInputDefinitionName, scheme.Name, [.. scheme.GetDeviceFamilies() ]);
     }
 
     private IInputUser? TryDevicePairing(InputSystemConfiguration configuration, RuntimeDeviceIdentifier deviceIdentifier)
@@ -202,7 +256,7 @@ internal partial class InputProcessor: IInputProcessor
         }
 
         var supportedDeviceCombination = configuration.SupportedDeviceCombinations
-                                        .Where(deviceCombination => deviceCombination.DeviceIdentities.Contains(deviceIdentifier.Identity))
+                                        .Where(deviceCombination => deviceCombination.DeviceFamilies.Contains(deviceIdentifier.DeviceFamily))
                                         .Cast<InputDeviceCombination?>()
                                         .FirstOrDefault();
         if (supportedDeviceCombination is null)
@@ -212,7 +266,7 @@ internal partial class InputProcessor: IInputProcessor
         }
 
         var targetUser = GetUserForDevicePairing(configuration.SupportedDeviceCombinations, _userManager.GetUsers(), 
-            configuration.JoinPolicy.DeviceJoinBehavior, deviceIdentifier.Identity);
+            configuration.JoinPolicy.DeviceJoinBehavior, deviceIdentifier.DeviceFamily);
         if (targetUser is null)
         {
             LogNewUserCreateDebug(_logger, deviceIdentifier);
@@ -240,36 +294,51 @@ internal partial class InputProcessor: IInputProcessor
     {
         if (_registeredUserDevices.TryGetValue(deviceIdentifier, out var userId))
         {
-            return _userInputTrackerLookup[userId];
+            return CreateOrUpdateTracker(_configurationProvider.Configuration, _userManager.GetUser(userId)!, [deviceIdentifier.DeviceFamily]);
         }
 
         var deviceUser = _userManager.GetInputUserForDevice(deviceIdentifier.DeviceId) ?? TryDevicePairing(_configurationProvider.Configuration, deviceIdentifier);
         if (deviceUser is null)
         {
-            LogNoInputUserForDeviceWarning(_logger, deviceIdentifier.Identity);
+            LogNoInputUserForDeviceWarning(_logger, deviceIdentifier.DeviceFamily);
             _notificationPublisher.Notify(new UnrecognizedDeviceNotification(deviceIdentifier));
             return null;
         }
 
-        if (!_userInputTrackerLookup.TryGetValue(deviceUser.Id, out var inputTracker))
+        _registeredUserDevices[deviceIdentifier] = deviceUser.Id;
+        if (_userInputTrackerLookup.TryGetValue(deviceUser.Id, out var inputTracker))
         {
-            LogNewInputTrackerForUnregisteredUserDebug(_logger, deviceUser.Id, deviceIdentifier);
-            inputTracker = CreateTracker(deviceUser.Id, _configurationProvider.Configuration, deviceUser.ActiveScheme);
+            return inputTracker;
         }
 
-        return inputTracker;
+        LogNewInputTrackerForUnregisteredUserDebug(_logger, deviceUser.Id, deviceIdentifier);
+        return CreateOrUpdateTracker(_configurationProvider.Configuration, deviceUser, [deviceIdentifier.DeviceFamily]);
     }
 
-    private IInputUserTracker CreateTracker(int userId, InputSystemConfiguration configuration, ActiveInputScheme activeScheme)
+    private IInputUserTracker? CreateOrUpdateTracker(InputSystemConfiguration configuration, IInputUser user, InputDeviceFamily[] deviceFamilies)
     {
-        var (inputDefinition, inputScheme) = GetViableInputScheme(configuration, activeScheme);
-        var schemeActionMap = configuration.GetSchemeMap(inputDefinition.Name, inputScheme.Name);
-        if (schemeActionMap is null)
+        if (_userInputTrackerLookup.TryGetValue(user.Id, out var inputTracker)
+             && user.ActiveInputDefinitionName.Equals(inputTracker.ActiveScheme.DefinitionName, StringComparison.OrdinalIgnoreCase)
+                 && deviceFamilies.Any(inputTracker.ActiveScheme.DeviceFamilies.Contains))
         {
-            throw new InvalidOperationException($"Scheme action map for user input tracker was null, but this should not have been possible; definition: {inputDefinition.Name}, scheme: {inputScheme.Name}.");
+            return inputTracker;
+        }
+        
+        var activeScheme = GetActiveInputScheme(configuration, user, deviceFamilies);
+        if (activeScheme is null)
+        {
+            return null;
         }
 
-        return _newInputTrackerFactory(userId, activeScheme, schemeActionMap, configuration.ProcessorConfiguration);
+        var schemeActionMap = configuration.GetSchemeMap(activeScheme.Value.DefinitionName, activeScheme.Value.DeviceCombinationId, activeScheme.Value.SchemeName);
+        if (schemeActionMap is null)
+        {
+            throw new InvalidOperationException($"Scheme action map for user input tracker was null, but this should not have been possible; definition: {activeScheme.Value.DefinitionName}, scheme: {activeScheme.Value.SchemeName}.");
+        }
+
+        LogNewActiveSchemeInformation(_logger, user.Id, string.Join(", ", deviceFamilies.Select(family => family.Name)), schemeActionMap.DefinitionName, schemeActionMap.SchemeName);
+        _userInputTrackerLookup[user.Id] = _newInputTrackerFactory(user.Id, schemeActionMap, configuration);
+        return _userInputTrackerLookup[user.Id];
     }
 
     private IInputUser? GetUserForDevicePairing(IEnumerable<InputDeviceCombination> supportedDeviceCombinations,
@@ -281,7 +350,7 @@ internal partial class InputProcessor: IInputProcessor
         }
 
         var deviceCombinationLookup = supportedDeviceCombinations.SelectMany(combination
-            => combination.DeviceIdentities.Select(identity => new { DeviceFamily = identity, Combination = combination }))
+            => combination.DeviceFamilies.Select(identity => new { DeviceFamily = identity, Combination = combination }))
             .GroupBy(deviceFamilyCombinations => deviceFamilyCombinations.DeviceFamily)
             .ToDictionary(deviceFamilyCombinationGroup => deviceFamilyCombinationGroup.Key,
                 deviceFamilyCombinationGroup 
@@ -291,13 +360,13 @@ internal partial class InputProcessor: IInputProcessor
 
         var userDevicePairingData = users.Select(user =>
         {
-            var pairedDeviceSet = user.PairedDevices.Select(pairedDevice => pairedDevice.DeviceIdentifier.Identity).ToHashSet();
-            var completedCombinations = supportedDeviceCombinations.Count(combination => combination.DeviceIdentities.All(identity => pairedDeviceSet.Contains(identity)));
+            var pairedDeviceSet = user.PairedDevices.Select(pairedDevice => pairedDevice.DeviceIdentifier.DeviceFamily).ToHashSet();
+            var completedCombinations = supportedDeviceCombinations.Count(combination => combination.DeviceFamilies.All(identity => pairedDeviceSet.Contains(identity)));
             var missingNewDevice = !pairedDeviceSet.Contains(newdeviceFamily);
             var fewestDevicesToCompleteClosestCombinationWithDevice = missingNewDevice
                 ? supportedDeviceCombinations
                     .Where(combination => combination.Contains(newdeviceFamily))
-                    .Select(combination => combination.DeviceIdentities.Count(identity => !pairedDeviceSet.Contains(identity)))
+                    .Select(combination => combination.DeviceFamilies.Count(identity => !pairedDeviceSet.Contains(identity)))
                     .Min()
                 : 100;
 

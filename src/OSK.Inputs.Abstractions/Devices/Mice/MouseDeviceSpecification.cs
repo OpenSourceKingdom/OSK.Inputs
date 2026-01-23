@@ -8,8 +8,8 @@ public abstract class MouseDeviceSpecification: InputDeviceSpecification<MouseIn
 {
     #region InputDeviceSpecification Overrides
 
-    public override IReadOnlyCollection<IInput> GetInputs()
-        => [.. Inputs.Select(input => new MouseDeviceInput(input))];
+    public override IReadOnlyCollection<DeviceInput> GetInputs()
+        => [.. Inputs.Select(input => input.ToInput())];
 
     #endregion
 

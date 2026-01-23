@@ -7,7 +7,7 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// to it
 /// </summary>
 /// <param name="DeviceId">The game system id for the device</param>
-/// <param name="Identity">The specific <see cref="InputDeviceFamily"/> associated with the id</param>
-public readonly record struct RuntimeDeviceIdentifier(int DeviceId, InputDeviceFamily Identity)
+/// <param name="DeviceFamily">The specific <see cref="InputDeviceFamily"/> associated with the device</param>
+public readonly record struct RuntimeDeviceIdentifier(int DeviceId, InputDeviceFamily DeviceFamily)
 {
 }

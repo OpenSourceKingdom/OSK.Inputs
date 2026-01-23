@@ -1,6 +1,5 @@
 ﻿namespace OSK.Inputs.Abstractions.Notifications;
 
-public class InputUserJoinedNotification(IInputUser user): InputUserNotification(user.Id)
+public class InputUserJoinedNotification(IInputUser user): InputUserNotification(user)
 {
-    public IInputUser User => user;
 }

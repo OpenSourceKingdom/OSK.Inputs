@@ -37,6 +37,11 @@ public class DeviceInputMap
     }
 
     /// <summary>
+    /// The list of virtual input maps associated with the devices
+    /// </summary>
+    public required IReadOnlyCollection<VirtualInputMap> VirtualMaps { get; init; }
+
+    /// <summary>
     /// Attempts to get an input map for a given input
     /// </summary>
     /// <param name="inputId">The unique id for the input on the device</param>

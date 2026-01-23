@@ -1,4 +1,5 @@
 ﻿using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.Runtime;
 
@@ -6,8 +7,20 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// The active scheme that a user is using to interact with the input system.
 /// See <see cref="InputScheme"/>
 /// </summary>
-/// <param name="DefinitionName">The name of the <see cref="InputDefinition"/></param>
-/// <param name="SchemeName">The name of the <see cref="InputScheme"/></param>
-public readonly record struct ActiveInputScheme(string DefinitionName, string SchemeName)
+/// <param name="definitionName">The name of the <see cref="InputDefinition"/></param>
+/// <param name="schemeName">The name of the <see cref="InputScheme"/></param>
+/// <param name="deviceFamilies">The list of devices associated with the active scheme</param>
+public readonly struct ActiveInputScheme(string definitionName, string schemeName, InputDeviceFamily[] deviceFamilies)
 {
+    #region Variables
+
+    public string DefinitionName => definitionName;
+
+    public string SchemeName => schemeName;
+
+    public string DeviceCombinationId { get; } = InputDeviceCombination.GetCombinationId(deviceFamilies);
+
+    public InputDeviceFamily[] DeviceFamilies => deviceFamilies;
+
+    #endregion
 }

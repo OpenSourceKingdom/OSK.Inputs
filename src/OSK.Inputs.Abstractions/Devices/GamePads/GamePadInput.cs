@@ -10,36 +10,38 @@ public enum GamePadInput
     Options = 2,
     Home = 3,
     Share = 4,
+    Plus = 5,
+    Minus = 6,
 
     // Face Buttons (Cardinal/Positional naming)
     /// <summary> Square (PS), X (Xbox) </summary>
-    ButtonWest = 10,
+    ButtonWest = 20,
     /// <summary> Circle (PS), B (Xbox) </summary>
-    ButtonEast = 11,
+    ButtonEast = 21,
     /// <summary> Triangle (PS), Y (Xbox) </summary>
-    ButtonNorth = 12,
+    ButtonNorth = 22,
     /// <summary> Cross (PS), A (Xbox) </summary>
-    ButtonSouth = 13,
+    ButtonSouth = 23,
 
     // Shoulder / Triggers
-    RightTrigger = 30,
-    RightBumper = 31,
-    LeftTrigger = 32,
-    LeftBumper = 33,
+    RightTrigger = 40,
+    RightBumper = 41,
+    LeftTrigger = 42,
+    LeftBumper = 43,
 
     // D-Pad
-    DpadLeft = 40,
-    DpadRight = 41,
-    DpadUp = 42,
-    DpadDown = 43,
+    DpadLeft = 60,
+    DpadRight = 61,
+    DpadUp = 62,
+    DpadDown = 63,
 
     // Joysticks
-    LeftJoyStickClick = 50,
-    LeftJoyStick = 51,
-    RightJoyStickClick = 52,
-    RightJoyStick = 53,
+    LeftJoyStickClick = 80,
+    LeftJoyStick = 81,
+    RightJoyStickClick = 82,
+    RightJoyStick = 83,
 
     // Touch
-    TouchPadClick = 60,
-    TouchPad = 70
+    TouchPadClick = 100,
+    TouchPad = 101
 }

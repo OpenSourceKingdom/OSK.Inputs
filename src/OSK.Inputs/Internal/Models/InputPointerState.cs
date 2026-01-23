@@ -5,10 +5,11 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 
-internal class InputPointerState(int pointerId, IDeviceInput input, int maxRecords): DeviceInputState(input)
+internal class InputPointerState(int pointerId, DeviceInput input, int maxRecords, float squaredPointerThreshold): DeviceInputState(input)
 {
     #region Variables
 
+    private Vector2? _startPosition;
     private readonly Queue<PointerLocationRecord> _pointerRecords = [];
 
     #endregion
@@ -17,7 +18,7 @@ internal class InputPointerState(int pointerId, IDeviceInput input, int maxRecor
 
     public int PointerId => pointerId;
 
-    public (Vector2, PointerMotion)? GetCurrentPositionAndMotionData()
+    public PointerStateInformation? GetPointerStateInformation()
     {
         PointerLocationRecord? currentRecord = null;
         var currentVelocity = Vector2.Zero;
@@ -45,11 +46,17 @@ internal class InputPointerState(int pointerId, IDeviceInput input, int maxRecor
 
         return currentRecord is null
             ? null
-            : (currentRecord.Value.Position, new PointerMotion(currentVelocity, currentAcceleration));
+            : new(_startPosition ?? currentRecord.Value.Position, currentRecord.Value.Position, new PointerMotion(currentVelocity, currentAcceleration));
     }
 
     public void AddRecord(Vector2 position)
     {
+        if (_pointerRecords.TryPeek(out var lastLocation) && (lastLocation.Position - position).LengthSquared() < squaredPointerThreshold)
+        {
+            return;
+        }
+
+        _startPosition ??= position;
         _pointerRecords.Enqueue(new PointerLocationRecord(position, Duration));
         if (_pointerRecords.Count > maxRecords)
         {

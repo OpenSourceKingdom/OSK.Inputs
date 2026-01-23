@@ -14,14 +14,14 @@ public class DeviceSchemeActionMap(InputDeviceFamily deviceFamily, IEnumerable<I
 {
     #region Variables
 
-    private readonly Dictionary<int, InputActionMap> _deviceInputMaps = actionMaps.Where(map => map.Input is IDeviceInput)
-                                                                                          .ToDictionary(inputMap => inputMap.InputId);
+    private readonly Dictionary<int, InputActionMap> _deviceInputMaps = actionMaps.Where(map => map.Input is DeviceInput)
+                                                                                  .ToDictionary(inputMap => ((DeviceInput)inputMap.Input).Id);
 
     private readonly Dictionary<int, InputActionMap[]> _deviceVirtualInputLookup
-        = actionMaps.Where(map => map.Input is VirtualInput)
-                .SelectMany(map => map.LinkedInputIds.Select(linkedId => new { InputId = linkedId, ActionMap = map }))
+        = actionMaps.Where(actionMap => actionMap.Input is VirtualInput)
+                .SelectMany(map => ((VirtualInput)map.Input).GetLinkedInputs().OfType<DeviceInput>().Select(linkedInput => new { InputId = linkedInput.Id, ActionMap = map }))
                 .GroupBy(inputLink => inputLink.InputId)
-                .ToDictionary(inputVirtualGroup => inputVirtualGroup.Key, inputVirtualGroup => inputVirtualGroup.Select(v => v.ActionMap).ToArray());
+                .ToDictionary(inputVirtualGroup => inputVirtualGroup.Key, inputVirtualGroup => inputVirtualGroup.Select(ig => ig.ActionMap).ToArray());
 
     #endregion
 

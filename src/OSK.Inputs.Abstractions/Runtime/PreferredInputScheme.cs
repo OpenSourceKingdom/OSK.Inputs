@@ -9,5 +9,7 @@ public readonly struct PreferredInputScheme
 
     public required string DefinitionName { get; init; }
 
+    public required string CombinationId { get; init; }
+
     public required string SchemeName { get; init; }
 }

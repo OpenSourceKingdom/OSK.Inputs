@@ -21,12 +21,12 @@ public class InputActionAttribute : Attribute
 
     #region Constructors
 
-    public InputActionAttribute(string actionName, InputPhase[] triggerPhases, bool includePointerDetails = false, string? description = null)
+    public InputActionAttribute(InputPhase[] triggerPhases, string? actionName = null, bool includePointerDetails = false, string? description = null)
     {
-        ActionName = actionName?.Trim();
-        Description = description;
         TriggerPhases = triggerPhases;
+        ActionName = actionName?.Trim();
         IncludePointerDetails = includePointerDetails;
+        Description = description;
     }
 
     #endregion

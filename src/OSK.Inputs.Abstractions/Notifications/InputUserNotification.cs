@@ -1,6 +1,6 @@
 ﻿namespace OSK.Inputs.Abstractions.Notifications;
 
-public abstract class InputUserNotification(int userId): IInputNotification
+public abstract class InputUserNotification(IInputUser user): IInputNotification
 {
-    public int UserId => userId;
+    public IInputUser User => user;
 }

@@ -10,12 +10,13 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// The contextual event information for an input that triggered an action and that a system can respond to.
 /// </summary>
 /// <param name="userId">The user who initiated the input</param>
+/// <param name="deltaTime">The amount of time that has occurred since the last frame update</param>
 /// <param name="inputEvent">The input that triggered the event</param>
 /// <param name="pointerDetails">Pointer information, if available</param>
 /// <param name="activityInformation">The specific activity information for this event</param>
 /// <param name="serviceProvider">The services available to this event context</param>
-public class InputEventContext(int userId, InputEvent inputEvent, PointerDetails pointerDetails, 
-    InputActivityInformation activityInformation, IServiceProvider serviceProvider)
+public class InputEventContext(int userId, TimeSpan deltaTime, InputEvent inputEvent, 
+    PointerDetails pointerDetails, InputActivityInformation activityInformation, IServiceProvider serviceProvider)
 {
     #region Variables
 
@@ -32,6 +33,12 @@ public class InputEventContext(int userId, InputEvent inputEvent, PointerDetails
     /// The user who initiated the event
     /// </summary>
     public int UserId => userId;
+
+
+    /// <summary>
+    /// The amount of time that has occurred since the last frame was processed
+    /// </summary>
+    public TimeSpan DeltaTimeSinceLastFrame => deltaTime;
 
     /// <summary>
     /// The input event that triggered the <see cref="InputAction"/> in the input system

@@ -2,15 +2,9 @@
 
 public class XboxGamePad : GamePadDeviceSpecification
 {
-    #region Static
-
-    public static InputDeviceFamily Xbox = new("Xbox", InputDeviceType.GamePad);
-
-    #endregion
-
     #region InputDeviceSpecification Overrides
 
-    public override InputDeviceFamily DeviceFamily => Xbox;
+    public override InputDeviceFamily DeviceFamily => InputDeviceFamily.Xbox;
 
     protected override GamePadInput[] Inputs { get; } = [
         GamePadInput.ButtonSouth, // A

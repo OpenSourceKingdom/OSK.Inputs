@@ -33,7 +33,7 @@ public class InputDefinitionBuilderTests
         mockServiceProvider.Setup(m => m.GetService(It.Is<Type>(type => type == typeof(TestRegistrationService))))
             .Returns(new TestRegistrationService());
 
-        definition.Actions.First().ActionExecutor(new InputEventContext(1, null!, null!, null!, mockServiceProvider.Object));
+        definition.Actions.First().ActionExecutor(new InputEventContext(1, TimeSpan.Zero, null!, null!, null!, mockServiceProvider.Object));
     }
 
     #endregion

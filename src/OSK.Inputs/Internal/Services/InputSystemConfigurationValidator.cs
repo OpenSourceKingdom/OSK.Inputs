@@ -63,17 +63,24 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
                 "A custom scheme must have a scheme name.");
         }
 
-        var existingScheme = definition.GetScheme(customScheme.Name);
-        if (existingScheme is not null && (!existingScheme.IsCustom || (existingScheme.IsCustom && !allowDuplicateCustomScheme)))
-        {
-            return InputConfigurationValidationResult.ForScheme(scheme => scheme.Name, InputConfigurationValidation.DuplicateData,
-                $"The custom scheme's name {customScheme.Name} already exists on input definition {definition.Name}.");
-        }
-
         if (customScheme.DeviceMaps is null || !customScheme.DeviceMaps.Any())
         {
             return InputConfigurationValidationResult.ForScheme(scheme => scheme.DeviceMaps, InputConfigurationValidation.MissingData,
                 $"The custom input scheme {customScheme.Name} on input definition {definition.Name} has no device maps.");
+        }
+
+        var scheme = customScheme.ToInputScheme();
+        if (!configuration.SupportedDeviceCombinations.Any(combination => combination.Id.Equals(scheme.CombinationId, StringComparison.OrdinalIgnoreCase)))
+        {
+            return InputConfigurationValidationResult.ForScheme(scheme => scheme.DeviceMaps, InputConfigurationValidation.InvalidData,
+                $"The custom input scheme {customScheme.Name} on input definition {definition.Name} has device maps that are not supported and can not be used.");
+        }
+
+        var existingScheme = definition.GetScheme(scheme.CombinationId, scheme.Name);
+        if (existingScheme is not null && (!existingScheme.IsCustom || (existingScheme.IsCustom && !allowDuplicateCustomScheme)))
+        {
+            return InputConfigurationValidationResult.ForScheme(scheme => scheme.Name, InputConfigurationValidation.DuplicateData,
+                $"The custom scheme's name {customScheme.Name} already exists on input definition {definition.Name}.");
         }
 
         return ValidateInputScheme(configuration, definition, customScheme.ToInputScheme());
@@ -107,17 +114,25 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
             return InputConfigurationValidationResult.ForInputSystem(inputSystem => inputSystem.ProcessorConfiguration, InputConfigurationValidation.MissingData,
                 "Processor configuration must exist.");
         }
-
         if (configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault() < TimeSpan.Zero)
         {
             return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.TapReactivationTime, InputConfigurationValidation.InvalidData,
                 "Tap delay time can not be less than 0.");
         }
-
         if (configuration.ProcessorConfiguration.ActiveTimeThreshold.GetValueOrDefault() < TimeSpan.Zero)
         {
             return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.ActiveTimeThreshold, InputConfigurationValidation.InvalidData,
                 "Start Phase Delay Before Active can not be less than 0.");
+        }
+        if (configuration.ProcessorConfiguration.DeadzoneTolerance.GetValueOrDefault() < 0)
+        {
+            return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.DeadzoneTolerance, InputConfigurationValidation.InvalidData,
+                "Deadzone Tolerance can not be less than 0.");
+        }
+        if (configuration.ProcessorConfiguration.PointerMovementThreshold.GetValueOrDefault() < 0)
+        {
+            return InputConfigurationValidationResult.ForProcessorConfiguration(processor => processor.PointerMovementThreshold, InputConfigurationValidation.InvalidData,
+                "Pointer move threshold can not be less than 0.");
         }
 
         return InputConfigurationValidationResult.Success();
@@ -232,13 +247,13 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
 
         // Note: test difficulty - due to how schemes are read-only and provided at construction into a dictionary (i.e duplicate keys throw),
         // it's not entirely feasible this will occur, but validation will be done to ensure if something changes that this is still caught
-        var duplicateSchemeNames = definition.Schemes.GroupBy(scheme => scheme.Name, StringComparer.OrdinalIgnoreCase)
+        var duplicateSchemeNames = definition.Schemes.GroupBy(scheme => new { scheme.CombinationId, scheme.Name })
            .Where(schemeGroup => schemeGroup.Count() > 1)
            .Select(schemeGroup => schemeGroup.Key);
         if (duplicateSchemeNames.Any())
         {
             return InputConfigurationValidationResult.ForDefinition(definition => definition.Schemes, InputConfigurationValidation.DuplicateData,
-                $"There are {duplicateSchemeNames.Count()} schemes with the same name on input definition {definition.Name}, the names are: {string.Join(", ", duplicateSchemeNames)}.");
+                $"There are {duplicateSchemeNames.Count()} schemes with the same name on input definition {definition.Name}, the names are: {string.Join(", ", duplicateSchemeNames.Select(scheme => $"Combination: {scheme.CombinationId} Scheme: {scheme.Name}"))}.");
         }
 
         var schemesMissingDeviceMaps = definition.Schemes.Where(scheme => scheme.DeviceMaps is null || !scheme.DeviceMaps.Any());
@@ -333,7 +348,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
                 $"There are {duplicateInputIds.Count()} input ids for the device map {deviceMap.DeviceFamily} with scheme {scheme.Name} on input definition {definition.Name}, the duplicate ids are: {string.Join(", ", duplicateInputIds)}.");
         }
 
-        var inputsMissingActionNames = deviceMap.InputMaps.Where(map => string.IsNullOrWhiteSpace(map.ActionName))
+        var inputsMissingActionNames = deviceMap.InputMaps.Where(map => !map.IsPassive && string.IsNullOrWhiteSpace(map.ActionName))
             .Select(map => map.InputId);
         if (inputsMissingActionNames.Any()) 
         {
@@ -341,7 +356,7 @@ internal class InputSystemConfigurationValidator : IInputSystemConfigurationVali
                 $"There are {inputsMissingActionNames.Count()} input maps missing action names for device map {deviceMap.DeviceFamily} with scheme {scheme.Name} on input definition {definition.Name}, the input map ids are: {string.Join(", ", inputsMissingActionNames)}.");
         }
 
-        var invalidActionNames = deviceMap.InputMaps.Where(map => definition.GetAction(map.ActionName) is null);
+        var invalidActionNames = deviceMap.InputMaps.Where(map => !map.IsPassive && definition.GetAction(map.ActionName) is null);
         if (invalidActionNames.Any()) 
         {
             return InputConfigurationValidationResult.ForDeviceMap(map => map.InputMaps, InputConfigurationValidation.InvalidData,

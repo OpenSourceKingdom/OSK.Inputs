@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
+using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
@@ -12,39 +13,67 @@ using OSK.Inputs.Internal.Models;
 
 namespace OSK.Inputs.Internal.Services;
 
-internal partial class InputUserInputTracker(int userId, ActiveInputScheme scheme, InputSchemeActionMap schemeMap, 
-    InputProcessorConfiguration processorConfiguration, ILogger<InputUserInputTracker> logger, IOutputFactory<InputUserInputTracker> outputFactory,
-    IServiceProvider serviceProvider): IInputUserTracker
+internal partial class InputUserInputTracker(int userId, InputSchemeActionMap schemeMap, 
+    InputSystemConfiguration configuration, ILogger<InputUserInputTracker> logger,
+    IOutputFactory<InputUserInputTracker> outputFactory, IServiceProvider serviceProvider): IInputUserTracker
 {
     #region Variables
 
+    /// <summary>
+    /// The deadzone minimum prevents calculating smoothness for intensities if the tolerance is effectively 0.
+    /// </summary>
+    private const float DeadzoneMinimumThreshold = 0.01f;
     private const int MaxPointerRecords = 3;
+    private float _pointerSquareThreshold = MathF.Pow(configuration.ProcessorConfiguration.PointerMovementThreshold.GetValueOrDefault(.01f), 2);
+
+    private float _deadZoneTolerance = configuration.ProcessorConfiguration.DeadzoneTolerance.HasValue
+        ? configuration.ProcessorConfiguration.DeadzoneTolerance < DeadzoneMinimumThreshold 
+            ? DeadzoneMinimumThreshold 
+            : configuration.ProcessorConfiguration.DeadzoneTolerance.Value
+        : DeadzoneMinimumThreshold;
 
     private readonly Dictionary<InputDeviceFamily, DeviceInputTracker> _deviceInputTrackerLookup
         = schemeMap.DeviceSchemeMaps.ToDictionary(
             deviceScheme => deviceScheme.DeviceFamily, 
             deviceScheme => new DeviceInputTracker(deviceScheme));
 
+    private readonly Dictionary<InputDeviceFamily, InputDeviceSpecification> _deviceInputLookup = schemeMap.DeviceSchemeMaps
+            .Select(device => configuration.GetDeviceSpecification(device.DeviceFamily))
+            .Where(specification => specification is not null)
+            .ToDictionary(specification => specification!.DeviceFamily, specification => specification!);
+
+    internal IEnumerable<DeviceInputTracker> GetInputTrackers() => _deviceInputTrackerLookup.Values;
+
     #endregion
 
     #region IUserInputTracker
 
-    public ActiveInputScheme ActiveScheme => scheme;
+    public ActiveInputScheme ActiveScheme { get; } = new ActiveInputScheme(schemeMap.DefinitionName, schemeMap.SchemeName, 
+                                                                            [.. schemeMap.DeviceSchemeMaps.Select(m => m.DeviceFamily)]);
 
     public int UserId => userId;
 
-    public IEnumerable<TriggeredActionEvent> Update(TimeSpan deltaTime)
+    public void ResetInput(InputDeviceFamily deviceFamily)
     {
-        var removalDelay = processorConfiguration.TapReactivationTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
+        if (_deviceInputTrackerLookup.TryGetValue(deviceFamily, out _))
+        {
+            _deviceInputTrackerLookup[deviceFamily] = new DeviceInputTracker(schemeMap.DeviceSchemeMaps.First(map => map.DeviceFamily == deviceFamily));
+        }
+    }
 
-        var triggeredActions = new List<TriggeredActionEvent>();
+    public IEnumerable<ProcessedInputEvent> Update(TimeSpan deltaTime)
+    {
+        var removalDelay = configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault(defaultValue: TimeSpan.Zero);
+
+        var triggeredActions = new Dictionary<IInput, ProcessedInputEvent>();
         foreach (var deviceTracker in _deviceInputTrackerLookup.Values)
         {
             var inputsToRemove = new List<InputState>();
-            foreach (var inputState in deviceTracker.AllStates)
+            foreach (var inputState in deviceTracker.AllInputStates)
             {
                 if (inputState.Phase is InputPhase.End)
                 {
+                    inputState.InactiveDuration += deltaTime;
                     if (inputState.InactiveDuration.GetValueOrDefault(TimeSpan.Zero) >= removalDelay)
                     {
                         inputsToRemove.Add(inputState);
@@ -54,108 +83,137 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
                 inputState.Duration += deltaTime;
 
-                TriggeredActionEvent? triggeredAction;
                 var reprocess = false;
                 switch (inputState.Phase)
                 {
                     case InputPhase.Start:
-                        if (inputState.Duration >= processorConfiguration.ActiveTimeThreshold.GetValueOrDefault(TimeSpan.Zero))
+                        if (inputState.Duration >= configuration.ProcessorConfiguration.ActiveTimeThreshold.GetValueOrDefault(TimeSpan.Zero))
                         {
                             inputState.Phase = InputPhase.Active;
-                            reprocess = true;
+                            reprocess = inputState is not VirtualInputState;
                         }
                         break;
                     case InputPhase.Active:
                         break;
                 }
 
+                ProcessedInputEvent? processedInputEvent = null;
                 var inputEvent = GetEventForState(inputState);
-                triggeredAction = inputEvent is not null && inputState.MappedAction is not null
-                    ? reprocess 
-                        ? Track(inputEvent).Value 
-                        : GetTriggeredActivation(inputState, inputEvent, inputState.MappedAction)
-                    : null;
 
-                if (triggeredAction is not null)
+                if (inputEvent is not null)
                 {
-                    triggeredActions.Add(triggeredAction.Value);
+                    if (reprocess)
+                    {
+                        var reprocessedOutput = Track(deltaTime, inputEvent);
+                        processedInputEvent = reprocessedOutput.IsSuccessful
+                            ? reprocessedOutput.Value
+                            : null;
+                    }
+                    else if (inputState.MappedAction is not null && inputState.MappedAction is ActiveInputActionMap activeInputActionMap
+                        && activeInputActionMap.Action.TriggerPhases.Contains(inputState.Phase))
+                    {
+                        processedInputEvent = GetTriggeredProcessedEvent(deltaTime, inputState, inputEvent, activeInputActionMap);
+                    }
+                }
+
+                if (processedInputEvent is not null)
+                {
+                    triggeredActions[inputState.GetActiveInput()] = processedInputEvent.Value;
                 }
             }
 
             foreach (var state in inputsToRemove)
             {
+                LogInputStateRemovedDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, 
+                    state is DeviceInputState ds ? ds.Input.Id.ToString() : "Virtual Input", state.Phase);
                 deviceTracker.RemoveState(state);
             }
         }
 
-        return triggeredActions;
+        return triggeredActions.Values;
     }
 
-    public IOutput<TriggeredActionEvent?> Track(InputEvent inputEvent)
+    public IOutput<ProcessedInputEvent> Track(TimeSpan deltaTime, InputEvent inputEvent)
     {
-        if (inputEvent is not DeviceInputEvent physicalInputEvent)
+        if (inputEvent is not DeviceInputEvent deviceInputEvent)
         {
-            return outputFactory.Fail<TriggeredActionEvent?>("The input event was not a physical input event");
+            return outputFactory.Fail<ProcessedInputEvent>("The input event was not a physical input event");
         }
-        if (!_deviceInputTrackerLookup.TryGetValue(physicalInputEvent.DeviceIdentifier.Identity, out var deviceTracker))
+        if (!_deviceInputTrackerLookup.TryGetValue(deviceInputEvent.DeviceIdentifier.DeviceFamily, out var deviceTracker))
         {
-            return outputFactory.Fail<TriggeredActionEvent?>("No device tracker was found for the device triggering the input.");
+            return outputFactory.NotFound<ProcessedInputEvent>("No device tracker was found for the device triggering the input.");
         }
 
-        var actionMaps = deviceTracker.SchemeMap.GetActionMaps(physicalInputEvent.Input.Id);
+        var actionMaps = deviceTracker.SchemeMap.GetActionMaps(deviceInputEvent.InputId);
         if (!actionMaps.Any())
         {
-            return outputFactory.Fail<TriggeredActionEvent?>("No action map found for the input");
+            return outputFactory.Fail<ProcessedInputEvent>("No a1ction map found for the input");
         }
 
-        var inputState = GetAndUpdateInputState(deviceTracker, physicalInputEvent);
+        var inputState = GetAndUpdateInputState(deviceTracker, deviceInputEvent);
         if (inputState is null)
         {
-            return outputFactory.Fail<TriggeredActionEvent?>("Unable to acquire input state");
+            return outputFactory.Fail<ProcessedInputEvent>("Unable to acquire input state");
         }
 
-        var virtualActionMaps = actionMaps.Where(map => map.Input is VirtualInput);
-        var inputActionMap = actionMaps.FirstOrDefault(map => map.Input is IDeviceInput);
-
-
-        var virtualInputActivationContext = ProcessVirtualInputEvent(deviceTracker, inputState, virtualActionMaps);
-        var triggeredActivation = virtualInputActivationContext is null && inputActionMap is not null 
-                && inputActionMap.Action.TriggerPhases.Contains(inputState.Phase)
-            ? GetTriggeredActivation(inputState, physicalInputEvent, inputActionMap)
-            : virtualInputActivationContext;
-
-        inputState.MappedAction = triggeredActivation?.ActionMap;
-
-        if (triggeredActivation is not null)
+        if (inputState.Phase is InputPhase.End && configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault(TimeSpan.Zero) == TimeSpan.Zero)
         {
-            triggeredActivation.Value.Execute();
-        }
-
-        if (inputState.Phase is InputPhase.End && processorConfiguration.TapReactivationTime is null)
-        {
+            LogInputStateRemovedDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, inputState.Input.Id.ToString(), inputState.Phase);
             deviceTracker.RemoveState(inputState);
         }
 
-        return outputFactory.Succeed(triggeredActivation);
+        var activeInputActionMaps = actionMaps.OfType<ActiveInputActionMap>();
+        // Passive action maps only modify state, they do not trigger events.
+        if (!activeInputActionMaps.Any())
+        {
+            return outputFactory.Succeed(ProcessedInputEvent.NotTriggered);
+        }
+
+        ProcessedInputEvent? processedInputEvent = null;
+
+        var virtualActionMaps = activeInputActionMaps.Where(map => map.Input is VirtualInput);
+        if (virtualActionMaps.Any())
+        {
+            processedInputEvent = ProcessVirtualInputEvent(deltaTime, deviceTracker, inputState, virtualActionMaps);
+        }
+        if (processedInputEvent is null)
+        {
+            var inputActionMap = activeInputActionMaps.FirstOrDefault(map => map.Input is DeviceInput);
+
+            processedInputEvent = inputActionMap is not null && inputActionMap is ActiveInputActionMap activeInputActionMap
+                && activeInputActionMap.Action.TriggerPhases.Contains(inputState.Phase)
+                ? GetTriggeredProcessedEvent(deltaTime, inputState, deviceInputEvent, inputActionMap)
+                : null;
+
+            inputState.MappedAction = processedInputEvent?.ActionMap;
+        }
+
+        return outputFactory.Succeed(processedInputEvent ?? ProcessedInputEvent.NotTriggered);
     }
 
     #endregion
 
     #region Helpers
 
-    private DeviceInputState? GetAndUpdateInputState(DeviceInputTracker deviceTracker, InputEvent inputEvent)
+    private DeviceInputState? GetAndUpdateInputState(DeviceInputTracker deviceTracker, DeviceInputEvent inputEvent)
     {
+        DeviceInput? input = null;
+        if (!_deviceInputLookup.TryGetValue(inputEvent.DeviceIdentifier.DeviceFamily, out var specification)
+             || !specification.TryGetInput(inputEvent.InputId, out input))
+        {
+            return null;
+        }
+
         DeviceInputState inputState;
         switch (inputEvent)
         {
             case InputPointerEvent pointerEvent:
                 var pointerState = deviceTracker.GetOrCreatePointerState(pointerEvent.PointerId, () =>
                 {
-                    return new InputPointerState(pointerEvent.PointerId, pointerEvent.Input, MaxPointerRecords)
+                    return new InputPointerState(pointerEvent.PointerId, input!, MaxPointerRecords, _pointerSquareThreshold)
                     {
                         DeviceIdentifier = pointerEvent.DeviceIdentifier,
-                        Phase = pointerEvent.Phase,
-                        Duration = TimeSpan.Zero
+                        Phase = pointerEvent.Phase
                     };
                 });
                 pointerState.AddRecord(pointerEvent.Position);
@@ -163,17 +221,20 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
                 inputState = pointerState;
                 break;
             case InputPowerEvent powerEvent:
-                var inputPowerState = deviceTracker.GetOrCreatePowerState(powerEvent.Input.Id, () =>
+                var inputPowerState = deviceTracker.GetOrCreatePowerState(powerEvent.InputId, () =>
                 {
-                    return new InputPowerState(powerEvent.Input)
+                    return new InputPowerState(input!)
                     {
                         DeviceIdentifier = powerEvent.DeviceIdentifier,
-                        Duration = TimeSpan.Zero,
                         InputPowers = []
                     };
                 });
 
-                inputPowerState.InputPowers = [.. powerEvent.InputIntensities];
+                inputPowerState.InputPowers = input switch  
+                {
+                    AnalogInput _ => ApplyDeadzoneSmoothScaling([.. powerEvent.InputIntensities], _deadZoneTolerance),
+                    _ => [.. powerEvent.InputIntensities]
+                };
                 if (inputPowerState.Phase is InputPhase.End && inputEvent.Phase is InputPhase.Start)
                 {
                     inputPowerState.TapCount += 1;
@@ -192,21 +253,29 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
             ? TimeSpan.Zero
             : null;
 
+        LogProcessedInputEventDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, inputState.Input.Id.ToString(), inputState.Phase);
+
         return inputState;
     }
 
-    private TriggeredActionEvent? ProcessVirtualInputEvent(DeviceInputTracker deviceTracker, DeviceInputState inputState,
-        IEnumerable<InputActionMap> virtualInputActionMaps)
+    private ProcessedInputEvent? ProcessVirtualInputEvent(TimeSpan deltaTime, DeviceInputTracker deviceTracker, DeviceInputState inputState,
+        IEnumerable<ActiveInputActionMap> virtualInputActionMaps)
     {
         foreach (var virtualInputActionMap in virtualInputActionMaps)
         {
-            switch (virtualInputActionMap.Input)
+            var virtualInput = (VirtualInput) virtualInputActionMap.Input;
+
+            // Check currently activated input actions
+            var triggeredVirtualState = deviceTracker.GetVirtualInputState(virtualInput);
+
+            // Process new virtual input actions
+            switch (virtualInput)
             {
                 case DeviceCombinationInput combinationInput:
                     var combinationPhase = inputState.Phase;
                     var completedCombination = true;
 
-                    foreach (var input in combinationInput.DeviceInputs.Where(input => input.Id != inputState.InputId))
+                    foreach (var input in combinationInput.GetDeviceInputs().Where(input => input.Id != inputState.Input.Id))
                     {
                         var otherInputState = deviceTracker.GetInputPowerState(input.Id);
                         if (otherInputState is null)
@@ -215,18 +284,50 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
                             break;
                         }
 
-                        combinationPhase = DetermineCombinationPhase(combinationPhase, otherInputState.Phase);
-                    }
+                        combinationPhase = CombineVirtualInputPhase(combinationPhase, otherInputState.Phase);
+                    }  
 
                     if (completedCombination)
                     {
-                        return GetTriggeredActivation(inputState, new VirtualInputEvent(combinationInput, combinationPhase), 
-                            virtualInputActionMap);
-                    }
+                        var virtualInputState = new VirtualInputState(virtualInput)
+                        {
+                            Phase = combinationPhase,
+                            DeviceIdentifier = inputState.DeviceIdentifier,
+                            MappedAction = virtualInputActionMap,
+                            TapCount = triggeredVirtualState is not null && triggeredVirtualState.Phase is InputPhase.End && combinationPhase is InputPhase.Start
+                                ? triggeredVirtualState.TapCount + 1
+                                : triggeredVirtualState?.TapCount ?? 0,
+                        };
 
+                        LogProcessedInputEventDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, "Combination Input", inputState.Phase);
+
+                        deviceTracker.SetVirtualInputState(virtualInputState);
+                        return virtualInputActionMap.Action.TriggerPhases.Contains(combinationPhase)
+                            ? GetTriggeredProcessedEvent(deltaTime, virtualInputState, GetEventForState(virtualInputState)!, virtualInputActionMap)
+                            : ProcessedInputEvent.NotTriggered;
+                    }
+                    else if (triggeredVirtualState is not null)
+                    {
+                        // Combination is no longer valid, end the virtual input
+                        triggeredVirtualState.Phase = InputPhase.End;
+                        triggeredVirtualState.InactiveDuration = TimeSpan.Zero;
+
+                        var endedEvent = GetEventForState(triggeredVirtualState);
+
+                        if (configuration.ProcessorConfiguration.TapReactivationTime is null)
+                        {
+                            deviceTracker.RemoveState(triggeredVirtualState);
+                        }
+
+                        LogProcessedInputEventDebug(logger, userId, deviceTracker.SchemeMap.DeviceFamily, "Combination Input", inputState.Phase);
+
+                        return virtualInputActionMap.Action.TriggerPhases.Contains(InputPhase.End) && endedEvent is not null
+                            ? GetTriggeredProcessedEvent(deltaTime, triggeredVirtualState, endedEvent, virtualInputActionMap)
+                            : ProcessedInputEvent.NotTriggered;
+                    }
                     break;
                 default:
-                    LogUnknownVirtualInputWarning(logger, deviceTracker.SchemeMap.DeviceFamily, virtualInputActionMap.Input.Id, virtualInputActionMap.Input.GetType().FullName);
+                    LogUnknownVirtualInputWarning(logger, deviceTracker.SchemeMap.DeviceFamily, virtualInputActionMap.Input.GetType().FullName);
                     break;
             }
         }
@@ -234,7 +335,7 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         return null;
     }
 
-    private InputPhase DetermineCombinationPhase(InputPhase phaseA, InputPhase phaseB)
+    private InputPhase CombineVirtualInputPhase(InputPhase phaseA, InputPhase phaseB)
     {
         // End phase always wins
         if (phaseA is InputPhase.End || phaseB is InputPhase.End)
@@ -263,26 +364,28 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
 
     private PointerDetails GetPointerInformation(InputActionMap actionMap)
     {
-        if (!actionMap.Action.IncludePointerDetails)
+        if (actionMap is not ActiveInputActionMap activeInputActionMap || !activeInputActionMap.Action.IncludePointerDetails)
         {
             return PointerDetails.Empty;
         }
 
-        var pointerData = _deviceInputTrackerLookup.Values.Select(deviceState
+        var pointerData = _deviceInputTrackerLookup.Values.SelectMany(deviceState
             => deviceState.PointerStates.Select(pointerState 
                 =>
-            {
-                var pointerPositionMotionData = pointerState.GetCurrentPositionAndMotionData();
-                if (pointerPositionMotionData is null)
                 {
-                    return null;
-                }
+                    var pointerStateInformation = pointerState.GetPointerStateInformation();
+                    if (pointerStateInformation is null)
+                    {
+                        return null;
+                    }
 
-                return (PointerData?) new PointerData(pointerState.PointerId, deviceState.SchemeMap.DeviceFamily,
-                    pointerPositionMotionData.Value.Item1, pointerPositionMotionData.Value.Item2);
-            }))
+                    return (PointerData?) new PointerData(pointerState.PointerId, deviceState.SchemeMap.DeviceFamily,
+                        pointerStateInformation.Value.StartPosition, 
+                        pointerStateInformation.Value.CurrentPosition, 
+                        pointerStateInformation.Value.Motion);
+                }))
             .Where(pointerData => pointerData is not null)
-            .Cast<PointerData>()
+            .Select(p => p!.Value)
             .ToArray();
 
         return new PointerDetails(pointerData);
@@ -293,22 +396,50 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
         switch (state)
         {
             case InputPowerState powerState:
-                return new InputPowerEvent(powerState.DeviceIdentifier, powerState.Input, powerState.Phase, powerState.InputPowers);
+                return new InputPowerEvent(powerState.DeviceIdentifier, powerState.Input.Id, powerState.Phase, powerState.InputPowers);
             case InputPointerState pointerState:
-                var pointerPositionAndMotionData = pointerState.GetCurrentPositionAndMotionData();
+                var pointerPositionAndMotionData = pointerState.GetPointerStateInformation();
                 return pointerPositionAndMotionData is null
                     ? null
-                    : new InputPointerEvent(pointerState.DeviceIdentifier, pointerState.Input, pointerState.Phase, pointerState.PointerId,
-                            pointerPositionAndMotionData.Value.Item1);
+                    : new InputPointerEvent(pointerState.DeviceIdentifier, pointerState.Input.Id, pointerState.Phase, pointerState.PointerId,
+                            pointerPositionAndMotionData.Value.CurrentPosition);
+            case VirtualInputState virtualInputState:
+                return new VirtualInputEvent(virtualInputState.Input, virtualInputState.Phase);
             default:
                 return null;
         }
     }
 
-    private TriggeredActionEvent GetTriggeredActivation(InputState state, InputEvent activation, InputActionMap actionMap)
-        => new(ActiveScheme, actionMap,
-                new InputEventContext(userId, activation, GetPointerInformation(actionMap),
-                GetActivityInformation(state), serviceProvider));
+    private ProcessedInputEvent GetTriggeredProcessedEvent(TimeSpan deltaTime, InputState state, InputEvent activation, ActiveInputActionMap actionMap)
+        => new(actionMap, new InputEventContext(userId, deltaTime, activation, GetPointerInformation(actionMap), GetActivityInformation(state), serviceProvider));
+
+    private InputIntensity[] ApplyDeadzoneSmoothScaling(InputIntensity[] inputIntensities, float deadzone)
+    {
+        if (deadzone <= DeadzoneMinimumThreshold)
+        {
+            return [.. inputIntensities.Select(intensity => InputIntensity.Zero(intensity.Axis))];
+        }
+
+        var rawMagnitude = inputIntensities.CalculateMagnitude();
+        if (rawMagnitude <= deadzone)
+        {
+            return [.. inputIntensities.Select(intensity => InputIntensity.Zero(intensity.Axis))];
+        }
+
+        // Calculate the scaled magnitude (0.0 to 1.0)
+        // This ensures that at the deadzone edge, the value is 0, not the deadzone value itself.
+        var scaledMagnitude = (rawMagnitude - deadzone) / (1f - deadzone);
+
+        // Clamp to 1.0 to handle slight hardware variances
+        scaledMagnitude = MathF.Min(scaledMagnitude, 1f);
+
+        // Calculate the scaling ratio
+        // We multiply the original component by (scaledMagnitude / rawMagnitude)
+        // This effectively "shortens" the vector while keeping its direction.
+        var factor = MathF.Abs(scaledMagnitude / rawMagnitude);
+
+        return [.. inputIntensities.Select(intensity => new InputIntensity(intensity.Axis, intensity.Power * factor))];
+    }
 
     #endregion
 
@@ -317,8 +448,14 @@ internal partial class InputUserInputTracker(int userId, ActiveInputScheme schem
     [LoggerMessage(eventId: 1, LogLevel.Warning, "Input Activation was of an unknown type and could not be processed: {activationTypeName}")]
     private static partial void LogUnknownActivationWarning(ILogger logger, string activationTypeName);
 
-    [LoggerMessage(eventId: 2, LogLevel.Warning, "An attempt was made to process a virtual input with id '{virtualInputId}' on device '{deviceFamily}', but it was unrecognized type '{virtualInputType}' and could not be processed.")]
-    private static partial void LogUnknownVirtualInputWarning(ILogger logger, InputDeviceFamily deviceFamily, int virtualInputId, string virtualInputType);
+    [LoggerMessage(eventId: 2, LogLevel.Warning, "An attempt was made to process a virtual input with on device '{deviceFamily}', but it was unrecognized type '{virtualInputType}' and could not be processed.")]
+    private static partial void LogUnknownVirtualInputWarning(ILogger logger, InputDeviceFamily deviceFamily, string virtualInputType);
+
+    [LoggerMessage(eventId: 3, LogLevel.Debug, "Input User Tracker for user '{userId}' processed input event for device '{deviceFamily}' input id '{inputId}' with phase '{inputPhase}'")]
+    private static partial void LogProcessedInputEventDebug(ILogger logger, int userId, InputDeviceFamily deviceFamily, string inputId, InputPhase inputPhase);
+
+    [LoggerMessage(eventId: 4, LogLevel.Debug, "Input User Tracker for user '{userId}' removed input processing for device '{deviceFamily}' input id '{inputId}' with phase '{inputPhase}'")]
+    private static partial void LogInputStateRemovedDebug(ILogger logger, int userId, InputDeviceFamily deviceFamily, string inputId, InputPhase inputPhase);
 
     #endregion
 }

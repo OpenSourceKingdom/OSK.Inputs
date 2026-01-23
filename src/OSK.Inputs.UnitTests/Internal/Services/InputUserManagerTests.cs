@@ -1,10 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿ using Microsoft.Extensions.Logging;
 using Moq;
 using OSK.Functions.Outputs.Abstractions;
 using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Functions.Outputs.Mocks;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
+using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Notifications;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal;
@@ -19,6 +20,9 @@ namespace OSK.Inputs.UnitTests.Internal.Services;
 public class InputUserManagerTests
 {
     #region Variables
+
+    private readonly Dictionary<int, InputUser> _users;
+    private readonly Dictionary<int, PreferredInputScheme[]> _schemes;
 
     private readonly Mock<IInputConfigurationProvider> _mockConfigurationProvider;
     private readonly Mock<IInputNotificationPublisher> _mockNotificationPublisher;
@@ -39,7 +43,10 @@ public class InputUserManagerTests
         _mockSchemeRepository = new();
         _outputFactory = new MockOutputFactory<InputUserManager>();
 
-        _manager = new InputUserManager(_mockConfigurationProvider.Object, _mockNotificationPublisher.Object, _mockSchemeRepository.Object,
+        _users = [];
+        _schemes = [];
+
+        _manager = new InputUserManager(_users, _schemes, _mockConfigurationProvider.Object, _mockNotificationPublisher.Object, _mockSchemeRepository.Object,
             Mock.Of<ILogger<InputUserManager>>(), _outputFactory);
     }
 
@@ -75,9 +82,9 @@ public class InputUserManagerTests
         _mockConfigurationProvider.Setup(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [], new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
 
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var output = _manager.CreateUser(new UserJoinOptions() { DevicesToPair = [new RuntimeDeviceIdentifier(1, TestIdentity.Identity1)] });
@@ -104,16 +111,16 @@ public class InputUserManagerTests
                 ],
                 new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
 
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var output = _manager.CreateUser(new UserJoinOptions());
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Equal("Def", output.Value.ActiveScheme.DefinitionName);
+        Assert.Equal("Def", output.Value.ActiveInputDefinitionName);
 
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
     }
@@ -122,7 +129,7 @@ public class InputUserManagerTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void CreateUser_OptionsUseInvalidActiveSchemeDefinitionName_ReturnsSuccessfully(string? definitionName)
+    public void CreateUser_OptionsUseInvalidActiveDefinitionName_NoDefaultDefinition_UsesFirst_ReturnsSuccessfully(string? definitionName)
     {
         // Arrange
         _mockConfigurationProvider.Setup(m => m.Configuration)
@@ -139,87 +146,16 @@ public class InputUserManagerTests
                 ],
                 new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
 
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
-        var output = _manager.CreateUser(new UserJoinOptions() { ActiveScheme = new ActiveInputScheme(definitionName!, "Abc") });
+        var output = _manager.CreateUser(new UserJoinOptions() { ActiveDefinitionName = definitionName! });
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Equal("Abc", output.Value.ActiveScheme.DefinitionName);
-
-        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void CreateUser_OptionsUseInvalidActiveSchemeSchemeName_NoDefaultDefinitionOrScheme_ReturnsSuccessfully(string? schemeName)
-    {
-        // Arrange
-        _mockConfigurationProvider.Setup(m => m.Configuration)
-            .Returns(new InputSystemConfiguration([],
-                [
-                    new InputDefinition("Abc", [],
-                    [
-                        new InputScheme("Abc", [], false, false),
-                        new InputScheme("Def", [], true, false)
-                    ], false),
-                    new InputDefinition("Def", [],
-                    [
-                        new InputScheme("Def", [], false, false)
-                    ], false)
-                ],
-                new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
-
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
-        user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
-
-        // Act
-        var output = _manager.CreateUser(new UserJoinOptions() { ActiveScheme = new ActiveInputScheme("Abc", schemeName!) });
-
-        // Assert
-        Assert.True(output.IsSuccessful);
-        Assert.Equal("Abc", output.Value.ActiveScheme.DefinitionName);
-        Assert.Equal("Def", output.Value.ActiveScheme.SchemeName);
-
-        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
-    }
-
-    [Fact]
-    public void CreateUser_OptionsUsesActiveSchemeThatDoesNotExist_UsesDefaults_ReturnsSuccessfully()
-    {
-        // Arrange
-        _mockConfigurationProvider.Setup(m => m.Configuration)
-            .Returns(new InputSystemConfiguration([],
-                [
-                    new InputDefinition("Abc", [],
-                    [
-                        new InputScheme("Abc", [], false, false),
-                        new InputScheme("Def", [], true, false)
-                    ], true),
-                    new InputDefinition("Def", [],
-                    [
-                        new InputScheme("Def", [], false, false)
-                    ], false)
-                ],
-                new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
-
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
-        user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
-
-        // Act
-        var output = _manager.CreateUser(new UserJoinOptions() { ActiveScheme = new ActiveInputScheme("QHa", "bad day") });
-
-        // Assert
-        Assert.True(output.IsSuccessful);
-        Assert.Equal("Abc", output.Value.ActiveScheme.DefinitionName);
-        Assert.Equal("Def", output.Value.ActiveScheme.SchemeName);
+        Assert.Equal("Abc", output.Value.ActiveInputDefinitionName);
 
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
     }
@@ -242,9 +178,9 @@ public class InputUserManagerTests
                 ],
                 new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
 
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var output = _manager.CreateUser(new UserJoinOptions() { DevicesToPair = [new RuntimeDeviceIdentifier(2, TestIdentity.Identity1)] });
@@ -252,11 +188,46 @@ public class InputUserManagerTests
         // Assert
         Assert.True(output.IsSuccessful);
         Assert.Single(output.Value.PairedDevices);
-        Assert.Equal("Def", output.Value.ActiveScheme.DefinitionName);
+        Assert.Equal("Def", output.Value.ActiveInputDefinitionName);
 
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is DevicePairedNotification)), Times.Once);
     }
+
+    [Fact]
+    public void CreateUser_OptionsIncludeUnpairedDevice_UsesSpecifiedDefinition_ReturnsSuccessfullyAndNotifiesNewUserAndPairedDevice()
+    {
+        // Arrange
+        _mockConfigurationProvider.Setup(m => m.Configuration)
+            .Returns(new InputSystemConfiguration([],
+                [
+                    new InputDefinition("Abc", [],
+                    [
+                        new InputScheme("Abc", [], false, false)
+                    ], true),
+                    new InputDefinition("Def", [],
+                    [
+                        new InputScheme("Def", [], false, false)
+                    ], false)
+                ],
+                new(), new InputSystemJoinPolicy() { MaxUsers = 2 }));
+
+        var user = new InputUser(1);
+        user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
+        _users[1] = user;
+
+        // Act
+        var output = _manager.CreateUser(new UserJoinOptions() { ActiveDefinitionName = "Def", DevicesToPair = [new RuntimeDeviceIdentifier(2, TestIdentity.Identity1)] });
+
+        // Assert
+        Assert.True(output.IsSuccessful);
+        Assert.Single(output.Value.PairedDevices);
+        Assert.Equal("Def", output.Value.ActiveInputDefinitionName);
+
+        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
+        _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is DevicePairedNotification)), Times.Once);
+    }
+
 
     #endregion
 
@@ -280,9 +251,9 @@ public class InputUserManagerTests
     public void SetActiveDefinition_InvalidDefinitionName_ReturnsError(string? definitionName)
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var output = _manager.SetActiveDefinition(1, definitionName!);
@@ -298,9 +269,9 @@ public class InputUserManagerTests
         _mockConfigurationProvider.Setup(m => m.Configuration)
             .Returns(new InputSystemConfiguration([], [], new(), new()));
 
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var output = _manager.SetActiveDefinition(1, "Abc");
@@ -323,9 +294,9 @@ public class InputUserManagerTests
                 ], false)
             ], new(), new()));
 
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var output = _manager.SetActiveDefinition(1, "Abc");
@@ -352,7 +323,7 @@ public class InputUserManagerTests
     public void GetInputUserForDevice_HasUsers_NoneHasDevice_ReturnsNull()
     {
         // Arrange
-        _manager._users[1] = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        _users[1] = new InputUser(1);
 
         // Act
         var user = _manager.GetInputUserForDevice(1);
@@ -365,9 +336,9 @@ public class InputUserManagerTests
     public void GetInputUserForDevice_HasUsers_UserHasDeviceWithId_ReturnsExpectedUser()
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var foundUser = _manager.GetInputUserForDevice(1);
@@ -395,9 +366,9 @@ public class InputUserManagerTests
     public void GetUser_Valid_ReturnsUser()
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var u = _manager.GetUser(1);
@@ -422,9 +393,9 @@ public class InputUserManagerTests
     public void GetUsers_HasUsers_ReturnsList()
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var users = _manager.GetUsers();
@@ -452,16 +423,16 @@ public class InputUserManagerTests
     public void RemoveUser_UserExists_ReturnsTrue()
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var result = _manager.RemoveUser(1);
 
         // Assert
         Assert.True(result);
-        Assert.Empty(_manager._users);
+        Assert.Empty(_users);
     }
 
     #endregion
@@ -483,12 +454,12 @@ public class InputUserManagerTests
     public void PairDevice_DeviceAlreadyPairedToAnotherUser_ReturnsError()
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
-        _manager._users[1] = user;
+        _users[1] = user;
 
-        var user2 = new InputUser(2, new ActiveInputScheme("Abc", "Abc"));
-        _manager._users[2] = user2;
+        var user2 = new InputUser(2);
+        _users[2] = user2;
 
         // Act
         var output = _manager.PairDevice(2, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
@@ -501,32 +472,34 @@ public class InputUserManagerTests
     public void PairDevice_UserExists_DeviceNotPaired_ReturnsSuccessfully()
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
-        _manager._users[1] = user;
+        var pairedDevices = new Dictionary<int, PairedDevice>();
+        var user = new InputUser(1, pairedDevices);
+        _users[1] = user;
 
         // Act
         var output = _manager.PairDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Single(user._pairedDevices);
+        Assert.Single(pairedDevices);
     }
 
     [Fact]
     public void PairDevice_UserExists_DeviceAlreadyPaired_ReturnsSuccessfully()
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var pairedDevices = new Dictionary<int, PairedDevice>();
+        var user = new InputUser(1, pairedDevices);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
 
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var output = _manager.PairDevice(1, new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Single(user._pairedDevices);
+        Assert.Single(pairedDevices);
     }
 
     #endregion
@@ -547,8 +520,8 @@ public class InputUserManagerTests
     public void UnpairDevice_UserExists_DeviceNotPairedToUser_ReturnsFalse()
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
-        _manager._users[1] = user;
+        var user = new InputUser(1);
+        _users[1] = user;
 
         // Act
         var result = _manager.UnpairDevice(1, 1);
@@ -562,10 +535,10 @@ public class InputUserManagerTests
     public void UnpairDevice_UserExists_DevicePairedToUser_ReturnsTrueAndNotifiesUnpairedEvent()
     {
         // Arrange
-        var user = new InputUser(1, new ActiveInputScheme("Abc", "Abc"));
+        var user = new InputUser(1);
         user.AddDevice(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1));
 
-        _manager._users[1] = user;
+        _users[1] = user;
 
         // Act
         var result = _manager.UnpairDevice(1, 1);
@@ -589,7 +562,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([], [], new(), new() { MaxUsers = 10 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = userId, DefinitionName = "Abc", SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = userId, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" });
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -606,7 +579,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([], [], new(), new() { MaxUsers = 1 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = name!, SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = name!, CombinationId = "Abc", SchemeName = "Abc" });
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -620,7 +593,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([], [], new(), new() { MaxUsers = 1 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" });
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -637,7 +610,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([], [], new(), new() { MaxUsers = 1 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = name! });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = name! });
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -654,7 +627,7 @@ public class InputUserManagerTests
             ], new(), new() { MaxUsers = 1 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" });
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -674,7 +647,7 @@ public class InputUserManagerTests
             .ReturnsAsync((PreferredInputScheme p, CancellationToken _) => _outputFactory.Succeed(p));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" });
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -711,7 +684,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([],
             [
                 new InputDefinition("Abc", [], [
-                    new InputScheme("Abc", [], false, false)
+                    new InputScheme("Abc", [new DeviceInputMap() { DeviceFamily = new InputDeviceFamily("Abc", InputDeviceType.Generic), InputMaps = [], VirtualMaps = [] }], false, false)
                     ], false)
             ], new(), new() { MaxUsers = 2 }));
 
@@ -719,11 +692,11 @@ public class InputUserManagerTests
             .ReturnsAsync(_outputFactory.Fail<IEnumerable<CustomInputScheme>>("A bad day"));
         _mockSchemeRepository.Setup(m => m.GetPreferredSchemesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(_outputFactory.Succeed((IEnumerable<PreferredInputScheme>)[
-                    new PreferredInputScheme() { UserId = -1, SchemeName = "Abc", DefinitionName = "Abc" },
-                    new PreferredInputScheme() { UserId = 100, SchemeName = "Abc", DefinitionName = "Abc" },
-                    new PreferredInputScheme() { UserId = 1, SchemeName = "Abc", DefinitionName = "Abc" },
-                    new PreferredInputScheme() { UserId = 1, SchemeName = "Abc", DefinitionName = "Abc" },
-                    new PreferredInputScheme() { UserId = 2, SchemeName = "Abc", DefinitionName = "Abc" }
+                    new PreferredInputScheme() { UserId = -1, CombinationId = "Abc", SchemeName = "Abc", DefinitionName = "Abc" },
+                    new PreferredInputScheme() { UserId = 100, CombinationId = "Abc", SchemeName = "Abc", DefinitionName = "Abc" },
+                    new PreferredInputScheme() { UserId = 1, CombinationId = "Abc", SchemeName = "Abc", DefinitionName = "Abc" },
+                    new PreferredInputScheme() { UserId = 1, CombinationId = "Abc", SchemeName = "Abc", DefinitionName = "Abc" },
+                    new PreferredInputScheme() { UserId = 2, CombinationId = "Abc", SchemeName = "Abc", DefinitionName = "Abc" }
                 ]));
 
         // Act
@@ -731,9 +704,9 @@ public class InputUserManagerTests
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Equal(2, _manager._userPreferredSchemesLookup.Count);
-        Assert.True(_manager._userPreferredSchemesLookup.TryGetValue(1, out var preferences) && preferences.Count is 1 && preferences.TryGetValue("Abc", out _));
-        Assert.True(_manager._userPreferredSchemesLookup.TryGetValue(2, out preferences) && preferences.Count is 1 && preferences.TryGetValue("Abc", out _));
+        Assert.Equal(2, _schemes.Count);
+        Assert.True(_schemes.TryGetValue(1, out var preferences) && preferences.Length is 1 && preferences.Any(scheme => scheme.SchemeName == "Abc"));
+        Assert.True(_schemes.TryGetValue(2, out preferences) && preferences.Length is 1 && preferences.Any(scheme => scheme.SchemeName == "Abc"));
     }
 
     #endregion

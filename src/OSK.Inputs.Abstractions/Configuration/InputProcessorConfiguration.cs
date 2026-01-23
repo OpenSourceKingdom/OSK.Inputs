@@ -21,4 +21,15 @@ public class InputProcessorConfiguration
     /// phase before transitioning to <see cref="InputPhase.Active"/>.
     /// </summary>
     public TimeSpan? ActiveTimeThreshold { get; init; }
+
+    /// <summary>
+    /// The amount of power that must be applied before a power input is considered 'on'. This is to help reduce
+    /// extremely small power inputs from 'triggering' the input without a user's intention
+    /// </summary>
+    public float? DeadzoneTolerance { get; init; }
+
+    /// <summary>
+    /// The amount of movement a pointer (mouse, touch, etc.) must move to be considered an actual movement of intent by a user
+    /// </summary>
+    public float? PointerMovementThreshold { get; init; }
 }

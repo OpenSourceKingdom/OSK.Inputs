@@ -17,6 +17,11 @@ public class InputScheme(string name, IEnumerable<DeviceInputMap> deviceMaps,
     #region Api
 
     /// <summary>
+    /// A unique combination identifier for the device families
+    /// </summary>
+    public string CombinationId { get; } = InputDeviceCombination.GetCombinationId(deviceMaps?.Where(map => map is not null).Select(map => map.DeviceFamily) ?? []);
+
+    /// <summary>
     /// A unique name for the scheme
     /// </summary>
     public string Name => name;
@@ -45,6 +50,13 @@ public class InputScheme(string name, IEnumerable<DeviceInputMap> deviceMaps,
         => _deviceMapLookup.TryGetValue(deviceFamily, out var map)
             ? map
             : null;
+
+    /// <summary>
+    /// Gets the device families this scheme uses
+    /// </summary>
+    /// <returns>The collection of device families</returns>
+    public IEnumerable<InputDeviceFamily> GetDeviceFamilies()
+        => _deviceMapLookup.Values.Select(map => map.DeviceFamily);
 
     #endregion
 }

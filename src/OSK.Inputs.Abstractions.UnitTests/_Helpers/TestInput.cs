@@ -3,6 +3,6 @@ using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.UnitTests._Helpers;
 
-public class TestInput(int id): Input(InputDeviceType.Generic, id), IDeviceInput
+public class TestInput(int id): DeviceInput(InputDeviceType.Generic, id)
 {
 }

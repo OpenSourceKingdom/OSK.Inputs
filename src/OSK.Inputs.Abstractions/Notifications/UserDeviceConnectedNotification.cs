@@ -2,7 +2,7 @@
 
 namespace OSK.Inputs.Abstractions.Notifications;
 
-public class UserDeviceConnectedNotification(int userId, RuntimeDeviceIdentifier deviceIdentifier)
-    : UserDeviceNotification(userId, deviceIdentifier)
+public class UserDeviceConnectedNotification(IInputUser user, RuntimeDeviceIdentifier deviceIdentifier)
+    : UserDeviceNotification(user, deviceIdentifier)
 {
 }

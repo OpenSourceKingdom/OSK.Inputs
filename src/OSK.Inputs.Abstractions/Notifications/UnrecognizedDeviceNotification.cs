@@ -2,6 +2,6 @@
 
 namespace OSK.Inputs.Abstractions.Notifications;
 
-public class UnrecognizedDeviceNotification(RuntimeDeviceIdentifier device): InputDeviceNotification(device)
+public class UnrecognizedDeviceNotification(RuntimeDeviceIdentifier device): InputDeviceNotification(device), IInputProcessorMessage
 {
 }

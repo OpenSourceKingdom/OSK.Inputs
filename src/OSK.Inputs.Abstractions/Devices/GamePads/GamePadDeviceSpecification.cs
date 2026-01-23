@@ -4,12 +4,15 @@ using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Devices.GamePads;
 
+/// <summary>
+/// A device specification that defines input for GamePad devices
+/// </summary>
 public abstract class GamePadDeviceSpecification : InputDeviceSpecification<GamePadInput>
 {
     #region InputDeviceSpecification Overrides
 
-    public override IReadOnlyCollection<IInput> GetInputs()
-        => [.. Inputs.Select(i => new GamePadDeviceInput(i))];
+    public override IReadOnlyCollection<DeviceInput> GetInputs()
+        => [.. Inputs.Select(i => i.ToInput())];
 
     #endregion
 

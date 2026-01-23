@@ -38,8 +38,7 @@ internal class InputSchemeBuilder(string name, IInputSystemConfigurationBuilder 
 
         var mapBuilder = new InputDeviceMapBuilder(deviceSpecification);
         mapBuilderConfigurator(mapBuilder);
-
-        var map = mapBuilder.Build(); ;
+        var map = mapBuilder.Build();
 
         var deviceInputLookup = deviceSpecification.GetInputs().ToDictionary(input => input.Id);
         var invalidInputs = map.InputMaps.Where(input => !deviceInputLookup.TryGetValue(input.InputId, out _));

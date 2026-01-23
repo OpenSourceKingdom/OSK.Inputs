@@ -2,15 +2,9 @@
 
 public class PlayStationGamePad : GamePadDeviceSpecification
 {
-    #region Static
-
-    public static InputDeviceFamily PlayStation = new("PlayStation", InputDeviceType.GamePad);
-
-    #endregion
-
     #region InputDeviceSpecification Overrides
 
-    public override InputDeviceFamily DeviceFamily => PlayStation;
+    public override InputDeviceFamily DeviceFamily => InputDeviceFamily.PlayStation;
 
     protected override GamePadInput[] Inputs { get; } = [
         GamePadInput.ButtonSouth, // Cross
