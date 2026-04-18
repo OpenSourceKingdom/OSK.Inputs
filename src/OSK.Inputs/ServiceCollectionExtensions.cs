@@ -1,7 +1,5 @@
-﻿using System;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using OSK.Functions.Outputs.Logging;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Exceptions;
 using OSK.Inputs.Internal;
@@ -19,16 +17,13 @@ public static class ServiceCollectionExtensions
     /// <exception cref="InputSystemValidationException">Thrown if the input system configuration provided by the source was invalid</exception>
     public static IServiceCollection AddInputs(this IServiceCollection services)
     {
-        services.AddLoggingFunctionOutputs();
-
         services.TryAddTransient<IInputSystemConfigurationValidator, InputSystemConfigurationValidator>();
 
         services.TryAddScoped<IInputProcessor, InputProcessor>();
         services.TryAddScoped<IInputUserManager, InputUserManager>();
         services.TryAddScoped<IInputSystem, InputSystem>();
         services.TryAddScoped<IInputNotificationPublisher, InputNotificationPublisher>();
-        services.TryAddScoped<IInputSystemNotifier>(provider
-            => provider.GetRequiredService<IInputNotificationPublisher>());
+        services.TryAddScoped<IInputSystemNotifier>(provider => provider.GetRequiredService<IInputNotificationPublisher>());
 
         services.TryAddSingleton<IInputConfigurationProvider, InputConfigurationProvider>();
 

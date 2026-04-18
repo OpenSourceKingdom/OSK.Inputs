@@ -1,7 +1,4 @@
-﻿using Moq;
-using OSK.Functions.Outputs.Logging.Abstractions;
-using OSK.Functions.Outputs.Mocks;
-using OSK.Inputs.Abstractions.Runtime;
+﻿using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal.Services;
 using Xunit;
 
@@ -15,7 +12,7 @@ public class InMemorySchemeRepositoryTests
     public void AllowCustomSchemes_ReturnsFalse()
     {
         // Arrange
-        var repository = new InMemorySchemeRepository(Mock.Of<IOutputFactory<InMemorySchemeRepository>>());
+        var repository = new InMemorySchemeRepository();
 
         // Act/Assert
         Assert.False(repository.AllowCustomSchemes);
@@ -29,11 +26,11 @@ public class InMemorySchemeRepositoryTests
     public async Task SavePreferredSchemeAsync_NewScheme_AddsToStorage_ReturnsSuccessfully()
     {
         // Arrange
-        var repository = new InMemorySchemeRepository(new MockOutputFactory<InMemorySchemeRepository>());
+        var repository = new InMemorySchemeRepository();
         var scheme = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" };
 
         // Act
-        var schemeOutput = await repository.SavePreferredSchemeAsync(scheme);
+        var schemeOutput = await repository.SavePreferredSchemeAsync(scheme, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(schemeOutput.IsSuccessful);
@@ -46,13 +43,13 @@ public class InMemorySchemeRepositoryTests
     public async Task SavePreferredSchemeAsync_ExistingScheme_OverwritesStorage_ReturnsSuccessfully()
     {
         // Arrange
-        var repository = new InMemorySchemeRepository(new MockOutputFactory<InMemorySchemeRepository>());
+        var repository = new InMemorySchemeRepository();
         var scheme1 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" };
         var scheme2 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Def" };
 
         // Act
-        var schemesOutput1 = await repository.SavePreferredSchemeAsync(scheme1);
-        var schemesOutput2 = await repository.SavePreferredSchemeAsync(scheme2);
+        var schemesOutput1 = await repository.SavePreferredSchemeAsync(scheme1, TestContext.Current.CancellationToken);
+        var schemesOutput2 = await repository.SavePreferredSchemeAsync(scheme2, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(schemesOutput1.IsSuccessful);
@@ -67,15 +64,15 @@ public class InMemorySchemeRepositoryTests
     public async Task SavePreferredSchemeAsync_ExistingAndNewSchemes_ReturnsSuccessfully()
     {
         // Arrange
-        var repository = new InMemorySchemeRepository(new MockOutputFactory<InMemorySchemeRepository>());
+        var repository = new InMemorySchemeRepository();
         var scheme1 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" };
         var scheme2 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Def", SchemeName = "Def" };
         var scheme3 = new PreferredInputScheme() { UserId = 1, DefinitionName = "Def", CombinationId = "Ghi", SchemeName = "Abc" };
 
         // Act
-        var schemesOutput1 = await repository.SavePreferredSchemeAsync(scheme1);
-        var schemesOutput2 = await repository.SavePreferredSchemeAsync(scheme3);
-        var schemesOutput3 = await repository.SavePreferredSchemeAsync(scheme2);
+        var schemesOutput1 = await repository.SavePreferredSchemeAsync(scheme1, TestContext.Current.CancellationToken);
+        var schemesOutput2 = await repository.SavePreferredSchemeAsync(scheme3, TestContext.Current.CancellationToken);
+        var schemesOutput3 = await repository.SavePreferredSchemeAsync(scheme2, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(schemesOutput1.IsSuccessful);
@@ -96,7 +93,7 @@ public class InMemorySchemeRepositoryTests
     public async Task GetPreferredSchemesAsync_ReturnsAllStoredSchemes()
     {
         // Arrange
-        var repository = new InMemorySchemeRepository(new MockOutputFactory<InMemorySchemeRepository>());
+        var repository = new InMemorySchemeRepository();
 
         repository._preferredSchemeLookup[1] = [
             new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc"}
@@ -110,11 +107,11 @@ public class InMemorySchemeRepositoryTests
         ];
 
         // Act
-        var schemesOutput = await repository.GetPreferredSchemesAsync();
+        var schemesOutput = await repository.GetPreferredSchemesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(schemesOutput.IsSuccessful);
-        Assert.Equal(4, schemesOutput.Value.Count());
+        Assert.Equal(4, schemesOutput.Data.Count());
     }
 
     #endregion

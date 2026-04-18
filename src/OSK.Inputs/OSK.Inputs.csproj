@@ -14,7 +14,6 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
 		<PackageReference Include="OSK.Expressions.Invoker" Version="1.1.0" />
-		<PackageReference Include="OSK.Functions.Outputs.Logging" Version="2.2.0" />
 		<PackageReference Include="PolySharp" Version="1.15.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

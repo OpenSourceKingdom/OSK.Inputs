@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using OSK.Functions.Outputs.Abstractions;
 using OSK.Hexagonal.MetaData;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Options;
+using OSK.Operations.Outputs.Models;
 
 namespace OSK.Inputs.Ports;
 
@@ -20,7 +20,7 @@ public interface IInputUserManager
     /// </summary>
     /// <param name="joinOptions">The options for the join operation to use</param>
     /// <returns>An output that describes if the user operation completed</returns>
-    IOutput<IInputUser> CreateUser(UserJoinOptions joinOptions);
+    Output<IInputUser> CreateUser(UserJoinOptions joinOptions);
 
     /// <summary>
     /// Attempts to remove the user with the id from the manager
@@ -55,7 +55,7 @@ public interface IInputUserManager
     /// <param name="userId">The id of the user to pair to</param>
     /// <param name="device">The device being paired</param>
     /// <returns>An output that describes if the pairing succeeded</returns>
-    IOutput PairDevice(int userId, RuntimeDeviceIdentifier device);
+    Output PairDevice(int userId, RuntimeDeviceIdentifier device);
 
     /// <summary>
     /// Attempts to remove the device from the user
@@ -71,7 +71,7 @@ public interface IInputUserManager
     /// <param name="userId">The id of the user</param>
     /// <param name="definitionName">The name of the definition to set to active</param>
     /// <returns>An output that describes if the switch successded</returns>
-    IOutput SetActiveDefinition(int userId, string definitionName);
+    Output SetActiveDefinition(int userId, string definitionName);
 
     /// <summary>
     /// Attempts to save a scheme preference for the given user
@@ -79,7 +79,7 @@ public interface IInputUserManager
     /// <param name="scheme">The scheme preference</param>
     /// <param name="cancellationToken">A token to cancel the operation</param>
     /// <returns>An output that describes if the save succeeded</returns>
-    Task<IOutput> SavePreferredSchemeAsync(PreferredInputScheme scheme, CancellationToken cancellationToken = default);
+    Task<Output> SavePreferredSchemeAsync(PreferredInputScheme scheme, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates and loads the input system configuration with user specified data.
@@ -90,5 +90,5 @@ public interface IInputUserManager
     /// </remarks>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<IOutput> LoadUserConfigurationAsync(CancellationToken cancellationToken = default);
+    Task<Output> LoadUserConfigurationAsync(CancellationToken cancellationToken = default);
 }

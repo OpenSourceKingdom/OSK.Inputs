@@ -1,8 +1,5 @@
-﻿ using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Moq;
-using OSK.Functions.Outputs.Abstractions;
-using OSK.Functions.Outputs.Logging.Abstractions;
-using OSK.Functions.Outputs.Mocks;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Devices;
@@ -13,6 +10,8 @@ using OSK.Inputs.Internal.Models;
 using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Options;
 using OSK.Inputs.UnitTests._Helpers;
+using OSK.Operations.Outputs;
+using OSK.Operations.Outputs.Models;
 using Xunit;
 
 namespace OSK.Inputs.UnitTests.Internal.Services;
@@ -28,8 +27,6 @@ public class InputUserManagerTests
     private readonly Mock<IInputNotificationPublisher> _mockNotificationPublisher;
     private readonly Mock<IInputSchemeRepository> _mockSchemeRepository;
 
-    private readonly IOutputFactory<InputUserManager> _outputFactory;
-
     private readonly InputUserManager _manager;
 
     #endregion
@@ -41,13 +38,11 @@ public class InputUserManagerTests
         _mockConfigurationProvider = new();
         _mockNotificationPublisher = new();
         _mockSchemeRepository = new();
-        _outputFactory = new MockOutputFactory<InputUserManager>();
 
         _users = [];
         _schemes = [];
 
-        _manager = new InputUserManager(_users, _schemes, _mockConfigurationProvider.Object, _mockNotificationPublisher.Object, _mockSchemeRepository.Object,
-            Mock.Of<ILogger<InputUserManager>>(), _outputFactory);
+        _manager = new InputUserManager(_users, _schemes, _mockConfigurationProvider.Object, _mockNotificationPublisher.Object, _mockSchemeRepository.Object, Mock.Of<ILogger<InputUserManager>>());
     }
 
     #endregion
@@ -120,7 +115,7 @@ public class InputUserManagerTests
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Equal("Def", output.Value.ActiveInputDefinitionName);
+        Assert.Equal("Def", output.Data.ActiveInputDefinitionName);
 
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
     }
@@ -155,7 +150,7 @@ public class InputUserManagerTests
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Equal("Abc", output.Value.ActiveInputDefinitionName);
+        Assert.Equal("Abc", output.Data.ActiveInputDefinitionName);
 
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
     }
@@ -187,8 +182,8 @@ public class InputUserManagerTests
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Single(output.Value.PairedDevices);
-        Assert.Equal("Def", output.Value.ActiveInputDefinitionName);
+        Assert.Single(output.Data.PairedDevices);
+        Assert.Equal("Def", output.Data.ActiveInputDefinitionName);
 
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is DevicePairedNotification)), Times.Once);
@@ -221,8 +216,8 @@ public class InputUserManagerTests
 
         // Assert
         Assert.True(output.IsSuccessful);
-        Assert.Single(output.Value.PairedDevices);
-        Assert.Equal("Def", output.Value.ActiveInputDefinitionName);
+        Assert.Single(output.Data.PairedDevices);
+        Assert.Equal("Def", output.Data.ActiveInputDefinitionName);
 
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is InputUserJoinedNotification)), Times.Once);
         _mockNotificationPublisher.Verify(m => m.Notify(It.Is<IInputNotification>(i => i is DevicePairedNotification)), Times.Once);
@@ -241,7 +236,7 @@ public class InputUserManagerTests
 
         // Assert
         Assert.False(output.IsSuccessful);
-        Assert.Equal(OutputSpecificityCode.DataNotFound, output.StatusCode.SpecificityCode);
+        Assert.Equal(OutputStatus.DataNotFound, output.StatusCode.Status);
     }
 
     [Theory]
@@ -278,7 +273,7 @@ public class InputUserManagerTests
 
         // Assert
         Assert.False(output.IsSuccessful);
-        Assert.Equal(OutputSpecificityCode.DataNotFound, output.StatusCode.SpecificityCode);
+        Assert.Equal(OutputStatus.DataNotFound, output.StatusCode.Status);
     }
 
     [Fact]
@@ -447,7 +442,7 @@ public class InputUserManagerTests
 
         // Assert
         Assert.False(output.IsSuccessful);
-        Assert.Equal(OutputSpecificityCode.DataNotFound, output.StatusCode.SpecificityCode);
+        Assert.Equal(OutputStatus.DataNotFound, output.StatusCode.Status);
     }
 
     [Fact]
@@ -562,7 +557,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([], [], new(), new() { MaxUsers = 10 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = userId, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = userId, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -579,7 +574,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([], [], new(), new() { MaxUsers = 1 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = name!, CombinationId = "Abc", SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = name!, CombinationId = "Abc", SchemeName = "Abc" }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -593,7 +588,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([], [], new(), new() { MaxUsers = 1 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -610,7 +605,7 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([], [], new(), new() { MaxUsers = 1 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = name! });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = name! }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -627,7 +622,7 @@ public class InputUserManagerTests
             ], new(), new() { MaxUsers = 1 }));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -644,10 +639,10 @@ public class InputUserManagerTests
             ], new(), new() { MaxUsers = 1 }));
 
         _mockSchemeRepository.Setup(m => m.SavePreferredSchemeAsync(It.IsAny<PreferredInputScheme>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((PreferredInputScheme p, CancellationToken _) => _outputFactory.Succeed(p));
+            .ReturnsAsync((PreferredInputScheme p, CancellationToken _) => Out.Success(p));
 
         // Act
-        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" });
+        var output = await _manager.SavePreferredSchemeAsync(new PreferredInputScheme() { UserId = 1, DefinitionName = "Abc", CombinationId = "Abc", SchemeName = "Abc" }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(output.IsSuccessful);
@@ -665,12 +660,12 @@ public class InputUserManagerTests
             .Returns(new InputSystemConfiguration([], [], new(), new()));
 
         _mockSchemeRepository.Setup(m => m.GetCustomSchemesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Fail<IEnumerable<CustomInputScheme>>("A bad day"));
+            .ReturnsAsync(Out.InvalidRequest<IEnumerable<CustomInputScheme>>("A bad day"));
         _mockSchemeRepository.Setup(m => m.GetPreferredSchemesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Fail<IEnumerable<PreferredInputScheme>>("A bad day"));
+            .ReturnsAsync(Out.InvalidRequest<IEnumerable<PreferredInputScheme>>("A bad day"));
 
         // Act
-        var output = await _manager.LoadUserConfigurationAsync();
+        var output = await _manager.LoadUserConfigurationAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(output.IsSuccessful);
@@ -689,9 +684,9 @@ public class InputUserManagerTests
             ], new(), new() { MaxUsers = 2 }));
 
         _mockSchemeRepository.Setup(m => m.GetCustomSchemesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Fail<IEnumerable<CustomInputScheme>>("A bad day"));
+            .ReturnsAsync(Out.InvalidRequest<IEnumerable<CustomInputScheme>>("A bad day"));
         _mockSchemeRepository.Setup(m => m.GetPreferredSchemesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_outputFactory.Succeed((IEnumerable<PreferredInputScheme>)[
+            .ReturnsAsync(Out.Success((IEnumerable<PreferredInputScheme>)[
                     new PreferredInputScheme() { UserId = -1, CombinationId = "Abc", SchemeName = "Abc", DefinitionName = "Abc" },
                     new PreferredInputScheme() { UserId = 100, CombinationId = "Abc", SchemeName = "Abc", DefinitionName = "Abc" },
                     new PreferredInputScheme() { UserId = 1, CombinationId = "Abc", SchemeName = "Abc", DefinitionName = "Abc" },
@@ -700,7 +695,7 @@ public class InputUserManagerTests
                 ]));
 
         // Act
-        var output = await _manager.LoadUserConfigurationAsync();
+        var output = await _manager.LoadUserConfigurationAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(output.IsSuccessful);

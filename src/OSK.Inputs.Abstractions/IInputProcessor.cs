@@ -2,7 +2,7 @@
 using OSK.Hexagonal.MetaData;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Abstractions.Notifications;
-using OSK.Functions.Outputs.Abstractions;
+using OSK.Operations.Outputs.Models;
 
 namespace OSK.Inputs.Abstractions;
 
@@ -42,7 +42,7 @@ public interface IInputProcessor
     /// Note: a successful output does not necessarily mean that an action was triggered - it only means that it met the requirements
     /// for validation and is being tracked within the input system. All input updates should be sent to this method.
     /// </returns>
-    IOutput ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent);
+    Output ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent);
 
     /// <summary>
     /// Informs the processor of some meaningful change in input system state that the input system should be aware of.

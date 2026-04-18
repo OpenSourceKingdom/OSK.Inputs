@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using OSK.Functions.Outputs.Abstractions;
 using OSK.Hexagonal.MetaData;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Models;
+using OSK.Operations.Outputs.Models;
 
 namespace OSK.Inputs.Ports;
 
@@ -51,7 +51,7 @@ public interface IInputSystem
     /// <param name="configuration">The configuration to apply to the manager</param>
     /// <param name="cancellationToken">A token to cancel the operation</param>
     /// <returns>An output that describes whether the configuration was fully initialized with the input system</returns>
-    Task<IOutput> InitializeAsync(InputSystemConfiguration configuration, CancellationToken cancellationToken = default);
+    Task<Output> InitializeAsync(InputSystemConfiguration configuration, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Attempts to delete the specified custom scheme from the input system
@@ -60,7 +60,7 @@ public interface IInputSystem
     /// <param name="schemeName">The scheme to delete from the definition</param>
     /// <param name="cancellationToken">A token to cancel the operation</param>
     /// <returns>An output describing the result of the operation</returns>
-    Task<IOutput> DeleteCustomSchemeAsync(string definitionName, string schemeName, CancellationToken cancellationToken = default);
+    Task<Output> DeleteCustomSchemeAsync(string definitionName, string schemeName, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Attempts to save the custom scheme to the input system
@@ -69,7 +69,7 @@ public interface IInputSystem
     /// <param name="saveFlags">The various flag options that will impact the save operation</param>
     /// <param name="cancellationToken">A token to cancel the operation</param>
     /// <returns>An output describing the result of the operation</returns>
-    Task<IOutput> SaveCustomSchemeAsync(CustomInputScheme scheme, SchemeSaveFlags saveFlags, CancellationToken cancellationToken = default);
+    Task<Output> SaveCustomSchemeAsync(CustomInputScheme scheme, SchemeSaveFlags saveFlags, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates the input system using the specified delta time

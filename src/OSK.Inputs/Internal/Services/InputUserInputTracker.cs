@@ -2,20 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
-using OSK.Functions.Outputs.Abstractions;
-using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal.Models;
+using OSK.Operations.Outputs;
+using OSK.Operations.Outputs.Models;
 
 namespace OSK.Inputs.Internal.Services;
 
 internal partial class InputUserInputTracker(int userId, InputSchemeActionMap schemeMap, 
-    InputSystemConfiguration configuration, ILogger<InputUserInputTracker> logger,
-    IOutputFactory<InputUserInputTracker> outputFactory, IServiceProvider serviceProvider): IInputUserTracker
+    InputSystemConfiguration configuration, ILogger<InputUserInputTracker> logger, IServiceProvider serviceProvider): IInputUserTracker
 {
     #region Variables
 
@@ -48,8 +47,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
     #region IUserInputTracker
 
-    public ActiveInputScheme ActiveScheme { get; } = new ActiveInputScheme(schemeMap.DefinitionName, schemeMap.SchemeName, 
-                                                                            [.. schemeMap.DeviceSchemeMaps.Select(m => m.DeviceFamily)]);
+    public ActiveInputScheme ActiveScheme { get; } = new ActiveInputScheme(schemeMap.DefinitionName, schemeMap.SchemeName, [.. schemeMap.DeviceSchemeMaps.Select(m => m.DeviceFamily)]);
 
     public int UserId => userId;
 
@@ -106,7 +104,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                     {
                         var reprocessedOutput = Track(deltaTime, inputEvent);
                         processedInputEvent = reprocessedOutput.IsSuccessful
-                            ? reprocessedOutput.Value
+                            ? reprocessedOutput.Data
                             : null;
                     }
                     else if (inputState.MappedAction is not null && inputState.MappedAction is ActiveInputActionMap activeInputActionMap
@@ -133,27 +131,27 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
         return triggeredActions.Values;
     }
 
-    public IOutput<ProcessedInputEvent> Track(TimeSpan deltaTime, InputEvent inputEvent)
+    public Output<ProcessedInputEvent> Track(TimeSpan deltaTime, InputEvent inputEvent)
     {
         if (inputEvent is not DeviceInputEvent deviceInputEvent)
         {
-            return outputFactory.Fail<ProcessedInputEvent>("The input event was not a physical input event");
+            return Out.InvalidRequest<ProcessedInputEvent>("The input event was not a physical input event");
         }
         if (!_deviceInputTrackerLookup.TryGetValue(deviceInputEvent.DeviceIdentifier.DeviceFamily, out var deviceTracker))
         {
-            return outputFactory.NotFound<ProcessedInputEvent>("No device tracker was found for the device triggering the input.");
+            return Out.DataNotFound<ProcessedInputEvent>("No device tracker was found for the device triggering the input.");
         }
 
         var actionMaps = deviceTracker.SchemeMap.GetActionMaps(deviceInputEvent.InputId);
         if (!actionMaps.Any())
         {
-            return outputFactory.Fail<ProcessedInputEvent>("No a1ction map found for the input");
+            return Out.InvalidRequest<ProcessedInputEvent>("No a1ction map found for the input");
         }
 
         var inputState = GetAndUpdateInputState(deviceTracker, deviceInputEvent);
         if (inputState is null)
         {
-            return outputFactory.Fail<ProcessedInputEvent>("Unable to acquire input state");
+            return Out.InvalidRequest<ProcessedInputEvent>("Unable to acquire input state");
         }
 
         if (inputState.Phase is InputPhase.End && configuration.ProcessorConfiguration.TapReactivationTime.GetValueOrDefault(TimeSpan.Zero) == TimeSpan.Zero)
@@ -166,7 +164,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
         // Passive action maps only modify state, they do not trigger events.
         if (!activeInputActionMaps.Any())
         {
-            return outputFactory.Succeed(ProcessedInputEvent.NotTriggered);
+            return Out.Success(ProcessedInputEvent.NotTriggered);
         }
 
         ProcessedInputEvent? processedInputEvent = null;
@@ -188,7 +186,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             inputState.MappedAction = processedInputEvent?.ActionMap;
         }
 
-        return outputFactory.Succeed(processedInputEvent ?? ProcessedInputEvent.NotTriggered);
+        return Out.Success(processedInputEvent ?? ProcessedInputEvent.NotTriggered);
     }
 
     #endregion

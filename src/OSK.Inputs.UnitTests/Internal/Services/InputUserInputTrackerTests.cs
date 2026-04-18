@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
-using OSK.Functions.Outputs.Mocks;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.Runtime;
@@ -12,21 +11,6 @@ namespace OSK.Inputs.UnitTests.Internal.Services;
 
 public class InputUserInputTrackerTests
 {
-    #region Variables
-
-    private readonly MockOutputFactory<InputUserInputTracker> _outputFactory;
-
-    #endregion
-
-    #region Constructors
-
-    public InputUserInputTrackerTests()
-    {
-        _outputFactory = new MockOutputFactory<InputUserInputTracker>();
-    }
-
-    #endregion
-
     #region Track
 
     [Fact]
@@ -313,8 +297,7 @@ public class InputUserInputTrackerTests
                  ])
             ]), new InputSystemConfiguration(
                 [new TestDeviceSpecification(TestIdentity.Identity1, new TestPhysicalInput(1), new TestPhysicalInput(2), new TestPhysicalInput(3))], 
-                [], configuration ?? new(), new()), Mock.Of<ILogger<InputUserInputTracker>>(), _outputFactory,
-                Mock.Of<IServiceProvider>()); 
+                [], configuration ?? new(), new()), Mock.Of<ILogger<InputUserInputTracker>>(), Mock.Of<IServiceProvider>()); 
     }
 
     #endregion
