@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="OSK.Extensions.Inputs.Configuration.UnitTests/OSK.Extensions.Inputs.Configuration.UnitTests.csproj" />
+  <Project Path="OSK.Extensions.Inputs.Configuration/OSK.Extensions.Inputs.Configuration.csproj" />
+  <Project Path="OSK.Inputs.Abstractions.UnitTests/OSK.Inputs.Abstractions.UnitTests.csproj" />
+  <Project Path="OSK.Inputs.Abstractions/OSK.Inputs.Abstractions.csproj" />
+  <Project Path="OSK.Inputs.UnitTests/OSK.Inputs.UnitTests.csproj" />
+  <Project Path="OSK.Inputs/OSK.Inputs.csproj" />
+</Solution>

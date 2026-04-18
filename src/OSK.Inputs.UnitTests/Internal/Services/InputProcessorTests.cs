@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
-using OSK.Functions.Outputs.Abstractions;
-using OSK.Functions.Outputs.Logging.Abstractions;
-using OSK.Functions.Outputs.Mocks;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Inputs;
@@ -14,6 +11,7 @@ using OSK.Inputs.Internal.Services;
 using OSK.Inputs.Options;
 using OSK.Inputs.Ports;
 using OSK.Inputs.UnitTests._Helpers;
+using OSK.Operations.Outputs;
 using Xunit;
 
 namespace OSK.Inputs.UnitTests.Internal.Services;
@@ -29,7 +27,6 @@ public class InputProcessorTests
     private readonly Mock<IInputNotificationPublisher> _mockNotificationPublisher;
     private readonly Mock<IInputUserTracker> _mockUserInputTracker;
     private readonly Mock<IServiceProvider> _mockServiceProvider;
-    private readonly IOutputFactory<InputProcessor> _outputFactory;
 
     private readonly InputProcessor _processor;
 
@@ -43,14 +40,11 @@ public class InputProcessorTests
         _mockNotificationPublisher = new();
         _mockConfigurationProvider = new();
         _mockUserInputTracker = new();
-        _outputFactory = new MockOutputFactory<InputProcessor>();
 
         var mockLogger = new Mock<ILogger<InputUserInputTracker>>();
         _mockServiceProvider = new Mock<IServiceProvider>();
         _mockServiceProvider.Setup(m => m.GetService(typeof(ILogger<InputUserInputTracker>)))
             .Returns(mockLogger.Object);
-        _mockServiceProvider.Setup(m => m.GetService(typeof(IOutputFactory<InputUserInputTracker>)))
-            .Returns(new MockOutputFactory<InputUserInputTracker>());
         _mockServiceProvider.Setup(m => m.GetService(typeof(IServiceProvider)))
             .Returns(_mockServiceProvider.Object);
 
@@ -58,8 +52,7 @@ public class InputProcessorTests
             _mockNotificationPublisher.Object, 
             _mockConfigurationProvider.Object,
             _mockServiceProvider.Object, 
-            Mock.Of<ILogger<InputProcessor>>(), 
-            _outputFactory,
+            Mock.Of<ILogger<InputProcessor>>(),
             (_, _, _) => _mockUserInputTracker.Object,
             _trackers);
     }
@@ -269,7 +262,7 @@ public class InputProcessorTests
         _mockUserManager.Setup(m => m.GetUsers())
             .Returns([]);
         _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
-            .Returns(_outputFactory.Fail<IInputUser>("Bad day"));
+            .Returns(Out.InvalidRequest<IInputUser>("Bad day"));
 
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
@@ -304,9 +297,9 @@ public class InputProcessorTests
         _mockUserManager.Setup(m => m.GetUsers())
             .Returns([]);
         _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
-            .Returns(_outputFactory.Succeed((IInputUser)new InputUser(1)));
+            .Returns(Out.Success((IInputUser)new InputUser(1)));
         _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
-            .Returns(_outputFactory.Fail("Bad Day"));
+            .Returns(Out.InvalidRequest("Bad Day"));
 
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
@@ -353,11 +346,11 @@ public class InputProcessorTests
             .Returns((int userId, RuntimeDeviceIdentifier _) =>
             {
                 Assert.Equal(mockUser.Object.Id, userId);
-                return _outputFactory.Succeed();
+                return Out.Success();
             });
 
         _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
+            .Returns(Out.Success(ProcessedInputEvent.NotTriggered));
 
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
@@ -404,11 +397,11 @@ public class InputProcessorTests
             .Returns((int userId, RuntimeDeviceIdentifier _) =>
             {
                 Assert.Equal(mockUser.Object.Id, userId);
-                return _outputFactory.Succeed();
+                return Out.Success();
             });
 
         _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
+            .Returns(Out.Success(ProcessedInputEvent.NotTriggered));
 
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
@@ -463,11 +456,11 @@ public class InputProcessorTests
             .Returns((int userId, RuntimeDeviceIdentifier _) =>
             {
                 Assert.Equal(mockUser2.Object.Id, userId);
-                return _outputFactory.Succeed();
+                return Out.Success();
             });
 
         _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
+            .Returns(Out.Success(ProcessedInputEvent.NotTriggered));
 
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(2, TestIdentity.Identity1),
@@ -522,11 +515,11 @@ public class InputProcessorTests
             .Returns((int userId, RuntimeDeviceIdentifier _) =>
             {
                 Assert.Equal(mockUser.Object.Id, userId);
-                return _outputFactory.Succeed();
+                return Out.Success();
             });
 
         _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
+            .Returns(Out.Success(ProcessedInputEvent.NotTriggered));
 
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(3, TestIdentity.Identity1),
@@ -583,11 +576,11 @@ public class InputProcessorTests
             .Returns((int userId, RuntimeDeviceIdentifier _) =>
             {
                 Assert.Equal(mockUser2.Object.Id, userId);
-                return _outputFactory.Succeed();
+                return Out.Success();
             });
 
         _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
+            .Returns(Out.Success(ProcessedInputEvent.NotTriggered));
 
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity2),
@@ -650,12 +643,11 @@ public class InputProcessorTests
             .Returns((int userId, RuntimeDeviceIdentifier _) =>
             {
                 Assert.Equal(mockUser2.Object.Id, userId);
-                return _outputFactory.Succeed();
+                return Out.Success();
             });
 
         _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
-
+            .Returns(Out.Success(ProcessedInputEvent.NotTriggered));
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(4, TestIdentity.Identity3),
             1, InputPhase.Start, []));
@@ -693,12 +685,12 @@ public class InputProcessorTests
         var user = new InputUser(1);
         user.ActiveInputDefinitionName = "Abc";
         _mockUserManager.Setup(m => m.CreateUser(It.IsAny<UserJoinOptions>()))
-            .Returns(_outputFactory.Succeed((IInputUser)user));
+            .Returns(Out.Success((IInputUser)user));
         _mockUserManager.Setup(m => m.PairDevice(It.IsAny<int>(), It.IsAny<RuntimeDeviceIdentifier>()))
-            .Returns(_outputFactory.Succeed());
+            .Returns(Out.Success());
 
         _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
+            .Returns(Out.Success(ProcessedInputEvent.NotTriggered));
 
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),
@@ -740,7 +732,7 @@ public class InputProcessorTests
         _mockUserManager.Setup(m => m.GetInputUserForDevice(It.IsAny<int>()))
             .Returns(mockUser.Object);
         _mockUserInputTracker.Setup(m => m.Track(It.IsAny<TimeSpan>(), It.IsAny<InputEvent>()))
-            .Returns(_outputFactory.Succeed(ProcessedInputEvent.NotTriggered));
+            .Returns(Out.Success(ProcessedInputEvent.NotTriggered));
 
         // Act
         var output = _processor.ProcessEvent(TimeSpan.Zero, new InputPowerEvent(new RuntimeDeviceIdentifier(1, TestIdentity.Identity1),

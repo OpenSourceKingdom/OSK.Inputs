@@ -4,8 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using OSK.Functions.Outputs.Abstractions;
-using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Options;
 using OSK.Inputs.Ports;
@@ -13,11 +11,13 @@ using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Internal.Models;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Abstractions.Notifications;
+using OSK.Operations.Outputs.Models;
+using OSK.Operations.Outputs;
 
 namespace OSK.Inputs.Internal.Services;
 
 internal partial class InputUserManager(IInputConfigurationProvider configurationProvider, IInputNotificationPublisher notificationPublisher,
-    IInputSchemeRepository schemeRepository, ILogger<InputUserManager> logger, IOutputFactory<InputUserManager> outputFactory) 
+    IInputSchemeRepository schemeRepository, ILogger<InputUserManager> logger) 
     : IInputUserManager
 {
     #region Variables
@@ -31,8 +31,8 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
 
     internal InputUserManager(Dictionary<int, InputUser> users, Dictionary<int, PreferredInputScheme[]> preferredSchemes,
         IInputConfigurationProvider configurationProvider, IInputNotificationPublisher notificationPublisher,
-        IInputSchemeRepository schemeRepository, ILogger<InputUserManager> logger, IOutputFactory<InputUserManager> outputFactory)
-        : this(configurationProvider, notificationPublisher, schemeRepository, logger, outputFactory)
+        IInputSchemeRepository schemeRepository, ILogger<InputUserManager> logger)
+        : this(configurationProvider, notificationPublisher, schemeRepository, logger)
     {
         _users = users;
         _userPreferredSchemesLookup = preferredSchemes;
@@ -42,7 +42,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
 
     #region IInputUserManager
 
-    public IOutput<IInputUser> CreateUser(UserJoinOptions options)
+    public Output<IInputUser> CreateUser(UserJoinOptions options)
     {
         if (options is null)
         {
@@ -51,7 +51,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
 
         if (configurationProvider.Configuration.JoinPolicy.MaxUsers <= _users.Count)
         {
-            return outputFactory.Fail<IInputUser>($"Unable to create user as the maximum number of users ({configurationProvider.Configuration.JoinPolicy.MaxUsers}) has been reached.", OutputSpecificityCode.InvalidParameterInputRange);
+            return Out.Error<IInputUser>(OutputStatus.InvalidRange, $"Unable to create user as the maximum number of users ({configurationProvider.Configuration.JoinPolicy.MaxUsers}) has been reached.");
         }
 
         var devicesToPair = options.DevicesToPair ?? [];
@@ -59,7 +59,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         if (alreadyPairedDevices.Any())
         {
             var inputDeviceError = string.Join(",", alreadyPairedDevices.Select(device => device.DeviceFamily));
-            return outputFactory.Fail<IInputUser>($"Unable to create user as one more devices have already been paired to the input system: {inputDeviceError}");
+            return Out.InvalidRequest<IInputUser>($"Unable to create user as one more devices have already been paired to the input system: {inputDeviceError}");
         }
 
         var newUserId = _users.Count is 0
@@ -82,8 +82,10 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             LogCreateUseActiveDefinitionNameNotFoundWarning(logger, options.ActiveDefinitionName!, inputDefinition.Name);
         }
 
-        _users[newUserId] = new InputUser(newUserId);
-        _users[newUserId].ActiveInputDefinitionName = inputDefinition.Name;
+        _users[newUserId] = new InputUser(newUserId)
+        {
+            ActiveInputDefinitionName = inputDefinition.Name
+        };
 
         notificationPublisher.Notify(new InputUserJoinedNotification(_users[newUserId]));
 
@@ -93,34 +95,34 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             notificationPublisher.Notify(new DevicePairedNotification(newUserId, device));
         }
 
-        return outputFactory.Succeed((IInputUser)_users[newUserId]);
+        return Out.Success((IInputUser)_users[newUserId]);
     }
 
-    public IOutput SetActiveDefinition(int userId, string definitionName)
+    public Output SetActiveDefinition(int userId, string definitionName)
     {
         if (!_users.TryGetValue(userId, out var user))
         {
             LogSetActiveDefinitionForBadUserInformation(logger, userId);
-            return outputFactory.NotFound($"User {userId} does not exist.");
+            return Out.DataNotFound($"User {userId} does not exist.");
         }
 
         if (string.IsNullOrWhiteSpace(definitionName))
         {
             LogActiveDefinitionNameNotFoundWarning(logger, "{Empty}");
-            return outputFactory.Fail("Input definition name cannot be null.");
+            return Out.InvalidRequest("Input definition name cannot be null.");
         }
 
         var definition = configurationProvider.Configuration.GetDefinition(definitionName);
         if (definition is null)
         {
             LogActiveDefinitionNameNotFoundWarning(logger, definitionName);
-            return outputFactory.NotFound($"Input definition with name {definition} does not exist.");
+            return Out.DataNotFound($"Input definition with name {definition} does not exist.");
         }
 
         user.ActiveInputDefinitionName = definitionName;
 
         notificationPublisher.Notify(new InputUserActiveDefinitionChangeNotification(user, user.ActiveInputDefinitionName));
-        return outputFactory.Succeed();
+        return Out.Success();
     }
 
     public IInputUser? GetInputUserForDevice(int deviceId)
@@ -151,23 +153,23 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         return false;
     }
 
-    public IOutput PairDevice(int userId, RuntimeDeviceIdentifier device)
+    public Output PairDevice(int userId, RuntimeDeviceIdentifier device)
     {
         if (!_users.TryGetValue(userId, out var user))
         {
-            return outputFactory.NotFound($"Unable to pair device {device.DeviceId}, {device.DeviceFamily.Name}, because there is no user with id {userId}.");
+            return Out.DataNotFound($"Unable to pair device {device.DeviceId}, {device.DeviceFamily.Name}, because there is no user with id {userId}.");
         }
 
         var pairedUser = GetInputUserForDevice(device.DeviceId);
         if (pairedUser is not null)
         {
             return pairedUser.Id == userId
-                ? outputFactory.Succeed()
-                : outputFactory.Fail($"Unable to pair device {device.DeviceId}, {device.DeviceFamily.Name}, to user {userId} because it is already paired to {pairedUser.Id}.");
+                ? Out.Success()
+                : Out.InvalidRequest($"Unable to pair device {device.DeviceId}, {device.DeviceFamily.Name}, to user {userId} because it is already paired to {pairedUser.Id}.");
         }
 
         user.AddDevice(device);
-        return outputFactory.Succeed();
+        return Out.Success();
     }
 
     public bool UnpairDevice(int userId, int deviceId)
@@ -187,39 +189,39 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
         return false;
     }
 
-    public async Task<IOutput> SavePreferredSchemeAsync(PreferredInputScheme scheme, CancellationToken cancellationToken = default)
+    public async Task<Output> SavePreferredSchemeAsync(PreferredInputScheme scheme, CancellationToken cancellationToken = default)
     {
         if (scheme.UserId < 0 || scheme.UserId >= configurationProvider.Configuration.JoinPolicy.MaxUsers)
         {
-            return outputFactory.Fail($"The provided user id must be non-zero and less than the max users ({configurationProvider.Configuration.JoinPolicy.MaxUsers}) for the input system.");
+            return Out.InvalidRequest($"The provided user id must be non-zero and less than the max users ({configurationProvider.Configuration.JoinPolicy.MaxUsers}) for the input system.");
         }
 
         if (string.IsNullOrWhiteSpace(scheme.DefinitionName))
         {
-            return outputFactory.Fail("Definition name can not be empty.");
+            return Out.InvalidRequest("Definition name can not be empty.");
         }
 
         var definition = configurationProvider.Configuration.GetDefinition(scheme.DefinitionName);
         if (definition is null)
         {
-            return outputFactory.NotFound($"No input definition with the name '{scheme.DefinitionName}' exists.");
+            return Out.DataNotFound($"No input definition with the name '{scheme.DefinitionName}' exists.");
         }
 
         if (string.IsNullOrWhiteSpace(scheme.SchemeName))
         {
-            return outputFactory.Fail("Scheme name can not be empty.");
+            return Out.InvalidRequest("Scheme name can not be empty.");
         }
 
         if (definition.GetScheme(scheme.CombinationId, scheme.SchemeName) is null)
         {
-            return outputFactory.NotFound($"No input scheme named '{scheme.SchemeName}' exists on the definition '{scheme.DefinitionName}' for the device combination '{scheme.CombinationId}'");
+            return Out.DataNotFound($"No input scheme named '{scheme.SchemeName}' exists on the definition '{scheme.DefinitionName}' for the device combination '{scheme.CombinationId}'");
         }
 
         // Fix scheme not taking effect
         return await schemeRepository.SavePreferredSchemeAsync(scheme, cancellationToken);
     }
 
-    public async Task<IOutput> LoadUserConfigurationAsync(CancellationToken cancellationToken = default)
+    public async Task<Output> LoadUserConfigurationAsync(CancellationToken cancellationToken = default)
     {
         configurationProvider.Configuration.Reset();
 
@@ -229,7 +231,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             // Only take one preferred scheme for each definition, even if the repository returns multiples.
             // There should only ever be 1 preferred scheme per definition, so multiples would indicate either a
             // mistake in the repository or some malicious intent
-            foreach (var userPreferredSchemes in getUserPreferredSchemes.Value
+            foreach (var userPreferredSchemes in getUserPreferredSchemes.Data
                 .Where(preferredScheme =>
                 {
                     if (preferredScheme.UserId < 0 || preferredScheme.UserId > configurationProvider.Configuration.JoinPolicy.MaxUsers)
@@ -268,7 +270,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             var getCustomSchemesOutput = await schemeRepository.GetCustomSchemesAsync(cancellationToken);
             if (getCustomSchemesOutput.IsSuccessful)
             {
-                configurationProvider.Configuration.ApplyCustomInputSchemes(getCustomSchemesOutput.Value);
+                configurationProvider.Configuration.ApplyCustomInputSchemes(getCustomSchemesOutput.Data);
             }
             else
             {
@@ -276,7 +278,7 @@ internal partial class InputUserManager(IInputConfigurationProvider configuratio
             }
         }
 
-        return outputFactory.Succeed();
+        return Out.Success();
     }
 
     #endregion

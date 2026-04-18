@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using OSK.Functions.Outputs.Abstractions;
-using OSK.Functions.Outputs.Logging.Abstractions;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Devices;
@@ -12,6 +10,8 @@ using OSK.Inputs.Abstractions.Notifications;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Options;
 using OSK.Inputs.Ports;
+using OSK.Operations.Outputs;
+using OSK.Operations.Outputs.Models;
 
 namespace OSK.Inputs.Internal.Services;
 
@@ -28,7 +28,6 @@ internal partial class InputProcessor: IInputProcessor
     private readonly IInputConfigurationProvider _configurationProvider;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<InputProcessor> _logger;
-    private readonly IOutputFactory<InputProcessor> _outputFactory;
 
     internal readonly ObjectFactory<InputUserInputTracker> _userInputTrackerFactory
         = ActivatorUtilities.CreateFactory<InputUserInputTracker>([typeof(int),
@@ -41,15 +40,13 @@ internal partial class InputProcessor: IInputProcessor
     #region Constructors
 
     public InputProcessor(IInputUserManager userManager, IInputNotificationPublisher notificationPublisher, 
-        IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger,
-        IOutputFactory<InputProcessor> outputFactory)
+        IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger)
     {
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         _configurationProvider = configurationProvider ?? throw new ArgumentNullException(nameof(configurationProvider));
         _notificationPublisher = notificationPublisher ?? throw new ArgumentNullException(nameof(notificationPublisher));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _outputFactory = outputFactory ?? throw new ArgumentNullException(nameof(outputFactory));
 
         notificationPublisher.OnUserNotification += HandleUserEvent;
         notificationPublisher.OnDeviceNotification += deviceNotification =>
@@ -66,10 +63,9 @@ internal partial class InputProcessor: IInputProcessor
 
     internal InputProcessor(IInputUserManager userManager, IInputNotificationPublisher notificationPublisher,
         IInputConfigurationProvider configurationProvider, IServiceProvider serviceProvider, ILogger<InputProcessor> logger,
-        IOutputFactory<InputProcessor> outputFactory,
         Func<int, InputSchemeActionMap, InputSystemConfiguration, IInputUserTracker> customTrackerFactory,
         Dictionary<int, IInputUserTracker> trackerDictionary)
-        : this(userManager, notificationPublisher, configurationProvider, serviceProvider, logger, outputFactory)
+        : this(userManager, notificationPublisher, configurationProvider, serviceProvider, logger)
     {
         _newInputTrackerFactory = customTrackerFactory ?? throw new ArgumentNullException(nameof(customTrackerFactory));
         _userInputTrackerLookup = trackerDictionary ?? throw new ArgumentNullException(nameof(trackerDictionary));
@@ -96,7 +92,7 @@ internal partial class InputProcessor: IInputProcessor
         }
     }
 
-    public IOutput ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent)
+    public Output ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent)
     {
         if (inputEvent is null)
         {
@@ -104,26 +100,26 @@ internal partial class InputProcessor: IInputProcessor
         }
         if (_pauseInputProcessing)
         {
-            return _outputFactory.Fail("Input processing paused");
+            return Out.InvalidRequest("Input processing paused");
         }
         if (inputEvent is not DeviceInputEvent deviceInputEvent)
         {
             LogUnsupportedInputTypeInformation(_logger, inputEvent.GetType().FullName);
-            return _outputFactory.Fail($"Input type '{inputEvent.GetType().FullName}' is not supported.");
+            return Out.InvalidRequest($"Input type '{inputEvent.GetType().FullName}' is not supported.");
         }
 
         var inputTracker = GetInputTrackerForDevice(deviceInputEvent.DeviceIdentifier);
         if (inputTracker is null)
         {
-            return _outputFactory.Fail($"Unrecognized error, unable to get an input tracker for the device or user.");
+            return Out.InvalidRequest($"Unrecognized error, unable to get an input tracker for the device or user.");
         }
 
         var processedInputEvent = inputTracker.Track(deltaTime, inputEvent);
-        if (processedInputEvent.IsSuccessful && processedInputEvent.Value.Triggered)
+        if (processedInputEvent.IsSuccessful && processedInputEvent.Data.Triggered)
         {
             LogInputActionTriggeredDebug(_logger, inputTracker.UserId, deviceInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, 
-                processedInputEvent.Value.ActionMap.Action?.Name ?? "{Passive Action}");
-            processedInputEvent.Value.Execute();
+                processedInputEvent.Data.ActionMap.Action?.Name ?? "{Passive Action}");
+            processedInputEvent.Data.Execute();
         }
 
         return processedInputEvent;
@@ -276,7 +272,7 @@ internal partial class InputProcessor: IInputProcessor
                 return null;
             }
 
-            targetUser = createUserOutput.Value;
+            targetUser = createUserOutput.Data;
         }
 
         var pairedOutput = _userManager.PairDevice(targetUser.Id, deviceIdentifier);
