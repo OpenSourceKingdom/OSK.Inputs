@@ -1,5 +1,4 @@
 ﻿using OSK.Inputs.Abstractions.Configuration;
-using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.UnitTests._Helpers;
 
@@ -75,7 +74,7 @@ public class DeviceSchemeActionMapTests
         => new(TestDeviceFamily.Identity1, inputs
             .Select(input => new ActiveInputActionMap() 
             { 
-                Action = new InputAction("", new HashSet<InputPhase>(), _ => { }),
+                Action = new InputAction("", new HashSet<InputPhase>(), _ => { }, []),
                 Input = input
             }));
 

@@ -9,7 +9,7 @@ public class TestRegistrationService
     {
     }
 
-    [InputAction([], "SpecialAction")]
+    [InputAction(ActionName = "SpecialAction")]
     public void ValidMethodB(InputEventContext context)
     {
     }

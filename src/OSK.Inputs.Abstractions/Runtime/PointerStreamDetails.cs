@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Inputs.Abstractions.Runtime;
 
@@ -7,14 +8,14 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// Provides data for all pointer details associated with the input system
 /// </summary>
 /// <param name="pointers">The collection of pointers in the input system, this should be a unique collection (i.e. unique id per pointer)</param>
-public class PointerDetails(PointerData[] pointers)
+public class PointerStreamDetails(PointerData[] pointers): InputStreamDetails
 {
     #region Static
 
     /// <summary>
     /// A default empty state for pointers. This possess no pointer data.
     /// </summary>
-    public static PointerDetails Empty = new([]);
+    public static PointerStreamDetails Empty = new([]);
 
     #endregion
 

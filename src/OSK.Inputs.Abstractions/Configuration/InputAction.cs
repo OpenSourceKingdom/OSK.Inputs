@@ -12,10 +12,11 @@ namespace OSK.Inputs.Abstractions.Configuration;
 /// <param name="actionName">The unique name for the action</param>
 /// <param name="triggerPhases">The phases considered valid to trigger the action</param>
 /// <param name="actionExecutor">The specific action to execute</param>
-/// <param name="includePointerDetails">Determines if pointer data should be calculated and applied to the event context when the action is executed</param>
+/// <param name="inputStreams">A list of desired input streams to include in the event context</param>
 /// <param name="description">A readable description for the action that can be displayed for users</param>
+/// <param name="actionGroup">An option group number that specifies the action group this action belongs to</param>
 public class InputAction(string actionName, ISet<InputPhase> triggerPhases, Action<InputEventContext> actionExecutor,
-    bool includePointerDetails = false, string? description = null)
+    IEnumerable<InputStreamType>? inputStreams = null, string? description = null, int? actionGroup = null)
 {
     #region Api
 
@@ -30,20 +31,26 @@ public class InputAction(string actionName, ISet<InputPhase> triggerPhases, Acti
     public string? Description => description;
 
     /// <summary>
-    /// Whether pointer information should be calculated and included on an event context when the action is executed.
+    /// A collection of additional data stream information that should be calculated and included on an event context when the action is executed.
     /// 
     /// <br />
-    /// Note: Calculating pointer information requires checking the collection of pointers associated to a given user and 
+    /// Note: For example, calculating pointer or similar data stream information may require checking the collection of pointers or associated data to a given user and 
     /// determining any <see cref="PointerMotion"/> information associated with them over recent frames. As such, this could
-    /// be a slight performance cost to turn on though motion information is only captured for a short time. This should be
-    /// used with actions that actually need the pointer information for their actions.
+    /// be a slight performance cost to turn on though the information is only captured for a short time. This should be used with actions that actually need the pointer 
+    /// information for their actions.
     /// </summary>
-    public bool IncludePointerDetails => includePointerDetails;
+    public IEnumerable<InputStreamType> InputStreams { get; } = inputStreams ?? [];
 
     /// <summary>
     /// The specific input phases that will trigger this action
     /// </summary>
     public ISet<InputPhase> TriggerPhases => triggerPhases;
+
+    /// <summary>
+    /// Specifies an action group for the input action. This can be used in conjunction with <see cref="InputEventProcessOptions.SuppressedActionGroups"/> to ignore
+    /// actions of a given type during input processing
+    /// </summary>
+    public int? ActionGroup => actionGroup;
 
     /// <summary>
     /// The configured action to execute when the related input is activated

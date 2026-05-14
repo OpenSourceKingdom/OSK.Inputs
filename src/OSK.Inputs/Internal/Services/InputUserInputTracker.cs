@@ -116,7 +116,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
 
                 if (processedInputEvent is not null)
                 {
-                    triggeredActions[inputState.GetActiveInput()] = processedInputEvent.Value;
+                    triggeredActions[inputState.GetActiveInput()] = processedInputEvent;
                 }
             }
 
@@ -205,7 +205,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
         DeviceInputState inputState;
         switch (inputEvent)
         {
-            case InputPointerEvent pointerEvent:
+            case PointerInputStreamEvent pointerEvent:
                 var pointerState = deviceTracker.GetOrCreatePointerState(pointerEvent.PointerId, () =>
                 {
                     return new InputPointerState(pointerEvent.PointerId, input!, MaxPointerRecords, _pointerSquareThreshold)
@@ -360,11 +360,11 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
         };
     }
 
-    private PointerDetails GetPointerInformation(InputActionMap actionMap)
+    private PointerStreamDetails GetPointerInformation(InputActionMap actionMap)
     {
-        if (actionMap is not ActiveInputActionMap activeInputActionMap || !activeInputActionMap.Action.IncludePointerDetails)
+        if (!ShouldIncludeStreamInContext(actionMap, InputStreamType.Pointer))
         {
-            return PointerDetails.Empty;
+            return PointerStreamDetails.Empty;
         }
 
         var pointerData = _deviceInputTrackerLookup.Values.SelectMany(deviceState
@@ -386,7 +386,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
             .Select(p => p!.Value)
             .ToArray();
 
-        return new PointerDetails(pointerData);
+        return new PointerStreamDetails(pointerData);
     }
     
     private InputEvent? GetEventForState(InputState state)
@@ -399,7 +399,7 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
                 var pointerPositionAndMotionData = pointerState.GetPointerStateInformation();
                 return pointerPositionAndMotionData is null
                     ? null
-                    : new InputPointerEvent(pointerState.DeviceIdentifier, pointerState.Input.Id, pointerState.Phase, pointerState.PointerId,
+                    : new PointerInputStreamEvent(pointerState.DeviceIdentifier, pointerState.Input.Id, pointerState.Phase, pointerState.PointerId,
                             pointerPositionAndMotionData.Value.CurrentPosition);
             case VirtualInputState virtualInputState:
                 return new VirtualInputEvent(virtualInputState.Input, virtualInputState.Phase);
@@ -408,8 +408,12 @@ internal partial class InputUserInputTracker(int userId, InputSchemeActionMap sc
         }
     }
 
+    private bool ShouldIncludeStreamInContext(InputActionMap actionMap, InputStreamType streamType)
+        => actionMap is ActiveInputActionMap activeActionMap
+            && (activeActionMap.Action.InputStreams.Contains(streamType) || (actionMap.Input is InputStream inputStream && inputStream.StreamType == streamType));
+
     private ProcessedInputEvent GetTriggeredProcessedEvent(TimeSpan deltaTime, InputState state, InputEvent activation, ActiveInputActionMap actionMap)
-        => new(actionMap, new InputEventContext(userId, deltaTime, activation, GetPointerInformation(actionMap), GetActivityInformation(state), serviceProvider));
+        => new(actionMap, new InputEventContext(userId, deltaTime, activation, [GetPointerInformation(actionMap)], GetActivityInformation(state), serviceProvider));
 
     private InputIntensity[] ApplyDeadzoneSmoothScaling(InputIntensity[] inputIntensities, float deadzone)
     {

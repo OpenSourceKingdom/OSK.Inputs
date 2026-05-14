@@ -1,5 +1,4 @@
 ﻿using OSK.Inputs.Abstractions.Configuration;
-using OSK.Inputs.Abstractions.Devices;
 using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.UnitTests._Helpers;
 
@@ -247,7 +246,7 @@ public class InputSystemConfigurationTests
             VirtualMaps = [new VirtualInputMap() { ActionName = "Def", Input = new DeviceCombinationInput(InputDeviceType.Keyboard, [input1, input2])}] 
         };
         var definition = new InputDefinition("Hello",
-            [new InputAction("Abc", new HashSet<InputPhase>(), _ => { } ), new InputAction("Def", new HashSet<InputPhase>(), _ => { })], 
+            [new InputAction("Abc", new HashSet<InputPhase>(), _ => { }), new InputAction("Def", new HashSet<InputPhase>(), _ => { })], 
             [new InputScheme("Abc", [map], false, false)], false);
         
         var configuration = new InputSystemConfiguration([testSpecification], [definition], new InputProcessorConfiguration(), new InputSystemJoinPolicy());

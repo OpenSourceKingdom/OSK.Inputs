@@ -1,4 +1,4 @@
-﻿namespace OSK.Inputs.Abstractions.Devices;
+﻿namespace OSK.Inputs.Abstractions.Inputs;
 
 /// <summary>
 /// The type of device an input device is
@@ -24,4 +24,9 @@ public enum InputDeviceType
     /// The device is a gamepad
     /// </summary>
     GamePad = 3,
+
+    /// <summary>
+    /// The device is a phone or similar mobile device
+    /// </summary>
+    Mobile = 4
 }

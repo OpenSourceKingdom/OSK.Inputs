@@ -1,6 +1,4 @@
-﻿using OSK.Inputs.Abstractions.Devices;
-
-namespace OSK.Inputs.Abstractions.Inputs;
+﻿namespace OSK.Inputs.Abstractions.Inputs;
 
 /// <summary>
 /// An input that provides ON/OFF or 0|1 input values

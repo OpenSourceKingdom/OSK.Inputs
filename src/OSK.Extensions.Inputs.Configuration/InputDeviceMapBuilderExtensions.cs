@@ -1,5 +1,6 @@
 ﻿using System;
 using OSK.Extensions.Inputs.Configuration.Ports;
+using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration;
 
@@ -23,17 +24,19 @@ public static class InputDeviceMapBuilderExtensions
     }
 
     /// <summary>
-    /// Adds a passive input map using a strongly typed enum
+    /// Adds an input stream using a strongly typed enum
     /// </summary>
+    /// <typeparam name="TInputStream">The type of input stream object</typeparam>
     /// <typeparam name="TInput">The input enum</typeparam>
     /// <param name="builder">The builder to configure</param>
     /// <param name="input">The enum value</param>
     /// <returns>The builder for chaining</returns>
-    public static IInputDeviceMapBuilder WithPassiveInput<TInput>(
+    public static IInputDeviceMapBuilder WithInputStream<TInputStream, TInput>(
         this IInputDeviceMapBuilder builder, TInput input)
+        where TInputStream : InputStream
         where TInput : Enum
     {
-        return builder.WithPassiveInput(Convert.ToInt32(input));
+        return builder.WithInputStream<TInputStream>(Convert.ToInt32(input));
     }
 
     #endregion

@@ -1,8 +1,12 @@
-﻿namespace OSK.Extensions.Inputs.Configuration.Options;
+﻿using OSK.Inputs.Abstractions.Inputs;
+
+namespace OSK.Extensions.Inputs.Configuration.Options;
 
 public class InputActionOptions
 {
-    public bool IncludePointerInformation { get; set; }
+    public int? ActionGroup { get; set; }
+
+    public InputStreamType[] IncludedInputStreams { get; set; } = [];
 
     public string? Description { get; set; }
 }

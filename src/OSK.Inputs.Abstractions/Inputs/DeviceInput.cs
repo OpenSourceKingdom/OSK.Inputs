@@ -1,12 +1,12 @@
 ﻿using System;
-using OSK.Inputs.Abstractions.Devices;
 
 namespace OSK.Inputs.Abstractions.Inputs;
 
 /// <summary>
 /// Represents an input on a device, like a joystick or button
 /// </summary>
-public abstract class DeviceInput(InputDeviceType deviceType, int id): Input(deviceType), IEquatable<DeviceInput>
+public abstract class DeviceInput(InputDeviceType deviceType, int id)
+    : Input(deviceType), IEquatable<DeviceInput>
 {    
     /// <summary>
     /// The unique id for the input

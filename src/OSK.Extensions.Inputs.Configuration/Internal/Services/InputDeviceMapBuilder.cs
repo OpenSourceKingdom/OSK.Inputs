@@ -13,7 +13,7 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
     #region Variables
 
     private readonly HashSet<int> _validInputIds = [.. deviceSpecification.GetInputs().Select(input => input.Id)];
-    private readonly Dictionary<int, string?> _inputMaps = [];
+    private readonly Dictionary<int, (string? ActionName, InputStream?)> _inputMaps = [];
     private readonly Dictionary<string, VirtualInput> _customVirtualInputs = [];
 
     #endregion
@@ -31,18 +31,19 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
             throw new InvalidOperationException($"Unable to assign input {inputId} to a device map with {deviceSpecification.DeviceFamily} because the action map was null and the input wasn't passive.");
         }
 
-        _inputMaps[inputId] = actionName;
+        _inputMaps[inputId] = (actionName, null);
         return this;
     }
 
-    public IInputDeviceMapBuilder WithPassiveInput(int inputId)
+    public IInputDeviceMapBuilder WithInputStream<TInputStream>(int inputId, string? actionName = default)
+        where TInputStream: InputStream
     {
         if (!_validInputIds.Contains(inputId))
         {
             throw new InvalidOperationException($"Unable to assign input {inputId} to a device map with {deviceSpecification.DeviceFamily} because it is not valid for the device.");
         }
 
-        _inputMaps[inputId] = null;
+        _inputMaps[inputId] = (actionName, (InputStream)Activator.CreateInstance(typeof(TInputStream), [deviceSpecification.DeviceFamily.DeviceType, inputId]));
 
         return this;
     }
@@ -79,7 +80,7 @@ internal class InputDeviceMapBuilder(InputDeviceSpecification deviceSpecificatio
         => new()
         {
             DeviceFamily = deviceSpecification.DeviceFamily,
-            InputMaps = [.. _inputMaps.Select(kvp => new InputMap() { InputId = kvp.Key, ActionName = kvp.Value })],
+            InputMaps = [.. _inputMaps.Select(kvp => new InputMap() { InputId = kvp.Key, ActionName = kvp.Value.ActionName })],
             VirtualMaps = [.. _customVirtualInputs.Select(kvp 
                 => new VirtualInputMap() { ActionName = kvp.Key, Input = kvp.Value })]
         };

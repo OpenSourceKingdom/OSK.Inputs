@@ -11,9 +11,9 @@ namespace OSK.Inputs.Abstractions.Runtime;
 /// <param name="phase">The phase of the input</param>
 /// <param name="pointerId">The pointer that this event is associated with</param>
 /// <param name="currentPosition">The position of the pointer</param>
-public class InputPointerEvent(RuntimeDeviceIdentifier device, int inputId, InputPhase phase,
+public class PointerInputStreamEvent(RuntimeDeviceIdentifier device, int inputId, InputPhase phase,
     int pointerId, Vector2 currentPosition)
-    : DeviceInputEvent(device, inputId, phase)
+    : DeviceInputStreamEvent(device, inputId, phase)
 {
     #region Variables
 
