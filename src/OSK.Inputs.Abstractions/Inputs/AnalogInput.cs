@@ -1,6 +1,4 @@
-﻿using OSK.Inputs.Abstractions.Devices;
-
-namespace OSK.Inputs.Abstractions.Inputs;
+﻿namespace OSK.Inputs.Abstractions.Inputs;
 
 /// <summary>
 /// An input that provides values between -1 to 1 or 0 to 1; a range of values

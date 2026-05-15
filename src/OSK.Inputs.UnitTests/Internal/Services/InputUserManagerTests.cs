@@ -3,6 +3,7 @@ using Moq;
 using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Configuration;
 using OSK.Inputs.Abstractions.Devices;
+using OSK.Inputs.Abstractions.Inputs;
 using OSK.Inputs.Abstractions.Notifications;
 using OSK.Inputs.Abstractions.Runtime;
 using OSK.Inputs.Internal;

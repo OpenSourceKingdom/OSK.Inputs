@@ -58,8 +58,8 @@ public readonly struct InputDeviceCombination(InputDeviceFamily[] deviceFamilies
 
         var matchedStrength = deviceFamilies.Contains(neededFamily)
             ? 1
-            : deviceFamilies.Where(family => neededFamily.DeviceType == family.DeviceType).Any()
-                ? .5f
+            : deviceFamilies.Any(family => neededFamily.DeviceType == family.DeviceType)
+                ? .5f // Represents that only half of the device family was matched (i.e. xbox failed to match to a dual shock but they're both game pads, so partial match on type)
                 : 0;
 
         return deviceFamilies.Length is 1

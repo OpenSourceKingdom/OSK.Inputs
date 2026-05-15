@@ -8,10 +8,10 @@ namespace OSK.Inputs.Abstractions;
 
 /// <summary>
 /// The core integration point for integrating input systems like Godot or Unity. Inputs for users are to be passed into 
-/// the <see cref="ProcessEvent(TimeSpan, InputEvent)"/> method as they are received, polled, or otherwise. 
+/// the <see cref="ProcessEvent(TimeSpan, InputEvent, InputEventProcessOptions)"/> method as they are received, polled, or otherwise. 
 /// 
 /// <br />
-/// Note: the only methods that should, in most cases, be used by integrations is either the <see cref="ProcessEvent(TimeSpan, InputEvent)"/>
+/// Note: the only methods that should, in most cases, be used by integrations is either the <see cref="ProcessEvent(TimeSpan, InputEvent, InputEventProcessOptions)"/>
 /// or the <see cref="ProcessMessage(IInputProcessorMessage)"/> signatures as they are used to drive inputs and messages
 /// within the input system. Other methods are utilized by the Input System itself.
 /// </summary>
@@ -36,13 +36,14 @@ public interface IInputProcessor
     /// </summary>
     /// <param name="deltaTime">The time that has passed since the last frame update</param>
     /// <param name="inputEvent">The <see cref="InputEvent"/> the user interaction triggered</param>
+    /// <param name="options">Options that can be applied to varying parts of the input process</param>
     /// <returns>
     /// An output that describes whether the event was processed or not. 
     /// <br />
     /// Note: a successful output does not necessarily mean that an action was triggered - it only means that it met the requirements
     /// for validation and is being tracked within the input system. All input updates should be sent to this method.
     /// </returns>
-    Output ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent);
+    Output<ProcessedInputResult> ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent, InputEventProcessOptions options);
 
     /// <summary>
     /// Informs the processor of some meaningful change in input system state that the input system should be aware of.

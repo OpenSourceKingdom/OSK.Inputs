@@ -1,4 +1,6 @@
-﻿namespace OSK.Inputs.Abstractions.Devices;
+﻿using OSK.Inputs.Abstractions.Inputs;
+
+namespace OSK.Inputs.Abstractions.Devices;
 
 /// <summary>
 /// Represents a unique input device that a game system can use

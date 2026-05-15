@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using OSK.Inputs.Abstractions;
 using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration.Attributes;
@@ -9,24 +9,44 @@ public class InputActionAttribute : Attribute
 {
     #region Variables
 
-    public string? ActionName { get; }
+    internal int? InternalActionGroup { get; private set; } 
+    private string? _actionName;
 
-    public string? Description { get; }
+    /// <summary>
+    /// A custom action name to use instead of the method name
+    /// </summary>
+    public string? ActionName 
+    { 
+        get => _actionName; 
+        set
+        {
+            _actionName = value?.Trim();
+        } 
+    }
 
-    public IEnumerable<InputPhase> TriggerPhases { get; }
+    /// <summary>
+    /// A user friendly description of this action, for UI display
+    /// </summary>
+    public string? Description { get; set; }
 
-    public bool IncludePointerDetails { get; }
+    /// <summary>
+    /// The desired trigger phases for the action
+    /// </summary>
+    public InputPhase[] TriggerPhases { get; set; } = [];
 
-    #endregion
+    /// <summary>
+    /// This represents the streams of data that should be included on the event context for a triggered action
+    /// </summary>
+    public InputStreamType[] IncludedInputStreams { get; set; } = [];
 
-    #region Constructors
-
-    public InputActionAttribute(InputPhase[] triggerPhases, string? actionName = null, bool includePointerDetails = false, string? description = null)
+    /// <summary>
+    /// Specifies an action type for the input action. This can be used in conjunction with <see cref="InputEventProcessOptions.SuppressedActionGroups"/> to ignore
+    /// actions of a given type during input processing
+    /// </summary>
+    public int ActionGroup 
     {
-        TriggerPhases = triggerPhases;
-        ActionName = actionName?.Trim();
-        IncludePointerDetails = includePointerDetails;
-        Description = description;
+        get => InternalActionGroup.GetValueOrDefault();
+        set => InternalActionGroup = value;
     }
 
     #endregion

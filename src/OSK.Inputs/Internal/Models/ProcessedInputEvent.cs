@@ -4,9 +4,9 @@ using OSK.Inputs.Abstractions.Runtime;
 
 namespace OSK.Inputs.Internal.Models;
 
-internal readonly struct ProcessedInputEvent(ActiveInputActionMap? actionMap, InputEventContext? context)
+internal class ProcessedInputEvent(ActiveInputActionMap? actionMap, InputEventContext? context)
 {
-    internal static ProcessedInputEvent NotTriggered = new ProcessedInputEvent(null, null);
+    internal static ProcessedInputEvent NotTriggered = new(null, null);
 
     [MemberNotNullWhen(true, nameof(ActionMap), nameof(ActivationContext))]
     public bool Triggered => actionMap is not null;
@@ -19,7 +19,7 @@ internal readonly struct ProcessedInputEvent(ActiveInputActionMap? actionMap, In
     {
         if (Triggered)
         {
-            ActionMap?.Action?.ActionExecutor(ActivationContext);
+            ActionMap.Action.ActionExecutor(ActivationContext);
         }
     }
 }

@@ -92,37 +92,52 @@ internal partial class InputProcessor: IInputProcessor
         }
     }
 
-    public Output ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent)
+    public Output<ProcessedInputResult> ProcessEvent(TimeSpan deltaTime, InputEvent inputEvent, InputEventProcessOptions options)
     {
         if (inputEvent is null)
         {
             throw new ArgumentNullException(nameof(inputEvent));
         }
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
         if (_pauseInputProcessing)
         {
-            return Out.InvalidRequest("Input processing paused");
+            return Out.InvalidRequest<ProcessedInputResult>("Input processing paused");
         }
         if (inputEvent is not DeviceInputEvent deviceInputEvent)
         {
             LogUnsupportedInputTypeInformation(_logger, inputEvent.GetType().FullName);
-            return Out.InvalidRequest($"Input type '{inputEvent.GetType().FullName}' is not supported.");
+            return Out.InvalidRequest<ProcessedInputResult>($"Input type '{inputEvent.GetType().FullName}' is not supported.");
         }
 
         var inputTracker = GetInputTrackerForDevice(deviceInputEvent.DeviceIdentifier);
         if (inputTracker is null)
         {
-            return Out.InvalidRequest($"Unrecognized error, unable to get an input tracker for the device or user.");
+            return Out.InvalidRequest<ProcessedInputResult>($"Unrecognized error, unable to get an input tracker for the device or user.");
         }
 
         var processedInputEvent = inputTracker.Track(deltaTime, inputEvent);
-        if (processedInputEvent.IsSuccessful && processedInputEvent.Data.Triggered)
+        if (!processedInputEvent.IsSuccessful)
+        {
+            return processedInputEvent.As<ProcessedInputResult>();
+        }
+
+        var actionSuppressed = processedInputEvent.Data.ActionMap?.Action.ActionGroup is not null &&
+            options.SuppressedActionGroups.Contains(processedInputEvent.Data.ActionMap.Action.ActionGroup.Value);
+        if (!actionSuppressed && processedInputEvent.Data.Triggered)
         {
             LogInputActionTriggeredDebug(_logger, inputTracker.UserId, deviceInputEvent.DeviceIdentifier, inputTracker.ActiveScheme, 
                 processedInputEvent.Data.ActionMap.Action?.Name ?? "{Passive Action}");
             processedInputEvent.Data.Execute();
         }
 
-        return processedInputEvent;
+        return Out.Success(new ProcessedInputResult()
+        {
+            MatchedAction = processedInputEvent.Data.ActionMap,
+            ConsumedInput = !actionSuppressed && (processedInputEvent.Data.ActivationContext?.ConsumedInput ?? false)
+        });
     }
 
     public void ToggleInputProcessing(bool pause)

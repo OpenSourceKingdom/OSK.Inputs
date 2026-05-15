@@ -58,8 +58,9 @@ public static class InputDefinitionBuilderExtensions
                 inputActionAttribute?.TriggerPhases ?? [InputPhase.Start],
                 new InputActionOptions()
                 {
+                    ActionGroup = inputActionAttribute?.InternalActionGroup,
                     Description = inputActionAttribute?.Description,
-                    IncludePointerInformation = inputActionAttribute?.IncludePointerDetails ?? false
+                    IncludedInputStreams = inputActionAttribute?.IncludedInputStreams ?? []
                 });
         }
 
