@@ -74,7 +74,12 @@ public interface IInputSystem
     /// <summary>
     /// Updates the input system using the specified delta time
     /// </summary>
-    /// <remarks>This process method may be ignored by the input system if the input system is pausing input</remarks>
+    /// <remarks>
+    /// 💡Notes:
+    /// <list type="bullet">
+    /// <item>This process method may be ignored by the input system if the input system is pausing input</item>
+    /// </list>
+    /// </remarks>
     /// <param name="deltaTime">the time that has passed since the last update</param>
     void Update(TimeSpan deltaTime);
 }
