@@ -85,10 +85,12 @@ public interface IInputUserManager
     /// Updates and loads the input system configuration with user specified data.
     /// </summary>
     /// <remarks>
-    /// It is important that this is run after a user saves, deletes, or performs any changes to persistent storage to ensure that the changes
-    /// are reflected in the input system
+    /// 💡Notes:
+    /// <list type="bullet">
+    /// <item> It is important that this is run after a user saves, deletes, or performs any changes to persistent storage to ensure that the changes are reflected in the input system</item>
+    /// </list>
     /// </remarks>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <param name="cancellationToken">A token to cancel the operation</param>
+    /// <returns>An output that describes if hte load succeeded</returns>
     Task<Output> LoadUserConfigurationAsync(CancellationToken cancellationToken = default);
 }

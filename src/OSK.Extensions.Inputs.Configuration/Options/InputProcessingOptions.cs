@@ -3,6 +3,9 @@ using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration.Options;
 
+/// <summary>
+/// Defines options that are utilized with an input processor
+/// </summary>
 public class InputProcessingOptions
 {
     /// <summary>

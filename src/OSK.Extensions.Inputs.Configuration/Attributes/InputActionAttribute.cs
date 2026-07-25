@@ -4,6 +4,9 @@ using OSK.Inputs.Abstractions.Inputs;
 
 namespace OSK.Extensions.Inputs.Configuration.Attributes;
 
+/// <summary>
+/// An attribute that can be used to provide extra context for input methods being used with an input processor
+/// </summary>
 [AttributeUsage(AttributeTargets.Method)]
 public class InputActionAttribute : Attribute
 {
